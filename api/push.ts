@@ -77,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   webpush.setVapidDetails('https://goofyahhtalk.vercel.app', VAPID_PUBLIC, VAPID_PRIVATE)
   const payload = JSON.stringify({
     title: claim.title || 'GoofyAhhTalk',
-    body: /^\[\[sticker:[a-z]+\]\]$/.test(claim.body || '') ? 'sent a sticker' : claim.body || '',
+    body: /^\[\[sticker:[a-z_]+\]\]$/.test(claim.body || '') ? 'sent a sticker' : claim.body || '',
     url: claim.url || '/',
     tag: claim.tag || undefined,
   })

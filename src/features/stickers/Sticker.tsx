@@ -4,7 +4,7 @@ import { useAvatarFor } from '../../ui/avatars'
 import { applyAvatar, faceTraits } from '../../ui/face'
 import { STICKERS, type StickerKind } from './stickers'
 
-const Heart = ({ c = '#FF4F8B' }: { c?: string }) => (
+export const Heart = ({ c = '#FF4F8B' }: { c?: string }) => (
   <svg viewBox="0 0 24 24" width="100%" height="100%">
     <path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 3 4.5 6.6 4.5c2.2 0 3.6 1.2 5.4 3.2 1.8-2 3.2-3.2 5.4-3.2 3.6 0 5.8 3.7 4.2 7.3C19.5 16.4 12 21 12 21z" fill={c} stroke="#17131F" strokeWidth="1.8" strokeLinejoin="round" />
   </svg>

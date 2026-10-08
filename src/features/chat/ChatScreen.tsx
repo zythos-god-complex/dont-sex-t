@@ -20,13 +20,14 @@ import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
-import { Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
+import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
 import { IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
 import { Sticker } from '../stickers/Sticker'
-import { STICKERS, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
+import { COUPLES, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
+import { CoupleSticker } from '../stickers/CoupleSticker'
 import { EMOJI_GROUPS } from './emojis'
 import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
 
@@ -302,9 +303,10 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
   }, [actions])
   const myName = useMe()?.username ?? ''
   const stk = stickerOf(m.body)
-  const emoji = stk ? 0 : emojiOnlyCount(m.body)
+  const cpl = coupleOf(m.body)
+  const emoji = stk || cpl ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
-  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk ? 'b-sticker' : ''].join(' ')
+  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : ''].join(' ')
   const [picker, setPicker] = useState(false)
   const [burst, setBurst] = useState(0)
   const [more, setMore] = useState(false)
@@ -417,7 +419,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
               <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {stk ? <Sticker kind={stk} name={mine ? myName : peerName} size={140} /> : linkify(m.body).map((p, i) =>
+          {cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? <Sticker kind={stk} name={mine ? myName : peerName} size={140} /> : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}
@@ -625,6 +627,7 @@ const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)
 
 function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversation; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; meId: string | null }) {
   const [tray, setTray] = useState(false)
+  const [trayTab, setTrayTab] = useState<'me' | 'us'>('me')
   const myName = useMe()?.username ?? ''
   const [text, setText] = useState('')
   const ta = useRef<HTMLTextAreaElement>(null)
@@ -691,26 +694,57 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
         {tray && (
           <motion.div className="stk-tray" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 34 }}>
             <div className="stk-tray-in">
-              <div className="stk-grid">
-                {STICKERS.map((st, i) => (
-                  <motion.button
-                    key={st.id}
-                    type="button"
-                    className="stk-pick"
-                    aria-label={st.caption}
-                    initial={{ scale: 0.4, opacity: 0, y: 16 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    transition={{ delay: 0.025 * i, type: 'spring', stiffness: 520, damping: 22 }}
-                    whileTap={{ scale: 0.82 }}
-                    onClick={() => {
-                      navigator.vibrate?.(8)
-                      sendMessage(conv.id, stickerBody(st.id), replyTo)
-                      onClearReply()
-                    }}
-                  >
-                    <Sticker kind={st.id} name={myName} size={78} />
-                  </motion.button>
-                ))}
+              <div className="stk-tabs">
+                <Segmented
+                  layoutId="stk-tabs"
+                  value={trayTab}
+                  onChange={setTrayTab}
+                  items={[
+                    { id: 'me', label: 'me' },
+                    { id: 'us', label: 'us two' },
+                  ]}
+                />
+              </div>
+              <div className={'stk-grid' + (trayTab === 'us' ? ' is-couple' : '')} key={trayTab}>
+                {trayTab === 'me'
+                  ? STICKERS.map((st, i) => (
+                      <motion.button
+                        key={st.id}
+                        type="button"
+                        className="stk-pick"
+                        aria-label={st.caption}
+                        initial={{ scale: 0.4, opacity: 0, y: 16 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        transition={{ delay: 0.025 * i, type: 'spring', stiffness: 520, damping: 22 }}
+                        whileTap={{ scale: 0.82 }}
+                        onClick={() => {
+                          navigator.vibrate?.(8)
+                          sendMessage(conv.id, stickerBody(st.id), replyTo)
+                          onClearReply()
+                        }}
+                      >
+                        <Sticker kind={st.id} name={myName} size={78} />
+                      </motion.button>
+                    ))
+                  : COUPLES.map((st, i) => (
+                      <motion.button
+                        key={st.id}
+                        type="button"
+                        className="stk-pick"
+                        aria-label={st.caption}
+                        initial={{ scale: 0.4, opacity: 0, y: 16 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        transition={{ delay: 0.03 * i, type: 'spring', stiffness: 520, damping: 22 }}
+                        whileTap={{ scale: 0.82 }}
+                        onClick={() => {
+                          navigator.vibrate?.(8)
+                          sendMessage(conv.id, stickerBody(st.id), replyTo)
+                          onClearReply()
+                        }}
+                      >
+                        <CoupleSticker kind={st.id} a={myName} b={conv.peer.username} size={104} />
+                      </motion.button>
+                    ))}
               </div>
             </div>
           </motion.div>

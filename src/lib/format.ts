@@ -126,7 +126,7 @@ export function messagePreview(m: Pick<Message, 'sender_id' | 'kind' | 'body'> |
   if (!m) return ''
   const mine = !!meId && m.sender_id === meId
   if (m.kind === 'theme') return mine ? 'you changed the theme' : 'changed the theme'
-  const body = /^\[\[sticker:[a-z]+\]\]$/.test(m.body) ? 'sent a sticker' : m.body.replace(/\s+/g, ' ').trim()
+  const body = /^\[\[sticker:[a-z_]+\]\]$/.test(m.body) ? 'sent a sticker' : m.body.replace(/\s+/g, ' ').trim()
   return mine ? `you: ${body}` : body
 }
 
