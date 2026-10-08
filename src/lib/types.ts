@@ -50,17 +50,13 @@ export const THEME_IDS = [
   'cherry',
   'midnight',
   'matcha',
-  'peach',
   'lagoon',
   'lavender',
   'terminal',
   'bubblegum',
   'citrus',
   'aurora',
-  'noir',
-  'strawberry',
   'forest',
-  'sunset',
   'y2k',
 ] as const
 export type ThemeId = (typeof THEME_IDS)[number]
