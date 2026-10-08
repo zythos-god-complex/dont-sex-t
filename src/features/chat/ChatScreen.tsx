@@ -21,10 +21,13 @@ import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, nee
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
+import { IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
+import { Recorder } from '../voice/Recorder'
+import { VoiceBubble } from '../voice/VoiceBubble'
+import { voiceOf } from '../voice/voice'
 import { Confetti, type ConfettiHandle } from './Confetti'
 import { Sticker } from '../stickers/Sticker'
 import { COUPLES, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
@@ -323,9 +326,10 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
   const myName = useMe()?.username ?? ''
   const stk = stickerOf(m.body)
   const cpl = coupleOf(m.body)
-  const emoji = stk || cpl ? 0 : emojiOnlyCount(m.body)
+  const voice = voiceOf(m.body)
+  const emoji = stk || cpl || voice ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
-  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : ''].join(' ')
+  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', voice ? 'b-voice' : ''].join(' ')
   const [picker, setPicker] = useState(false)
   const [burst, setBurst] = useState(0)
   const [more, setMore] = useState(false)
@@ -438,7 +442,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
               <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? <Sticker kind={stk} name={mine ? myName : peerName} size={140} /> : linkify(m.body).map((p, i) =>
+          {voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? <Sticker kind={stk} name={mine ? myName : peerName} size={140} /> : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}
@@ -647,6 +651,7 @@ const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)
 function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversation; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; meId: string | null }) {
   const [tray, setTray] = useState(false)
   const [trayTab, setTrayTab] = useState<'me' | 'us'>('me')
+  const [recording, setRecording] = useState(false)
   const myName = useMe()?.username ?? ''
   const [text, setText] = useState('')
   const ta = useRef<HTMLTextAreaElement>(null)
@@ -769,7 +774,20 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="composer">
+      <AnimatePresence mode="popLayout" initial={false}>
+        {recording && (
+          <Recorder
+            key="rec"
+            userId={meId ?? 'anon'}
+            onSend={(body) => {
+              sendMessage(conv.id, body, replyTo)
+              onClearReply()
+            }}
+            onClose={() => setRecording(false)}
+          />
+        )}
+      </AnimatePresence>
+      <div className="composer" style={recording ? { display: 'none' } : undefined}>
         <button
           type="button"
           className={'stk-toggle' + (tray ? ' is-on' : '')}
@@ -799,9 +817,31 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           enterKeyHint={fine ? 'send' : 'enter'}
           maxLength={2000}
         />
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout" initial={false}>
+          {!has && (
+            <motion.button
+              key="mic"
+              type="button"
+              className="send mic"
+              aria-label="record voice note"
+              initial={{ scale: 0, rotate: 40 }}
+              animate={{ scale: 1, rotate: 0 }}
+              exit={{ scale: 0, rotate: -30 }}
+              transition={{ type: 'spring', stiffness: 600, damping: 24 }}
+              whileTap={{ scale: 0.86 }}
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setTray(false)
+                ta.current?.blur()
+                setRecording(true)
+              }}
+            >
+              <IconMic size={21} />
+            </motion.button>
+          )}
           {has && (
             <motion.button
+              key="send"
               className="send"
               aria-label="send"
               initial={{ scale: 0, rotate: -40 }}

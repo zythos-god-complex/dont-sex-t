@@ -49,5 +49,6 @@ export function coupleOf(body: string | null | undefined): CoupleKind | null {
 export const stickerBody = (k: StickerKind | CoupleKind) => `[[sticker:${k}]]`
 /** Human text for previews, quotes, toasts. */
 export function displayBody(body: string): string {
+  if (/^\[\[voice:/.test(body)) return 'voice message'
   return stickerOf(body) || coupleOf(body) ? 'sent a sticker' : body
 }

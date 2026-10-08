@@ -620,3 +620,34 @@
   30%, 50%, 70% { transform: translateX(-5px) rotate(-2.5deg) translateY(-2px); }
   40%, 60% { transform: translateX(5px) rotate(2.5deg) translateY(-2px); }
 }
+
+/* voice notes */
+.b.b-voice { padding: 8px 10px 8px 8px; min-width: 228px; }
+.vn { display: flex; align-items: center; gap: 10px; }
+.vn-play { width: 38px; height: 38px; border-radius: 50%; flex: none; display: grid; place-items: center; background: currentColor; }
+.vn-play svg { color: var(--theme-recv); }
+.b.mine .vn-play svg { color: var(--theme-sent-2); }
+.vn-play svg path, .vn-play svg rect { fill: var(--vn-icon, currentColor); }
+.b.theirs .vn-play { --vn-icon: var(--theme-recv); }
+.b.mine .vn-play { --vn-icon: var(--theme-sent-2); }
+.vn-wave { flex: 1; height: 30px; display: flex; align-items: center; gap: 2px; cursor: pointer; }
+.vn-wave i { flex: 1; min-width: 2px; border-radius: 2px; background: currentColor; opacity: .35; transition: opacity .15s; }
+.vn-wave i.on { opacity: 1; }
+.vn-side { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: none; }
+.vn-time { font: 700 12px/1 var(--font-display); opacity: .8; }
+.vn-speed { font: 800 11px/1 var(--font-display); padding: 3px 6px; border-radius: 999px; background: color-mix(in srgb, currentColor 16%, transparent); color: inherit; }
+.send.mic { background: color-mix(in srgb, var(--theme-composer-ink) 9%, transparent); color: var(--theme-composer-ink); }
+.rec {
+  display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 5px 5px 5px 8px; border-radius: 26px;
+  background: var(--theme-composer); color: var(--theme-composer-ink); box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 6px 22px -10px rgba(0,0,0,.28);
+  border: 1px solid color-mix(in srgb, var(--theme-ink) 8%, transparent);
+}
+.rec-x { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--danger); flex: none; }
+.rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #FF3B4E; flex: none; animation: recdot 1s ease-in-out infinite; }
+@keyframes recdot { 50% { opacity: .25; transform: scale(.8); } }
+.rec-time { font: 750 15px/1 var(--font-display); min-width: 38px; }
+.rec-wave { flex: 1; height: 28px; display: flex; align-items: center; gap: 2px; overflow: hidden; }
+.rec-wave i { flex: 1; height: 100%; border-radius: 2px; background: var(--theme-accent); transform-origin: center; transition: transform 90ms linear; }
+.rec-msg { flex: 1; font: 650 14px/1.2 var(--font-display); color: var(--danger); }
+.rec-send { flex: none; }
+.dots-loader.small i { width: 6px; height: 6px; }
