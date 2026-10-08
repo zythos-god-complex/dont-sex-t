@@ -716,9 +716,29 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
     } catch {
       /* ignore */
     }
-    const el = fileIn.current
-    dbg('tap photo btn | input=' + !!el + ' | ua=' + navigator.userAgent.slice(0, 140))
-    el?.click()
+    dbg('tap photo btn v2 (fresh input, explicit types)')
+    // a brand new input every time, outside React, listening to both change and input
+    const el = document.createElement('input')
+    el.type = 'file'
+    el.accept = 'image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif'
+    el.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0'
+    let handled = false
+    const take = (ev: Event) => {
+      if (handled) return
+      handled = true
+      dbg(`${ev.type} event fired | files=${el.files?.length ?? 0}`)
+      void pickImage(el.files?.[0])
+      setTimeout(() => el.remove(), 1000)
+    }
+    el.addEventListener('change', take)
+    el.addEventListener('input', take)
+    el.addEventListener('cancel', () => {
+      picking.current = false
+      dbg('picker sent CANCEL event')
+      el.remove()
+    })
+    document.body.appendChild(el)
+    el.click()
   }
   const pickImage = async (file: File | undefined) => {
     picking.current = false
