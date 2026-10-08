@@ -453,6 +453,7 @@ function ensureConvChannel(c: Conversation) {
   const entry: ConvChan = { ch, topic: c.topic, joinedOnce: false }
   const convId = c.id
   ch.on('broadcast', { event: 'typing' }, (e) => onPeerTyping(convId, unwrap(e)))
+  ch.on('broadcast', { event: 'confetti' }, () => confettiSubs.forEach((f) => f(convId)))
   ch.on('broadcast', { event: 'msg' }, (e) => onPeerBroadcastMsg(convId, unwrap(e)))
   ch.on('broadcast', { event: 'react' }, (e) => {
     const p = unwrap(e) as unknown as { message_id: string; user_id: string; emoji: string | null }
@@ -465,6 +466,18 @@ function ensureConvChannel(c: Conversation) {
     }
   })
   convCh.set(c.id, entry)
+}
+
+const confettiSubs = new Set<(convId: string) => void>()
+
+/** Peer fired confetti in a conversation. */
+export function onPeerConfetti(f: (convId: string) => void): () => void {
+  confettiSubs.add(f)
+  return () => void confettiSubs.delete(f)
+}
+
+export function sendConfetti(convId: string): void {
+  broadcast(convId, 'confetti', {})
 }
 
 function broadcast(convId: string, event: string, payload: unknown) {

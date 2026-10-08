@@ -15,7 +15,7 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice } from '../../lib/engine'
+import { loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, sendConfetti, onPeerConfetti } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
@@ -90,9 +90,11 @@ function ChatView({ conv }: { conv: Conversation }) {
     k.y = e.clientY
     if (k.n >= 4) {
       k.n = 0
-      confetti.current?.burst(e.clientX, e.clientY)
+      confetti.current?.rain()
+      sendConfetti(conv.id)
     }
   }
+  useEffect(() => onPeerConfetti((id) => id === conv.id && confetti.current?.rain()), [conv.id])
   useEffect(() => setReplyTo(null), [conv.id])
   const chatRef = useRef<HTMLDivElement>(null)
   const [themeBump, setThemeBump] = useState(false)

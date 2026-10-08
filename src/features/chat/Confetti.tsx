@@ -17,7 +17,7 @@ const LOOK: Record<string, { shape: Shape; colors: string[] }> = {
   bubbles: { shape: 'bubble', colors: ['rgba(255,255,255,.85)'] },
 }
 
-export type ConfettiHandle = { burst: (x: number, y: number) => void }
+export type ConfettiHandle = { burst: (x: number, y: number) => void; rain: () => void }
 
 /** Theme particle burst that lands on message bubbles and gets shaken off. */
 export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () => HTMLElement | null }>(function Confetti({ themeId, host }, ref) {
@@ -167,31 +167,47 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
     }
   }
 
+  const look = () => {
+    const th = getTheme(themeRef.current)
+    return LOOK[th.ambient] ?? { shape: 'confetti' as Shape, colors: [th.sent[0], th.sent[1], th.sent[2], th.accent] }
+  }
+  const count = () => Math.round(110 * Math.min(2.5, Math.max(0.5, useAmbientPrefs.getState().amount)))
+  const add = (lk: { shape: Shape; colors: string[] }, i: number, x: number, y: number, vx: number, vy: number) =>
+    parts.current.push({
+      x, y, vx, vy,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.25,
+      s: lk.shape === 'confetti' ? 7 + Math.random() * 5 : 6 + Math.random() * 6,
+      c: lk.colors[i % lk.colors.length],
+      shape: lk.shape,
+      state: 'fly',
+      phase: Math.random() * 10,
+    })
+  const kick = () => {
+    navigator.vibrate?.([10, 30, 10])
+    const running = !!phase.current
+    phase.current = { start: performance.now(), released: false }
+    if (!running) raf.current = requestAnimationFrame(loop)
+  }
+
   useImperativeHandle(ref, () => ({
     burst(x, y) {
-      const th = getTheme(themeRef.current)
-      const look = LOOK[th.ambient] ?? { shape: 'confetti' as Shape, colors: [th.sent[0], th.sent[1], th.sent[2], th.accent] }
-      const n = Math.round(110 * Math.min(2.5, Math.max(0.5, useAmbientPrefs.getState().amount)))
+      const lk = look()
+      const n = count()
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2
         const sp = 3 + Math.random() * 9
-        parts.current.push({
-          x, y,
-          vx: Math.cos(a) * sp,
-          vy: Math.sin(a) * sp - 6 - Math.random() * 4,
-          rot: Math.random() * Math.PI * 2,
-          vr: (Math.random() - 0.5) * 0.25,
-          s: look.shape === 'confetti' ? 7 + Math.random() * 5 : 6 + Math.random() * 6,
-          c: look.colors[i % look.colors.length],
-          shape: look.shape,
-          state: 'fly',
-          phase: Math.random() * 10,
-        })
+        add(lk, i, x, y, Math.cos(a) * sp, Math.sin(a) * sp - 6 - Math.random() * 4)
       }
-      navigator.vibrate?.([10, 30, 10])
-      const running = !!phase.current
-      phase.current = { start: performance.now(), released: false }
-      if (!running) raf.current = requestAnimationFrame(loop)
+      kick()
+    },
+    // shower from the top edge, same on every screen size
+    rain() {
+      const lk = look()
+      const n = count()
+      const W = window.innerWidth
+      for (let i = 0; i < n; i++) add(lk, i, Math.random() * W, -20 - Math.random() * 260, (Math.random() - 0.5) * 3, 1 + Math.random() * 2.5)
+      kick()
     },
   }))
 
