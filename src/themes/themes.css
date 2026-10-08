@@ -1,0 +1,72 @@
+/* Ambient layers for chat themes. Cheap CSS only; paused for reduced motion. */
+.amb { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.amb i { position: absolute; left: var(--x); top: -6%; display: block; }
+
+.amb-petals i {
+  width: calc(14px * var(--s)); height: calc(10px * var(--s)); border-radius: 80% 0 80% 0; background: #FFB3CB; opacity: 0.75;
+  animation: fall var(--d) linear infinite; animation-delay: var(--delay);
+}
+.amb-petals i:nth-child(3n) { background: #FFC8D9; }
+.amb-leaves i {
+  width: calc(14px * var(--s)); height: calc(9px * var(--s)); border-radius: 0 90% 0 90%; background: #8CC56A; opacity: 0.55;
+  animation: fall calc(var(--d) * 1.3) linear infinite; animation-delay: var(--delay);
+}
+.scheme-dark .amb-leaves i { background: #3E8C5C; opacity: 0.5; }
+@keyframes fall {
+  0% { transform: translate(0, -4vh) rotate(0deg); }
+  100% { transform: translate(var(--drift), 112vh) rotate(540deg); }
+}
+
+.amb-stars i {
+  top: var(--y); width: 2.5px; height: 2.5px; border-radius: 50%; background: #fff; opacity: 0.2; scale: var(--s);
+  animation: twinkle calc(var(--d) * 0.35) ease-in-out infinite; animation-delay: var(--delay);
+}
+@keyframes twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.9; } }
+
+.amb-sparkles i {
+  top: var(--y); width: 6px; height: 6px; scale: var(--s); opacity: 0;
+  background: conic-gradient(from 45deg, transparent 0 25%, #fff 0 25.5%, transparent 0 50%, #fff 0 50.5%, transparent 0 75%, #fff 0 75.5%, transparent 0);
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  background: #fff; animation: sparkle calc(var(--d) * 0.4) ease-in-out infinite; animation-delay: var(--delay);
+}
+@keyframes sparkle { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0); } 50% { opacity: 0.9; transform: scale(1.2) rotate(45deg); } }
+
+.amb-bubbles i {
+  top: auto; bottom: -40px; width: calc(16px * var(--s)); height: calc(16px * var(--s)); border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.75); background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.7), rgba(255,255,255,.08) 60%);
+  animation: rise var(--d) linear infinite; animation-delay: var(--delay);
+}
+@keyframes rise { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translate(calc(var(--drift) * .4), -115vh); opacity: 0.2; } }
+
+.amb-hearts i {
+  top: auto; bottom: -30px; width: calc(14px * var(--s)); height: calc(14px * var(--s)); opacity: 0.6;
+  background: #FF8ACB; clip-path: path('M7 13 C-3 6 1 -1 7 3 C13 -1 17 6 7 13 Z');
+  animation: rise calc(var(--d) * 1.2) linear infinite; animation-delay: var(--delay);
+}
+.amb-hearts i:nth-child(2n) { background: #8FD0FF; }
+
+.amb-aurora i {
+  position: absolute; left: -20%; right: -20%; height: 55%; top: -10%; border-radius: 50%; filter: blur(50px); opacity: 0.55;
+  background: linear-gradient(90deg, transparent, #2CF5B0, #1EC8D6, transparent); animation: aurora 14s ease-in-out infinite alternate;
+}
+.amb-aurora i:nth-child(2) { top: 10%; background: linear-gradient(90deg, transparent, #FF5AC8, #7B5CFF, transparent); opacity: 0.32; animation-duration: 18s; animation-direction: alternate-reverse; }
+.amb-aurora i:nth-child(3) { top: 30%; background: linear-gradient(90deg, transparent, #48F0A0, transparent); opacity: 0.22; animation-duration: 22s; }
+@keyframes aurora { from { transform: translateX(-12%) skewY(-6deg); } to { transform: translateX(12%) skewY(6deg); } }
+
+.amb-haze i {
+  position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(60px); opacity: 0.5; top: -20%; left: -20%;
+  background: #D9C6FF; animation: haze 20s ease-in-out infinite alternate;
+}
+.amb-haze i:nth-child(2) { top: 40%; left: 40%; background: #C9D6FF; animation-duration: 26s; }
+@keyframes haze { from { transform: translate(0, 0); } to { transform: translate(15%, 10%); } }
+
+.amb-scan {
+  background: repeating-linear-gradient(180deg, rgba(124,255,155,.05) 0 1px, transparent 1px 3px);
+}
+.amb-scan::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 30%; top: -30%;
+  background: linear-gradient(180deg, transparent, rgba(124,255,155,.06), transparent); animation: scan 7s linear infinite;
+}
+@keyframes scan { to { transform: translateY(440%); } }
+
+@media (prefers-reduced-motion: reduce) { .amb i, .amb::after { animation: none !important; } }
