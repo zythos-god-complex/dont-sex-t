@@ -3,7 +3,7 @@ import type { AvatarConfig } from '../ui/face'
 
 export type Gender = 'm' | 'f'
 
-export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null }
+export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean }
 
 export type Me = Profile & { inbox: string }
 
@@ -32,6 +32,10 @@ export type Conversation = {
   muted: boolean
   unread: number
   last_message: Message | null
+  status?: 'accepted' | 'pending' | 'declined'
+  requester?: string | null
+  declined_at?: string | null
+  blocked?: 'me' | 'them' | null
 }
 
 export const THEME_IDS = [
@@ -65,6 +69,9 @@ export type ErrorCode =
   | 'rate_limited'
   | 'theme_invalid'
   | 'self_chat'
+  | 'request_pending'
+  | 'request_cooldown'
+  | 'blocked'
   | 'network' // fetch failed / offline / timeout
   | 'server' // anything else (5xx, PostgREST errors, missing RPC)
 
@@ -76,6 +83,7 @@ export type OnlineUser = {
   since: string // ISO, earliest tab join
   away: boolean // true only when every tab of theirs is hidden
   avatar?: AvatarConfig | null // custom face, when they built one
+  show_status?: boolean
 }
 
 /** In-app banner for a message that arrived in a conversation that is not open+visible. */

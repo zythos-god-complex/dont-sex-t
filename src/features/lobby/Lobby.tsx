@@ -1,13 +1,16 @@
 import { useState, type CSSProperties } from 'react'
 import { Link, useLocation } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
-import { useMe, useNow, useOnline, useTypingToMe, useUnreadFrom, useUnreadTotal, type OnlineFilter } from '../../lib/hooks'
+import { useNow, useOnline, useTypingToMe, useUnreadFrom, useUnreadTotal, type OnlineFilter } from '../../lib/hooks'
 import { hereFor } from '../../lib/format'
 import type { OnlineUser } from '../../lib/types'
 import { GoofyFace, useLookAt } from '../../ui/GoofyFace'
 import { faceTilt } from '../../ui/face'
 import { Badge, Segmented, TypingDots, Wordmark, spring, useIsDesktop } from '../../ui/kit'
 import { GenderIcon, IconDm } from '../../ui/icons'
+import { MeButton } from '../shell/MeSheet'
+import { useBlocks } from '../../lib/engine'
+import { useStore } from '../../lib/store'
 
 function Card({ u, now }: { u: OnlineUser; now: number }) {
   const [, nav] = useLocation()
@@ -15,11 +18,12 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
   const unread = useUnreadFrom(u.id)
   const [ref, look] = useLookAt<HTMLButtonElement>()
   const tilt = faceTilt(u.username, 1.6)
+  const showStatus = useStore((s) => s.profiles[u.id]?.show_status !== false && u.show_status !== false)
   return (
     <motion.button
       ref={ref}
       layout
-      className={'card' + (u.away ? ' is-away' : '')}
+      className={'card' + (u.away && showStatus ? ' is-away' : '')}
       style={{ '--tilt': `${tilt}deg` } as CSSProperties}
       initial={{ opacity: 0, scale: 0.85, y: 14 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -30,7 +34,7 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
     >
       {unread > 0 && <Badge n={unread} className="card-badge" />}
       <span className="card-face">
-        <GoofyFace name={u.username} size={104} presence={u.away ? 'away' : 'online'} look={look} />
+        <GoofyFace name={u.username} size={104} presence={showStatus ? (u.away ? 'away' : 'online') : null} look={look} />
       </span>
       <span className="card-name ellipsis">{u.username}</span>
       <span className={'card-meta' + (typing ? ' is-typing' : '')}>
@@ -41,7 +45,7 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
         ) : (
           <>
             <GenderIcon g={u.gender} size={15} className={'g-ico g-' + u.gender} />
-            {u.away ? 'away' : hereFor(u.since, now)}
+            {showStatus ? (u.away ? 'away' : hereFor(u.since, now)) : u.gender === 'm' ? 'male' : 'female'}
           </>
         )}
       </span>
@@ -50,10 +54,12 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
 }
 
 export default function Lobby() {
-  const me = useMe()
   const desktop = useIsDesktop()
   const [filter, setFilter] = useState<OnlineFilter>('all')
-  const { list, counts } = useOnline(filter)
+  const { list: all, counts } = useOnline(filter)
+  const blocked = useBlocks((b) => b.blocked)
+  const blockedBy = useBlocks((b) => b.blockedBy)
+  const list = all.filter((u) => !blocked.includes(u.id) && !blockedBy.includes(u.id))
   const unread = useUnreadTotal()
   const now = useNow(30000)
 
@@ -70,7 +76,7 @@ export default function Lobby() {
               <IconDm size={25} />
               <Badge n={unread} className="dm-badge" />
             </Link>
-            {me && <GoofyFace name={me.username} size={32} />}
+            <MeButton />
           </div>
         </header>
       )}

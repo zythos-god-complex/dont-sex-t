@@ -13,6 +13,9 @@ const KNOWN_CODES: ReadonlySet<string> = new Set([
   'rate_limited',
   'theme_invalid',
   'self_chat',
+  'request_pending',
+  'request_cooldown',
+  'blocked',
 ])
 
 export class ApiError extends Error {
@@ -98,6 +101,14 @@ export const api = {
   me: (token: string) => rpc<Me>('gat_me', { p_token: token }),
 
   setAvatar: (token: string, avatar: AvatarConfig | null) => rpc<Me>('gat_set_avatar', { p_token: token, p_avatar: avatar }),
+  joinTemp: (gender: Gender) => rpc<{ token: string; me: Me }>('gat_join_temp', { p_gender: gender }),
+  rename: (token: string, username: string) => rpc<Me>('gat_rename', { p_token: token, p_username: username }),
+  settings: (token: string, showStatus: boolean | null, showSeen: boolean | null) =>
+    rpc<Me>('gat_settings', { p_token: token, p_show_status: showStatus, p_show_seen: showSeen }),
+  nameHistory: (token: string, userId: string) => rpc<{ username: string; changed_at: string }[]>('gat_name_history_of', { p_token: token, p_user: userId }),
+  respond: (token: string, conv: string, accept: boolean) => rpc<Conversation>('gat_respond', { p_token: token, p_conversation: conv, p_accept: accept }),
+  block: (token: string, peer: string, on: boolean) => rpc<{ blocked: boolean }>('gat_block', { p_token: token, p_peer: peer, p_on: on }),
+  blockList: (token: string) => rpc<{ blocked: string[]; blocked_by: string[] }>('gat_block_list', { p_token: token }),
 
   profiles: (token: string, ids: string[]) => rpc<Profile[]>('gat_profiles', { p_token: token, p_ids: ids }),
 

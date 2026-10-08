@@ -85,7 +85,29 @@ function lsDel(k: string): void {
   }
 }
 
+const SS_T = 'gat.tt'
+function ssGet(): string | null {
+  try {
+    return sessionStorage.getItem(SS_T)
+  } catch {
+    return null
+  }
+}
+/** Temp mode: the token lives only in this tab session and is gone when the site is closed. */
+export function writeTempSession(token: string): void {
+  try {
+    sessionStorage.setItem(SS_T, token)
+  } catch {
+    /* blocked */
+  }
+}
+export function isTempToken(token: string | null | undefined): boolean {
+  return !!token && ssGet() === token
+}
+
 export function readSession(): Session | null {
+  const tt = ssGet()
+  if (isValidTokenShape(tt) && !isValidTokenShape(readCookie(COOKIE_T)) && !isValidTokenShape(lsGet(LS_T))) return { token: tt, username: null }
   const ct = readCookie(COOKIE_T)
   const cu = readCookie(COOKIE_U)
   const lt = lsGet(LS_T)
@@ -104,6 +126,7 @@ export function readSession(): Session | null {
 }
 
 export function writeSession(token: string, username: string | null): void {
+  if (isTempToken(token)) return
   writeCookie(COOKIE_T, token)
   lsSet(LS_T, token)
   if (username) {
@@ -113,6 +136,11 @@ export function writeSession(token: string, username: string | null): void {
 }
 
 export function clearSession(): void {
+  try {
+    sessionStorage.removeItem(SS_T)
+  } catch {
+    /* blocked */
+  }
   writeCookie(COOKIE_T, '', 0)
   writeCookie(COOKIE_U, '', 0)
   lsDel(LS_T)
@@ -141,6 +169,7 @@ export function takeUrlToken(): string | null {
 
 /** Points <link rel="manifest"> at /api/manifest?t=<token> so an iOS home screen install carries identity. */
 export function setManifestToken(token: string | null): void {
+  if (isTempToken(token)) token = null
   if (!hasDoc()) return
   let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')
   if (!link) {

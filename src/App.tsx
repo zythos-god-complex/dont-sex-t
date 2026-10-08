@@ -8,10 +8,11 @@ import Lobby from './features/lobby/Lobby'
 import Inbox from './features/inbox/Inbox'
 import ChatScreen from './features/chat/ChatScreen'
 import Toasts from './features/toasts/Toasts'
-import { GoofyFace } from './ui/GoofyFace'
 import { Badge, Wordmark, useIsDesktop } from './ui/kit'
 import { IconLive } from './ui/icons'
 import { bindVisualViewport, trackNav } from './features/shell/nav'
+import { MeButton } from './features/shell/MeSheet'
+import { refreshBlocks } from './lib/engine'
 
 function depthOf(path: string): number {
   if (path.startsWith('/dm/')) return 2
@@ -88,7 +89,7 @@ function DesktopApp() {
             </button>
             {me && (
               <div className="d-me">
-                <GoofyFace name={me.username} size={34} />
+                <MeButton size={34} />
               </div>
             )}
           </div>
@@ -128,6 +129,12 @@ export default function App() {
   const [loc] = useLocation()
   useEffect(() => trackNav(loc), [loc])
   useEffect(() => bindVisualViewport(), [])
+  useEffect(() => {
+    if (status !== 'ready') return
+    void refreshBlocks()
+    const t = setInterval(() => void refreshBlocks(), 30000)
+    return () => clearInterval(t)
+  }, [status])
   useEffect(() => {
     document.title = unread > 0 ? `(${unread}) GoofyAhhTalk` : 'GoofyAhhTalk'
   }, [unread])

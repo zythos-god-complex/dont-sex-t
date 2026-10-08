@@ -1,10 +1,11 @@
+import { create } from 'zustand'
 import type { AvatarConfig } from '../ui/face'
 // Everything live: wires realtime + api into the store.
 // Actions are plain exported functions (see bottom). window.__gat exposes them for QA.
 import type { RealtimeChannel } from '@supabase/realtime-js'
 import { api, isApiError, isRetryable } from './api'
 import { canPush, channel, getRealtime, onSocket, reconnectNow, removeChannel } from './realtime'
-import { clearSession, readSession, setManifestToken, takeUrlToken, writeSession } from './session'
+import { clearSession, readSession, setManifestToken, takeUrlToken, writeSession, writeTempSession } from './session'
 import {
   countUnread,
   EMPTY_MESSAGES,
@@ -304,7 +305,7 @@ function myMeta() {
   const me = get().me
   if (!me) return null
   if (!lobbySince) lobbySince = new Date().toISOString()
-  return { id: me.id, username: me.username, gender: me.gender, since: lobbySince, away: !visible, avatar: me.avatar ?? null }
+  return { id: me.id, username: me.username, gender: me.gender, since: lobbySince, away: !visible, avatar: me.avatar ?? null, show_status: me.show_status !== false }
 }
 
 function trackMe() {
@@ -1524,4 +1525,77 @@ export const actions = {
 
 if (hasWin) {
   ;(window as unknown as { __gat: unknown }).__gat = { useStore, ...actions }
+}
+
+// ---------------------------------------------------------------------------------------------
+// profile, privacy, temp mode, requests, blocks
+// ---------------------------------------------------------------------------------------------
+
+/** Temp mode: random goof name, session only. */
+export async function joinTemp(gender: Gender): Promise<Me> {
+  const r = await api.joinTemp(gender)
+  writeTempSession(r.token)
+  gen++
+  teardownSession()
+  token = r.token
+  const s = get()
+  set({ ...initialState(), status: 'ready', me: r.me, token: r.token, connection: s.connection, online: s.online })
+  startSession()
+  void refreshConversations(true)
+  void refreshBlocks()
+  return r.me
+}
+
+function updateMe(me: Me): void {
+  set({ me })
+  if (token) writeSession(token, me.username)
+  trackMe()
+}
+
+export async function saveAvatar(avatar: AvatarConfig | null): Promise<void> {
+  if (!token) return
+  updateMe(await api.setAvatar(token, avatar))
+}
+
+export async function renameMe(username: string): Promise<void> {
+  if (!token) return
+  updateMe(await api.rename(token, username))
+}
+
+export async function savePrivacy(showStatus: boolean | null, showSeen: boolean | null): Promise<void> {
+  if (!token) return
+  const me = get().me
+  if (me) set({ me: { ...me, show_status: showStatus ?? me.show_status, show_seen: showSeen ?? me.show_seen } })
+  updateMe(await api.settings(token, showStatus, showSeen))
+}
+
+export function nameHistory(userId: string) {
+  return token ? api.nameHistory(token, userId) : Promise.resolve([])
+}
+
+export async function respondRequest(convId: string, accept: boolean): Promise<void> {
+  if (!token) return
+  const c = get().conversations[convId]
+  if (c) set({ conversations: { ...get().conversations, [convId]: { ...c, status: accept ? 'accepted' : 'declined', declined_at: accept ? null : new Date().toISOString() } } })
+  onConvEvent(await api.respond(token, convId, accept))
+}
+
+export const useBlocks = create<{ blocked: string[]; blockedBy: string[] }>(() => ({ blocked: [], blockedBy: [] }))
+
+export async function refreshBlocks(): Promise<void> {
+  if (!token) return
+  try {
+    const r = await api.blockList(token)
+    useBlocks.setState({ blocked: r.blocked ?? [], blockedBy: r.blocked_by ?? [] })
+  } catch {
+    /* next tick */
+  }
+}
+
+export async function setBlocked(peerId: string, on: boolean): Promise<void> {
+  if (!token) return
+  const b = useBlocks.getState()
+  useBlocks.setState({ blocked: on ? [...new Set([...b.blocked, peerId])] : b.blocked.filter((x) => x !== peerId) })
+  await api.block(token, peerId, on)
+  void refreshBlocks()
 }

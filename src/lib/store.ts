@@ -250,8 +250,9 @@ export function presenceToOnline(
       const since = typeof raw.since === 'string' ? raw.since : new Date().toISOString()
       const away = raw.away === true
       const avatar = isAvatar(raw.avatar) ? raw.avatar : null
+      const show_status = raw.show_status !== false
       const cur = acc[id]
-      if (!cur) acc[id] = { id, username, gender, since, away, avatar }
+      if (!cur) acc[id] = { id, username, gender, since, away, avatar, show_status }
       else {
         cur.away = cur.away && away // away only when every tab is away
         if (ts(since) < ts(cur.since)) cur.since = since
@@ -269,7 +270,7 @@ export function presenceToOnline(
       if (p.avatar !== undefined) n.avatar = isAvatar(p.avatar) ? p.avatar : n.avatar
     }
     const o = prev[id]
-    if (o && o.username === n.username && o.gender === n.gender && o.since === n.since && o.away === n.away && JSON.stringify(o.avatar ?? null) === JSON.stringify(n.avatar ?? null)) out[id] = o
+    if (o && o.username === n.username && o.gender === n.gender && o.since === n.since && o.away === n.away && JSON.stringify(o.avatar ?? null) === JSON.stringify(n.avatar ?? null) && o.show_status === n.show_status) out[id] = o
     else {
       out[id] = n
       changed = true

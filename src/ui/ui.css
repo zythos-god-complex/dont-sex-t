@@ -458,3 +458,19 @@
 .theme-row.is-open .theme-row-chev { rotate: -90deg; }
 .theme-drop { overflow: hidden; }
 .theme-drop .swatches { padding: 12px 2px 4px; }
+
+/* profile sheet */
+.me-btn { border-radius: 50%; display: grid; place-items: center; -webkit-tap-highlight-color: transparent; transition: transform 90ms; }
+.me-btn:active { transform: scale(.9); }
+.me { display: flex; flex-direction: column; gap: 10px; }
+.me-face { position: relative; align-self: center; margin: 4px 0 6px; }
+.me-edit { bottom: -4px; right: -18px; width: 46px; height: 46px; }
+.me-name { display: flex; gap: 8px; align-items: center; }
+.me-name input {
+  flex: 1; min-width: 0; height: 54px; border-radius: var(--r-lg); background: var(--bg-2); border: 2px solid var(--line);
+  text-align: center; font: 650 19px/1 var(--font-display); color: var(--ink); outline: none;
+}
+.me-name input:focus { border-color: var(--ink); }
+.me-save { height: 54px; padding: 0 18px; border-radius: var(--r-lg); background: var(--accent); color: #fff; font: 750 16px/1 var(--font-display); box-shadow: 0 4px 0 var(--accent-2); }
+.me-temp { text-align: center; font: 750 20px/1 var(--font-display); }
+.me-temp span { font: 750 12px/1 var(--font-display); background: var(--sun); color: #17131F; padding: 4px 8px; border-radius: 999px; vertical-align: middle; margin-left: 6px; }
