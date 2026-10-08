@@ -22,9 +22,9 @@ import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
 import { IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
-import { Ambient } from '../../themes/Ambient'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
+import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
 
 export type ChatScreenProps = { username: string }
 
@@ -66,6 +66,18 @@ function ChatView({ conv }: { conv: Conversation }) {
   const now = useNow(30000)
   const [settings, setSettings] = useState(false)
   const [egg, setEgg] = useState(0)
+  const chatRef = useRef<HTMLDivElement>(null)
+  const [themeBump, setThemeBump] = useState(false)
+  const firstTheme = useRef(true)
+  useEffect(() => {
+    if (firstTheme.current) {
+      firstTheme.current = false
+      return
+    }
+    setThemeBump(true)
+    const t = setTimeout(() => setThemeBump(false), 900)
+    return () => clearTimeout(t)
+  }, [theme.id])
   const me = useMe()
 
   useEffect(() => {
@@ -91,12 +103,8 @@ function ChatView({ conv }: { conv: Conversation }) {
   else if (status.lastSeenAt) statusLine = activeAgo(status.lastSeenAt, now)
 
   return (
-    <div className={'chat scheme-' + theme.scheme} style={themeVars(theme)}>
-      <AnimatePresence initial={false}>
-        <motion.div key={theme.id} className="chat-bg" style={{ background: theme.bg }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.45 }}>
-          <Ambient kind={theme.ambient} />
-        </motion.div>
-      </AnimatePresence>
+    <div ref={chatRef} className={'chat scheme-' + theme.scheme + (themeBump ? ' theme-bump' : '')} style={themeVars(theme)}>
+      <ThemeBackground themeId={theme.id} host={chatRef} />
 
       <header className="chat-head">
         {!desktop && (
@@ -127,7 +135,7 @@ function ChatView({ conv }: { conv: Conversation }) {
       <AnimatePresence>{egg > 0 && <EasterEgg key="egg" me={me?.username ?? ''} />}</AnimatePresence>
 
       <Sheet open={settings} onClose={() => setSettings(false)} label="chat settings">
-        <SettingsBody conv={conv} />
+        <SettingsBody conv={conv} onPicked={() => setSettings(false)} />
       </Sheet>
     </div>
   )
@@ -496,7 +504,7 @@ function NameHistory({ peerId }: { peerId: string }) {
   )
 }
 
-function SettingsBody({ conv }: { conv: Conversation }) {
+function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => void }) {
   const [themeOpen, setThemeOpen] = useState(false)
   const push = usePushState(conv.id)
   const busy = usePushBusy()
@@ -524,7 +532,12 @@ function SettingsBody({ conv }: { conv: Conversation }) {
         {THEMES.map((t) => {
           const on = t.id === conv.theme
           return (
-            <motion.button key={t.id} className={'swatch' + (on ? ' is-on' : '')} onClick={() => void setTheme(conv.id, t.id)} whileTap={{ scale: 0.94 }} aria-pressed={on}>
+            <motion.button key={t.id} className={'swatch' + (on ? ' is-on' : '')} onClick={(e) => {
+                if (t.id === conv.theme) return
+                setThemeOrigin(e.clientX, e.clientY)
+                onPicked()
+                setTimeout(() => void setTheme(conv.id, t.id), 260)
+              }} whileTap={{ scale: 0.94 }} aria-pressed={on}>
               <span className="swatch-prev" style={{ ...themeVars(t), background: t.bg }}>
                 <span className="sw-b sw-recv" />
                 <span className="sw-b sw-sent" />
