@@ -21,10 +21,12 @@ import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, nee
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
+import { IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
+import { Sticker } from '../stickers/Sticker'
+import { STICKERS, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
 import { EMOJI_GROUPS } from './emojis'
 import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
 
@@ -298,9 +300,11 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
     const t = setTimeout(() => setActions(false), 3500)
     return () => clearTimeout(t)
   }, [actions])
-  const emoji = emojiOnlyCount(m.body)
+  const myName = useMe()?.username ?? ''
+  const stk = stickerOf(m.body)
+  const emoji = stk ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
-  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : ''].join(' ')
+  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk ? 'b-sticker' : ''].join(' ')
   const [picker, setPicker] = useState(false)
   const [burst, setBurst] = useState(0)
   const [more, setMore] = useState(false)
@@ -410,10 +414,10 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
               }}
             >
               <b>{m.reply.sender_id === meId ? 'you' : peerName}</b>
-              <span>{m.reply.body}</span>
+              <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {linkify(m.body).map((p, i) =>
+          {stk ? <Sticker kind={stk} name={mine ? myName : peerName} size={140} /> : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}
@@ -620,6 +624,8 @@ function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: C
 const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
 
 function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversation; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; meId: string | null }) {
+  const [tray, setTray] = useState(false)
+  const myName = useMe()?.username ?? ''
   const [text, setText] = useState('')
   const ta = useRef<HTMLTextAreaElement>(null)
   const lastSent = useRef<{ body: string; at: number } | null>(null)
@@ -672,7 +678,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
               <IconReply size={18} />
               <div className="reply-bar-text">
                 <b>replying to {replyTo.sender_id === meId ? 'yourself' : conv.peer.username}</b>
-                <span>{replyTo.body}</span>
+                <span>{displayBody(replyTo.body)}</span>
               </div>
               <button type="button" aria-label="cancel reply" onClick={onClearReply}>
                 <IconClose size={18} />
@@ -681,7 +687,49 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           </motion.div>
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {tray && (
+          <motion.div className="stk-tray" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 34 }}>
+            <div className="stk-tray-in">
+              <div className="stk-grid">
+                {STICKERS.map((st, i) => (
+                  <motion.button
+                    key={st.id}
+                    type="button"
+                    className="stk-pick"
+                    aria-label={st.caption}
+                    initial={{ scale: 0.4, opacity: 0, y: 16 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    transition={{ delay: 0.025 * i, type: 'spring', stiffness: 520, damping: 22 }}
+                    whileTap={{ scale: 0.82 }}
+                    onClick={() => {
+                      navigator.vibrate?.(8)
+                      sendMessage(conv.id, stickerBody(st.id), replyTo)
+                      onClearReply()
+                    }}
+                  >
+                    <Sticker kind={st.id} name={myName} size={78} />
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="composer">
+        <button
+          type="button"
+          className={'stk-toggle' + (tray ? ' is-on' : '')}
+          aria-label="stickers"
+          onPointerDown={(e) => e.preventDefault()}
+          onClick={() => {
+            if (!tray) ta.current?.blur()
+            else ta.current?.focus()
+            setTray((v) => !v)
+          }}
+        >
+          <IconSticker size={24} />
+        </button>
         <textarea
           ref={ta}
           rows={1}
@@ -692,6 +740,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
             setText(e.target.value)
             setTyping(conv.id, e.target.value.trim().length > 0)
           }}
+          onFocus={() => setTray(false)}
           onBlur={() => setTyping(conv.id, false)}
           onKeyDown={onKey}
           enterKeyHint={fine ? 'send' : 'enter'}

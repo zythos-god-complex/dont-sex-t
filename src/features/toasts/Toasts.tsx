@@ -4,6 +4,7 @@ import { useToasts } from '../../lib/hooks'
 import { dismissToast } from '../../lib/engine'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { spring } from '../../ui/kit'
+import { displayBody } from '../stickers/stickers'
 
 export default function Toasts() {
   const toasts = useToasts()
@@ -34,7 +35,7 @@ export default function Toasts() {
             <GoofyFace name={t.username} size={38} />
             <span className="toast-main">
               <span className="toast-name ellipsis">{t.username}</span>
-              <span className="toast-body ellipsis">{t.kind === 'theme' ? 'changed the theme' : t.body}</span>
+              <span className="toast-body ellipsis">{t.kind === 'theme' ? 'changed the theme' : displayBody(t.body)}</span>
             </span>
           </motion.button>
         ))}

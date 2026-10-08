@@ -114,3 +114,10 @@ export const IconReply = (p: P) => (
     <path d="M4 12h9.5a6.5 6.5 0 0 1 6.5 6.5V20" />
   </Svg>
 )
+export const IconSticker = (p: P) => (
+  <Svg {...p}>
+    <path d="M20 12.5V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h5.5z" />
+    <path d="M12.5 20c0-4.1 3.4-7.5 7.5-7.5" />
+    <path d="M9 10h.01M15 10h.01M9 14.5c1 .8 2 1 3 1" />
+  </Svg>
+)
