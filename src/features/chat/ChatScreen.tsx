@@ -680,19 +680,78 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const imagesOk = !!conv.my_images && !!conv.peer_images
   const fileIn = useRef<HTMLInputElement>(null)
   const [upload, setUpload] = useState<{ preview: string; err?: boolean } | null>(null)
+  // TEMP photo debug: every step is posted into the chat as a 🐞 message
+  const dbg = (t: string) => sendMessage(conv.id, '🐞 ' + t, null)
+  const picking = useRef(false)
+  useEffect(() => {
+    try {
+      const was = sessionStorage.getItem('gat.dbg.pick')
+      if (was) {
+        sessionStorage.removeItem('gat.dbg.pick')
+        setTimeout(() => dbg('page RELOADED while picker was open (picked at ' + was + ')'), 1500)
+      }
+    } catch {
+      /* ignore */
+    }
+    const onFocus = () => {
+      if (!picking.current || document.visibilityState !== 'visible') return
+      setTimeout(() => {
+        if (picking.current && document.visibilityState === 'visible') {
+          picking.current = false
+          dbg('picker closed, but NO change event fired')
+        }
+      }, 2500)
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [conv.id])
+  const openPicker = () => {
+    picking.current = true
+    try {
+      sessionStorage.setItem('gat.dbg.pick', new Date().toLocaleTimeString())
+    } catch {
+      /* ignore */
+    }
+    const el = fileIn.current
+    dbg('tap photo btn | input=' + !!el + ' | ua=' + navigator.userAgent.slice(0, 140))
+    el?.click()
+  }
   const pickImage = async (file: File | undefined) => {
-    if (!file || (file.type && !file.type.startsWith('image/'))) return
+    picking.current = false
+    try {
+      sessionStorage.removeItem('gat.dbg.pick')
+    } catch {
+      /* ignore */
+    }
+    if (!file) {
+      dbg('change fired but no file')
+      return
+    }
+    dbg(`got file | name=${file.name} | type="${file.type}" | size=${Math.round(file.size / 1024)}kb`)
+    if (file.type && !file.type.startsWith('image/')) {
+      dbg('rejected: not an image type')
+      return
+    }
     const preview = URL.createObjectURL(file)
     setUpload({ preview })
     const reply = replyTo
     onClearReply()
+    let step = 'decode'
     try {
       const { blob, w, h } = await prepImage(file)
+      dbg(`decoded ok | ${w}x${h} | out=${blob.type} ${Math.round(blob.size / 1024)}kb`)
+      step = 'upload'
       const url = await uploadImage(blob, meId ?? 'anon')
+      dbg('uploaded ok')
       sendMessage(conv.id, imageBody(url, w, h), reply)
       setUpload(null)
       URL.revokeObjectURL(preview)
-    } catch {
+    } catch (e) {
+      dbg(`FAILED at ${step} | ${e instanceof Error ? e.name + ': ' + e.message : String(e)}`)
       setUpload({ preview, err: true })
       setTimeout(() => {
         setUpload(null)
@@ -855,7 +914,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           <IconSticker size={24} />
         </button>
         {imagesOk && (
-          <button type="button" className="stk-toggle img-tg" aria-label="photo" disabled={!!upload} onPointerDown={(e) => e.preventDefault()} onClick={() => fileIn.current?.click()}>
+          <button type="button" className="stk-toggle img-tg" aria-label="photo" disabled={!!upload} onPointerDown={(e) => e.preventDefault()} onClick={openPicker}>
             <IconImage size={24} />
           </button>
         )}

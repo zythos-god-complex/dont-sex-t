@@ -57,6 +57,6 @@ export async function uploadImage(blob: Blob, userId: string): Promise<string> {
     headers: { apikey: SUPABASE_KEY, 'content-type': type },
     body: blob,
   })
-  if (!r.ok) throw new Error('upload failed')
+  if (!r.ok) throw new Error(`upload ${r.status} ${(await r.text().catch(() => '')).slice(0, 160)}`)
   return `${SUPABASE_URL}/storage/v1/object/public/gat-img/${path}`
 }
