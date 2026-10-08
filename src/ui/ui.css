@@ -651,3 +651,7 @@
 .rec-msg { flex: 1; font: 650 14px/1.2 var(--font-display); color: var(--danger); }
 .rec-send { flex: none; }
 .dots-loader.small i { width: 6px; height: 6px; }
+.rec-stop { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #FF3B4E; background: color-mix(in srgb, #FF3B4E 12%, transparent); }
+.rec-play { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--theme-accent); color: var(--theme-accent-ink); }
+.rec-wave.is-review i { background: var(--theme-composer-ink); opacity: .3; transition: opacity .12s; }
+.rec-wave.is-review i.on { background: var(--theme-accent); opacity: 1; }

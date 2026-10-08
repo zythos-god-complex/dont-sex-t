@@ -8,7 +8,12 @@ const MAX = 120
 export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: (body: string) => void; onClose: () => void }) {
   const [secs, setSecs] = useState(0)
   const [live, setLive] = useState<number[]>([])
-  const [state, setState] = useState<'starting' | 'rec' | 'sending' | 'blocked'>('starting')
+  const [state, setState] = useState<'starting' | 'rec' | 'review' | 'sending' | 'blocked'>('starting')
+  const [review, setReview] = useState<{ blob: Blob; url: string; dur: number; peaks: number[] } | null>(null)
+  const [playing, setPlaying] = useState(false)
+  const [pos, setPos] = useState(0)
+  const player = useRef<HTMLAudioElement | null>(null)
+  const raf = useRef(0)
   const rec = useRef<MediaRecorder | null>(null)
   const chunks = useRef<Blob[]>([])
   const levels = useRef<number[]>([])
@@ -16,7 +21,7 @@ export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: 
   const ctx = useRef<AudioContext | null>(null)
   const started = useRef(0)
   const timer = useRef<ReturnType<typeof setInterval>>(undefined)
-  const sendAfterStop = useRef(false)
+  const sendAfterStop = useRef<'no' | 'send' | 'review'>('no')
 
   const cleanup = () => {
     clearInterval(timer.current)
@@ -36,19 +41,18 @@ export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: 
         r.ondataavailable = (e) => e.data.size && chunks.current.push(e.data)
         r.onstop = async () => {
           cleanup()
-          if (!sendAfterStop.current) return
+          const mode = sendAfterStop.current
+          if (mode === 'no') return
           const dur = (performance.now() - started.current) / 1000
           if (dur < 0.6) return onClose()
-          setState('sending')
-          try {
-            const blob = new Blob(chunks.current, { type: r.mimeType || mime || 'audio/webm' })
-            const url = await uploadVoice(blob, userId)
-            onSend(voiceBody(url, Math.min(dur, MAX), toPeaks(levels.current)))
-            onClose()
-          } catch {
-            setState('rec')
-            onClose()
+          const blob = new Blob(chunks.current, { type: r.mimeType || mime || 'audio/webm' })
+          const peaks = toPeaks(levels.current)
+          if (mode === 'review') {
+            setReview({ blob, url: URL.createObjectURL(blob), dur: Math.min(dur, MAX), peaks })
+            setState('review')
+            return
           }
+          await upload(blob, Math.min(dur, MAX), peaks)
         }
         const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
         const ac = new AC()
@@ -71,7 +75,7 @@ export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: 
           setLive((l) => [...l.slice(-31), rms])
           const t = (performance.now() - started.current) / 1000
           setSecs(t)
-          if (t >= MAX) stop(true)
+          if (t >= MAX) stop('review')
         }, 90)
       } catch {
         setState('blocked')
@@ -80,26 +84,91 @@ export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: 
     })()
     return () => {
       dead = true
-      sendAfterStop.current = false
+      sendAfterStop.current = 'no'
+      cancelAnimationFrame(raf.current)
+      player.current?.pause()
       if (rec.current?.state === 'recording') rec.current.stop()
       cleanup()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const stop = (send: boolean) => {
-    sendAfterStop.current = send
-    if (rec.current && rec.current.state === 'recording') rec.current.stop()
-    else if (!send) onClose()
+  const upload = async (blob: Blob, dur: number, peaks: number[]) => {
+    setState('sending')
+    player.current?.pause()
+    try {
+      const url = await uploadVoice(blob, userId)
+      onSend(voiceBody(url, dur, peaks))
+    } catch {
+      /* dropped */
+    }
+    onClose()
   }
+
+  const stop = (mode: 'no' | 'send' | 'review') => {
+    sendAfterStop.current = mode
+    if (rec.current && rec.current.state === 'recording') rec.current.stop()
+    else if (mode === 'no') onClose()
+  }
+
+  const discard = () => {
+    player.current?.pause()
+    if (review) URL.revokeObjectURL(review.url)
+    if (state === 'review') onClose()
+    else stop('no')
+  }
+
+  const togglePlay = () => {
+    if (!review) return
+    let a = player.current
+    if (!a) {
+      a = new Audio(review.url)
+      a.onended = () => {
+        setPlaying(false)
+        setPos(0)
+      }
+      player.current = a
+    }
+    if (a.paused) {
+      void a.play().then(() => {
+        setPlaying(true)
+        const tick = () => {
+          setPos(a!.currentTime)
+          if (!a!.paused) raf.current = requestAnimationFrame(tick)
+        }
+        raf.current = requestAnimationFrame(tick)
+      })
+    } else {
+      a.pause()
+      setPlaying(false)
+    }
+  }
+
+  const prog = review ? Math.min(1, pos / review.dur) : 0
 
   return (
     <motion.div className="rec" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ type: 'spring', stiffness: 520, damping: 30 }}>
-      <button type="button" className="rec-x" aria-label="cancel" onClick={() => stop(false)} disabled={state === 'sending'}>
+      <button type="button" className="rec-x" aria-label="cancel" onClick={discard} disabled={state === 'sending'}>
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" /></svg>
       </button>
       {state === 'blocked' ? (
         <span className="rec-msg">mic blocked in browser settings</span>
+      ) : review ? (
+        <>
+          <motion.button type="button" className="rec-play" aria-label={playing ? 'pause' : 'play'} onClick={togglePlay} whileTap={{ scale: 0.88 }} disabled={state === 'sending'}>
+            {playing ? (
+              <svg viewBox="0 0 24 24" width="16" height="16"><rect x="6" y="5" width="4.2" height="14" rx="1.6" fill="currentColor" /><rect x="13.8" y="5" width="4.2" height="14" rx="1.6" fill="currentColor" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" fill="currentColor" /></svg>
+            )}
+          </motion.button>
+          <div className="rec-wave is-review">
+            {review.peaks.map((p, i) => (
+              <i key={i} className={i / review.peaks.length < prog ? 'on' : ''} style={{ transform: `scaleY(${0.15 + p * 0.85})` }} />
+            ))}
+          </div>
+          <span className="rec-time tnum">{fmtDur(playing || pos ? review.dur - pos : review.dur)}</span>
+        </>
       ) : (
         <>
           <span className="rec-dot" />
@@ -112,7 +181,19 @@ export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: 
           </div>
         </>
       )}
-      <motion.button type="button" className="send rec-send" aria-label="send voice note" onClick={() => stop(true)} disabled={state !== 'rec'} whileTap={{ scale: 0.86 }}>
+      {state === 'rec' && (
+        <motion.button type="button" className="rec-stop" aria-label="stop and listen" onClick={() => stop('review')} whileTap={{ scale: 0.86 }}>
+          <svg viewBox="0 0 24 24" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="3" fill="currentColor" /></svg>
+        </motion.button>
+      )}
+      <motion.button
+        type="button"
+        className="send rec-send"
+        aria-label="send voice note"
+        onClick={() => (review ? void upload(review.blob, review.dur, review.peaks) : stop('send'))}
+        disabled={state !== 'rec' && state !== 'review'}
+        whileTap={{ scale: 0.86 }}
+      >
         {state === 'sending' ? (
           <span className="dots-loader small"><i /><i /><i /></span>
         ) : (
