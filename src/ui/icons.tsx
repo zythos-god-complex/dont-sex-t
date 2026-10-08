@@ -108,3 +108,9 @@ export const IconSmilePlus = (p: P) => (
     <path d="M8.5 14.5c.9 1.2 2.1 1.8 3.5 1.8s2.6-.6 3.5-1.8M9 10h.01M15 10h.01M18.5 3v5M16 5.5h5" />
   </Svg>
 )
+export const IconReply = (p: P) => (
+  <Svg {...p}>
+    <path d="M10 6L4 12l6 6" />
+    <path d="M4 12h9.5a6.5 6.5 0 0 1 6.5 6.5V20" />
+  </Svg>
+)

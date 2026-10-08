@@ -555,6 +555,8 @@ function onPeerBroadcastMsg(convId: string, p: Record<string, unknown>) {
     kind: p.kind === 'theme' ? 'theme' : 'text',
     body: p.body,
     created_at: new Date(created).toISOString(),
+    reply_to: typeof p.reply_to === 'string' ? p.reply_to : null,
+    reply: p.reply && typeof p.reply === 'object' && typeof (p.reply as { body?: unknown }).body === 'string' ? (p.reply as Message['reply']) : null,
   }
   unconfirmed.add(msg.id)
   set((st) => {
@@ -1192,7 +1194,7 @@ export function resolveChat(usernameOrId: string): Promise<Conversation | null> 
 export const openChatWith = resolveChat
 
 /** Optimistic send. Returns the client message id (or null if nothing to send). */
-export function sendMessage(convId: string, body: string): string | null {
+export function sendMessage(convId: string, body: string, replyTo: Message | null = null): string | null {
   const s = get()
   const me = s.me
   const text = body.trim().slice(0, 2000)
@@ -1201,7 +1203,11 @@ export function sendMessage(convId: string, body: string): string | null {
   const list = s.messages[convId]
   const lastTs = list && list.length ? ts(list[list.length - 1].created_at) : 0
   const created = new Date(Math.max(serverNow(), lastTs + 1)).toISOString()
-  const msg: Message = { id, conversation_id: convId, sender_id: me.id, kind: 'text', body: text, created_at: created }
+  const msg: Message = {
+    id, conversation_id: convId, sender_id: me.id, kind: 'text', body: text, created_at: created,
+    reply_to: replyTo?.id ?? null,
+    reply: replyTo ? { id: replyTo.id, sender_id: replyTo.sender_id, body: replyTo.body.slice(0, 140) } : null,
+  }
   set((st) => {
     const c = st.conversations[convId]
     return {
@@ -1235,7 +1241,7 @@ async function deliver(msg: Message, attempt: number): Promise<void> {
   if (!t) return
   const t0 = Date.now()
   try {
-    const saved = await api.send(t, msg.conversation_id, msg.id, msg.body)
+    const saved = await api.send(t, msg.conversation_id, msg.id, msg.body, msg.reply_to ?? null)
     if (g !== gen) return
     learnSkew(saved.created_at, t0, Date.now())
     const convId = msg.conversation_id

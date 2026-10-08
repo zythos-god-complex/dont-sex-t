@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation } from 'wouter'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useMotionValue, useTransform } from 'motion/react'
 import {
   useHasMore,
   useLoadingOlder,
@@ -21,7 +21,7 @@ import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, nee
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
+import { IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
@@ -68,6 +68,8 @@ function ChatView({ conv }: { conv: Conversation }) {
   const now = useNow(30000)
   const [settings, setSettings] = useState(false)
   const [egg, setEgg] = useState(0)
+  const [replyTo, setReplyTo] = useState<Message | null>(null)
+  useEffect(() => setReplyTo(null), [conv.id])
   const chatRef = useRef<HTMLDivElement>(null)
   const [themeBump, setThemeBump] = useState(false)
   const me = useMe()
@@ -122,8 +124,8 @@ function ChatView({ conv }: { conv: Conversation }) {
         </button>
       </header>
 
-      <MessageList conv={conv} now={now} sinceOnline={status.since} online={status.online} />
-      <ChatFooter conv={conv} meId={me?.id ?? null} now={now} onEgg={() => setEgg((n) => n + 1)} />
+      <MessageList conv={conv} now={now} sinceOnline={status.since} online={status.online} onReply={setReplyTo} />
+      <ChatFooter conv={conv} meId={me?.id ?? null} now={now} onEgg={() => setEgg((n) => n + 1)} replyTo={replyTo} onClearReply={() => setReplyTo(null)} />
       <AnimatePresence>{egg > 0 && <EasterEgg key="egg" me={me?.username ?? ''} />}</AnimatePresence>
 
       <Sheet open={settings} onClose={() => setSettings(false)} label="chat settings">
@@ -135,7 +137,7 @@ function ChatView({ conv }: { conv: Conversation }) {
 
 /* ------------------------------------------------------------------ messages */
 
-function MessageList({ conv, now, sinceOnline, online }: { conv: Conversation; now: number; sinceOnline: string | null; online: boolean }) {
+function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conversation; now: number; sinceOnline: string | null; online: boolean; onReply: (m: Message) => void }) {
   const me = useMe()
   const msgs = useMessages(conv.id)
   const typing = usePeerTyping(conv.id)
@@ -228,7 +230,7 @@ function MessageList({ conv, now, sinceOnline, online }: { conv: Conversation; n
     const joinNext = !!next && sameGroup(m, next) && !needsSeparator(m, next)
     items.push(
       <Fragment key={m.id}>
-        <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} meId={me?.id ?? null} />
+        <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} meId={me?.id ?? null} onReply={onReply} />
         {isMine && mine?.id === m.id && <MineStatus state={mine.state === 'seen' && me?.show_seen === false ? 'sent' : mine.state} id={m.id} />}
       </Fragment>,
     )
@@ -284,7 +286,18 @@ function MineStatus({ state, id }: { state: 'sending' | 'failed' | 'sent' | 'see
 
 const REACTIONS = ['❤️', '😂', '💀', '😮', '😢', '👍']
 
-function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null }) {
+function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null; onReply: (m: Message) => void }) {
+  const [actions, setActions] = useState(false)
+  const moved = useRef(false)
+  const tapTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const dx = useMotionValue(0)
+  const replyHint = useTransform(dx, [0, 60], [0, 1])
+  const replyHintScale = useTransform(dx, [0, 60], [0.4, 1])
+  useEffect(() => {
+    if (!actions) return
+    const t = setTimeout(() => setActions(false), 3500)
+    return () => clearTimeout(t)
+  }, [actions])
   const emoji = emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
   const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : ''].join(' ')
@@ -300,10 +313,12 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; m
   const chips = [...counts.entries()]
 
   const open = () => {
+    press.current = null
     navigator.vibrate?.(12)
     setPicker(true)
   }
   const onDown = (e: React.PointerEvent) => {
+    moved.current = false
     press.current = { t: setTimeout(open, 380), x: e.clientX, y: e.clientY }
   }
   const cancel = () => {
@@ -312,16 +327,26 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; m
   }
   const onMove = (e: React.PointerEvent) => {
     const p = press.current
-    if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 8) cancel()
+    if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 8) {
+      moved.current = true
+      cancel()
+    }
   }
   const onUp = () => {
+    const wasPress = !press.current
     cancel()
+    if (moved.current || wasPress || picker) return
     const now = Date.now()
     if (now - lastTap.current < 280) {
+      clearTimeout(tapTimer.current)
       lastTap.current = 0
       if (mineR !== '❤️') setBurst((b) => b + 1)
       react(m.conversation_id, m.id, '❤️')
-    } else lastTap.current = now
+    } else {
+      lastTap.current = now
+      clearTimeout(tapTimer.current)
+      tapTimer.current = setTimeout(() => setActions((a) => !a), 290)
+    }
   }
   const pick = (e: string) => {
     setPicker(false)
@@ -331,6 +356,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; m
 
   return (
     <motion.div
+      data-mid={m.id}
       className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '') + (chips.length ? ' has-reacts' : '')}
       initial={{ opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 }}
       animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
@@ -338,8 +364,27 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; m
     >
       {!mine && <span className="b-face">{!joinNext && <GoofyFace name={peerName} size={28} blink={false} />}</span>}
       <div className="b-wrap">
+        <motion.span className="swipe-hint" style={{ opacity: replyHint, scale: replyHintScale }}>
+          <IconReply size={18} />
+        </motion.span>
         <motion.div
           className={cls}
+          drag="x"
+          dragDirectionLock
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={{ left: 0, right: 0.55 }}
+          dragSnapToOrigin
+          style={{ x: dx }}
+          onDragStart={() => {
+            moved.current = true
+            cancel()
+          }}
+          onDragEnd={(_, info) => {
+            if (info.offset.x > 60) {
+              navigator.vibrate?.(10)
+              onReply(m)
+            }
+          }}
           onPointerDown={onDown}
           onPointerMove={onMove}
           onPointerUp={onUp}
@@ -352,6 +397,22 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; m
           animate={picker ? { scale: 1.04 } : { scale: 1 }}
           transition={{ type: 'spring', stiffness: 500, damping: 22 }}
         >
+          {m.reply && (
+            <button
+              type="button"
+              className="b-quote"
+              onClick={(e) => {
+                e.stopPropagation()
+                const el = document.querySelector(`[data-mid="${m.reply!.id}"]`)
+                el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+                el?.classList.add('flash')
+                setTimeout(() => el?.classList.remove('flash'), 1200)
+              }}
+            >
+              <b>{m.reply.sender_id === meId ? 'you' : peerName}</b>
+              <span>{m.reply.body}</span>
+            </button>
+          )}
           {linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
@@ -362,6 +423,18 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; m
             ),
           )}
         </motion.div>
+        <AnimatePresence>
+          {actions && !picker && (
+            <motion.div className="b-actions" initial={{ opacity: 0, scale: 0.6, x: mine ? 10 : -10 }} animate={{ opacity: 1, scale: 1, x: 0 }} exit={{ opacity: 0, scale: 0.6 }} transition={spring}>
+              <button type="button" aria-label="react" onClick={() => { setActions(false); setPicker(true) }}>
+                <IconSmilePlus size={19} />
+              </button>
+              <button type="button" aria-label="reply" onClick={() => { setActions(false); onReply(m) }}>
+                <IconReply size={19} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <AnimatePresence>
           {burst > 0 && (
             <motion.span
@@ -482,7 +555,7 @@ function EmptyChat({ conv, now, sinceOnline, online }: { conv: Conversation; now
 
 /* ------------------------------------------------------------------ requests / blocks */
 
-function ChatFooter({ conv, meId, now, onEgg }: { conv: Conversation; meId: string | null; now: number; onEgg: () => void }) {
+function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: Conversation; meId: string | null; now: number; onEgg: () => void; replyTo: Message | null; onClearReply: () => void }) {
   const name = conv.peer.username
   let content: React.ReactNode = null
   if (conv.blocked === 'me')
@@ -534,7 +607,7 @@ function ChatFooter({ conv, meId, now, onEgg }: { conv: Conversation; meId: stri
       )
     }
   }
-  if (!content) return <Composer conv={conv} onEgg={onEgg} />
+  if (!content) return <Composer conv={conv} onEgg={onEgg} replyTo={replyTo} onClearReply={onClearReply} meId={meId} />
   return (
     <motion.div className="req" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={spring}>
       {content}
@@ -546,7 +619,7 @@ function ChatFooter({ conv, meId, now, onEgg }: { conv: Conversation; meId: stri
 
 const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
 
-function Composer({ conv, onEgg }: { conv: Conversation; onEgg: () => void }) {
+function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversation; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; meId: string | null }) {
   const [text, setText] = useState('')
   const ta = useRef<HTMLTextAreaElement>(null)
   const lastSent = useRef<{ body: string; at: number } | null>(null)
@@ -576,7 +649,8 @@ function Composer({ conv, onEgg }: { conv: Conversation; onEgg: () => void }) {
       navigator.vibrate?.([18, 40, 18])
     }
     lastSent.current = { body, at: now }
-    sendMessage(conv.id, body)
+    sendMessage(conv.id, body, replyTo)
+    onClearReply()
     setText('')
     setTyping(conv.id, false)
     ta.current?.focus()
@@ -591,6 +665,22 @@ function Composer({ conv, onEgg }: { conv: Conversation; onEgg: () => void }) {
 
   return (
     <div className="composer-wrap">
+      <AnimatePresence>
+        {replyTo && (
+          <motion.div className="reply-bar" initial={{ opacity: 0, y: 12, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: 8, height: 0 }} transition={spring}>
+            <div className="reply-bar-in">
+              <IconReply size={18} />
+              <div className="reply-bar-text">
+                <b>replying to {replyTo.sender_id === meId ? 'yourself' : conv.peer.username}</b>
+                <span>{replyTo.body}</span>
+              </div>
+              <button type="button" aria-label="cancel reply" onClick={onClearReply}>
+                <IconClose size={18} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="composer">
         <textarea
           ref={ta}

@@ -17,6 +17,8 @@ export type Message = {
   body: string
   created_at: string
   reactions?: Record<string, string> // user id -> emoji
+  reply_to?: string | null
+  reply?: { id: string; sender_id: string; body: string } | null
 }
 
 export type Conversation = {

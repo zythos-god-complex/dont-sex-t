@@ -128,8 +128,8 @@ export const api = {
       p_limit: limit,
     }),
 
-  send: (token: string, conversation: string, id: string, body: string) =>
-    rpc<Message>('gat_send', { p_token: token, p_conversation: conversation, p_id: id, p_body: body }),
+  send: (token: string, conversation: string, id: string, body: string, reply: string | null = null) =>
+    rpc<Message>('gat_send', { p_token: token, p_conversation: conversation, p_id: id, p_body: body, p_reply: reply }),
 
   read: (token: string, conversation: string) =>
     rpc<{ at: string }>('gat_read', { p_token: token, p_conversation: conversation }),
