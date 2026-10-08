@@ -676,3 +676,5 @@
 .row-time { display: inline-flex; align-items: center; gap: 4px; }
 .row-pin { color: var(--accent); rotate: 35deg; }
 .row-item { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+.file-in { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden; clip-path: inset(50%); }

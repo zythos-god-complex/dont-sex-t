@@ -681,7 +681,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const fileIn = useRef<HTMLInputElement>(null)
   const [upload, setUpload] = useState<{ preview: string; err?: boolean } | null>(null)
   const pickImage = async (file: File | undefined) => {
-    if (!file || !file.type.startsWith('image/')) return
+    if (!file || (file.type && !file.type.startsWith('image/'))) return
     const preview = URL.createObjectURL(file)
     setUpload({ preview })
     const reply = replyTo
@@ -697,7 +697,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
       setTimeout(() => {
         setUpload(null)
         URL.revokeObjectURL(preview)
-      }, 2200)
+      }, 3500)
     }
   }
 
@@ -863,10 +863,13 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           ref={fileIn}
           type="file"
           accept="image/*"
-          hidden
+          className="file-in"
+          tabIndex={-1}
+          aria-hidden="true"
           onChange={(e) => {
-            void pickImage(e.target.files?.[0])
+            const f = e.target.files?.[0]
             e.target.value = ''
+            void pickImage(f)
           }}
         />
         <textarea

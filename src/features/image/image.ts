@@ -11,18 +11,39 @@ export function imageOf(body: string | null | undefined): ImageMsg | null {
 export const imageBody = (url: string, w: number, h: number) => `[[img:${url}|${w}|${h}]]`
 
 /** Downscale to a sane size and re-encode. GIFs pass through so they keep moving. */
+/** Decode with createImageBitmap, falling back to an <img> (some Android browsers reject one or the other). */
+async function decode(file: File): Promise<{ src: CanvasImageSource; width: number; height: number; done: () => void }> {
+  try {
+    const bmp = await createImageBitmap(file)
+    return { src: bmp, width: bmp.width, height: bmp.height, done: () => bmp.close?.() }
+  } catch {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.decoding = 'async'
+    await new Promise<void>((ok, no) => {
+      img.onload = () => ok()
+      img.onerror = () => no(new Error('decode'))
+      img.src = url
+    })
+    return { src: img, width: img.naturalWidth, height: img.naturalHeight, done: () => URL.revokeObjectURL(url) }
+  }
+}
+
 export async function prepImage(file: File): Promise<{ blob: Blob; w: number; h: number }> {
-  const bmp = await createImageBitmap(file)
+  const im = await decode(file)
   const max = 1600
-  const k = Math.min(1, max / Math.max(bmp.width, bmp.height))
-  const w = Math.round(bmp.width * k)
-  const h = Math.round(bmp.height * k)
-  if (file.type === 'image/gif' && file.size < 6_000_000) return { blob: file, w, h }
+  const k = Math.min(1, max / Math.max(im.width, im.height))
+  const w = Math.max(1, Math.round(im.width * k))
+  const h = Math.max(1, Math.round(im.height * k))
+  if (file.type === 'image/gif' && file.size < 6_000_000) {
+    im.done()
+    return { blob: file, w, h }
+  }
   const cv = document.createElement('canvas')
   cv.width = w
   cv.height = h
-  cv.getContext('2d')!.drawImage(bmp, 0, 0, w, h)
-  bmp.close?.()
+  cv.getContext('2d')!.drawImage(im.src, 0, 0, w, h)
+  im.done()
   const blob = await new Promise<Blob>((ok, no) => cv.toBlob((b) => (b ? ok(b) : no(new Error('encode'))), 'image/jpeg', 0.84))
   return { blob, w, h }
 }
