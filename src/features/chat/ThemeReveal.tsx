@@ -4,7 +4,7 @@ import { getTheme } from '../../themes/themes'
 import { Ambient } from '../../themes/Ambient'
 
 // Where the next theme change should bloom from (set when you tap a swatch).
-let pendingOrigin: { x: number; y: number } | null = null
+export let pendingOrigin: { x: number; y: number } | null = null
 export function setThemeOrigin(x: number, y: number) {
   pendingOrigin = { x, y }
 }
@@ -17,7 +17,7 @@ type Reveal = { id: string; x: string; y: string; key: number }
  * Chat background with a theme change that blooms out of the tapped swatch (or drops from the
  * header when the other person changed it): a circular wipe, shockwave rings and a name pill that drops in under the header.
  */
-export function ThemeBackground({ themeId, host, onPhase }: { themeId: string; host: RefObject<HTMLDivElement | null>; onPhase?: (on: boolean) => void }) {
+export function ThemeBackground({ themeId, onPhase }: { themeId: string; host: RefObject<HTMLDivElement | null>; onPhase?: (on: boolean) => void }) {
   const [label, setLabel] = useState<{ name: string; key: number } | null>(null)
   const [base, setBase] = useState(themeId)
   const [reveal, setReveal] = useState<Reveal | null>(null)
@@ -31,13 +31,8 @@ export function ThemeBackground({ themeId, host, onPhase }: { themeId: string; h
       setReveal(null)
       return
     }
-    let x = '50%'
-    let y = '0%'
-    const r = host.current?.getBoundingClientRect()
-    if (pendingOrigin && r) {
-      x = `${((pendingOrigin.x - r.left) / r.width) * 100}%`
-      y = `${((pendingOrigin.y - r.top) / r.height) * 100}%`
-    }
+    const x = '50%'
+    const y = '50%'
     pendingOrigin = null
     if (reveal) setBase(reveal.id)
     const key = ++seq.current
@@ -50,7 +45,7 @@ export function ThemeBackground({ themeId, host, onPhase }: { themeId: string; h
       setReveal((r) => (r?.key === key ? null : r))
       onPhase?.(false)
     }, 920)
-    const hide = setTimeout(() => setLabel((l) => (l?.key === key ? null : l)), 1600)
+    const hide = setTimeout(() => setLabel((l) => (l?.key === key ? null : l)), 1800)
     return () => {
       clearTimeout(done)
       clearTimeout(hide)
@@ -97,11 +92,11 @@ export function ThemeBackground({ themeId, host, onPhase }: { themeId: string; h
         {label && (
           <motion.div
             key={label.key}
-            className="theme-label"
+            className="theme-sticker"
             style={{ background: getTheme(themeId).accent, color: getTheme(themeId).accentInk }}
-            initial={{ y: -24, opacity: 0, scale: 0.8, filter: 'blur(6px)' }}
-            animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)', transition: { delay: 0.3, type: 'spring', stiffness: 420, damping: 22 } }}
-            exit={{ y: -12, opacity: 0, scale: 0.92, filter: 'blur(4px)', transition: { duration: 0.28 } }}
+            initial={{ y: -40, opacity: 0, scale: 0.6, filter: 'blur(8px)' }}
+            animate={{ y: 0, opacity: 1, scale: 1, rotate: -3, filter: 'blur(0px)', transition: { delay: 0.3, type: 'spring', stiffness: 420, damping: 18 } }}
+            exit={{ y: -24, opacity: 0, scale: 0.9, filter: 'blur(6px)', transition: { duration: 0.3 } }}
           >
             {label.name}
           </motion.div>
