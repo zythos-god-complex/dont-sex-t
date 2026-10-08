@@ -1,4 +1,5 @@
 import './styles/index.css'
+import { Analytics } from '@vercel/analytics/react'
 import { useEffect, useRef } from 'react'
 import { Route, Switch, useLocation, useRoute } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
@@ -139,9 +140,16 @@ export default function App() {
     document.title = unread > 0 ? `(${unread}) GoofyAhhTalk` : 'GoofyAhhTalk'
   }, [unread])
   if (status === 'booting') return <div className="boot" />
-  if (status === 'onboarding') return <Onboarding />
+  if (status === 'onboarding')
+    return (
+      <>
+        <Onboarding />
+        <Analytics />
+      </>
+    )
   return (
     <>
+      <Analytics />
       <ConnectionBanner />
       {desktop ? <DesktopApp /> : <MobileApp />}
       <Toasts />
