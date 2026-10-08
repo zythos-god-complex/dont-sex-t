@@ -1,34 +1,28 @@
-/// <reference types="vitest/config" />
+import { readFileSync } from 'node:fs'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
-import { buildManifest } from './api/manifest.ts'
 
-// Serves /api/manifest in dev and preview (on Vercel it is a function).
-function devManifest(): Plugin {
-  const mw = (req: { url?: string }, res: { setHeader(k: string, v: string): void; end(b: string): void }, next: () => void) => {
-    if (!req.url || !req.url.startsWith('/api/manifest')) return next()
-    const t = new URL(req.url, 'http://x').searchParams.get('t')
-    res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8')
-    res.setHeader('Cache-Control', 'no-store')
-    res.end(JSON.stringify(buildManifest(t)))
-  }
+// Every build gets an id; open tabs poll /version.json and offer a refresh when it changes.
+const BUILD_ID = Date.now().toString(36)
+
+function versionFile(): Plugin {
   return {
-    name: 'gat-dev-manifest',
-    configureServer(server) {
-      server.middlewares.use(mw)
-    },
-    configurePreviewServer(server) {
-      server.middlewares.use(mw)
+    name: 'gat-version',
+    generateBundle() {
+      let notes = ''
+      try {
+        notes = JSON.parse(readFileSync('release.json', 'utf8')).notes ?? ''
+      } catch {
+        /* no notes */
+      }
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ id: BUILD_ID, notes }) })
     },
   }
 }
 
 export default defineConfig({
-  plugins: [react(), devManifest()],
+  plugins: [react(), versionFile()],
+  define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
   server: { host: true, port: 5173 },
   build: { target: 'es2022', sourcemap: false },
-  test: {
-    include: ['src/**/*.test.ts'],
-    environment: 'node',
-  },
 })

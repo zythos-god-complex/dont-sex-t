@@ -1,5 +1,6 @@
 import './styles/index.css'
 import { Analytics } from '@vercel/analytics/react'
+import UpdateBanner from './features/update/UpdateBanner'
 import { useEffect, useRef } from 'react'
 import { Route, Switch, useLocation, useRoute } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
@@ -144,7 +145,9 @@ export default function App() {
     return (
       <>
         <Onboarding />
+        <UpdateBanner />
         <Analytics />
+      <UpdateBanner />
       </>
     )
   return (
