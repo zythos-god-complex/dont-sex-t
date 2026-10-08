@@ -23,6 +23,7 @@ export default function Onboarding() {
   const [avatar, setAvatar] = useState<AvatarConfig | null>(null)
   const [building, setBuilding] = useState(false)
   const [spin, setSpin] = useState(0)
+  const [touched, setTouched] = useState(false)
   const typingTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const shake = useAnimationControls()
   const [faceRef, look] = useLookAt<HTMLDivElement>()
@@ -112,20 +113,23 @@ export default function Onboarding() {
           </motion.div>
           <motion.button
             type="button"
-            className="ob-face-btn ob-dice"
+            className={"ob-face-btn ob-dice" + (touched ? "" : " is-calling")}
             aria-label="random face"
             animate={{ rotate: spin * 360 }}
             transition={{ type: 'spring', stiffness: 260, damping: 18 }}
             whileTap={{ scale: 0.88 }}
             onClick={() => {
               setSpin((n) => n + 1)
+              setTouched(true)
               setAvatar(randomAvatar())
             }}
           >
-            <IconDice size={22} />
+            <IconDice size={24} />
+            <span className="ob-face-tag">random</span>
           </motion.button>
-          <motion.button type="button" className="ob-face-btn ob-brush" aria-label="build your face" whileTap={{ scale: 0.88 }} onClick={() => setBuilding(true)}>
-            <IconBrush size={22} />
+          <motion.button type="button" className={"ob-face-btn ob-brush" + (touched ? "" : " is-calling")} aria-label="build your face" whileTap={{ scale: 0.88 }} onClick={() => { setTouched(true); setBuilding(true) }}>
+            <IconBrush size={24} />
+            <span className="ob-face-tag">edit</span>
           </motion.button>
         </motion.div>
         <Wordmark size={40} />

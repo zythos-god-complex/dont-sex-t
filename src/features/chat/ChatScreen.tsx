@@ -412,6 +412,7 @@ function Composer({ conv, onEgg }: { conv: Conversation; onEgg: () => void }) {
 /* ------------------------------------------------------------------ settings */
 
 function SettingsBody({ conv }: { conv: Conversation }) {
+  const [themeOpen, setThemeOpen] = useState(false)
   const push = usePushState(conv.id)
   const busy = usePushBusy()
   const hint = push === 'needs-install' ? 'add to home screen to turn on' : push === 'denied' ? 'blocked in browser settings' : push === 'unsupported' ? 'not supported in this browser' : null
@@ -422,6 +423,17 @@ function SettingsBody({ conv }: { conv: Conversation }) {
         <span className="settings-name">{conv.peer.username}</span>
       </div>
       <h3 className="settings-label">theme</h3>
+      <button type="button" className={'theme-row' + (themeOpen ? ' is-open' : '')} onClick={() => setThemeOpen((v) => !v)} aria-expanded={themeOpen}>
+        <span className="theme-row-sw" style={{ ...themeVars(getTheme(conv.theme)), background: getTheme(conv.theme).bg }}>
+          <span className="sw-b sw-recv" />
+          <span className="sw-b sw-sent" />
+        </span>
+        <span className="theme-row-name">{getTheme(conv.theme).name}</span>
+        <IconBack size={20} className="theme-row-chev" style={{ rotate: '180deg' }} />
+      </button>
+      <AnimatePresence initial={false}>
+        {themeOpen && (
+          <motion.div className="theme-drop" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 36 }}>
       <div className="swatches">
         {THEMES.map((t) => {
           const on = t.id === conv.theme
@@ -441,6 +453,9 @@ function SettingsBody({ conv }: { conv: Conversation }) {
           )
         })}
       </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <h3 className="settings-label">notifications</h3>
       <div className="settings-row">
         <IconBell size={22} />
