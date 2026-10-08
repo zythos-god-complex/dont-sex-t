@@ -716,11 +716,12 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
     } catch {
       /* ignore */
     }
-    dbg('tap photo btn v2 (fresh input, explicit types)')
+    dbg('tap photo btn v3 (no accept filter)')
     // a brand new input every time, outside React, listening to both change and input
     const el = document.createElement('input')
     el.type = 'file'
-    el.accept = 'image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif'
+    // no accept filter: Android then opens its own document picker instead of handing off to the
+    // OEM gallery app, which on some phones never returns the photo to Chrome
     el.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0'
     let handled = false
     const take = (ev: Event) => {
@@ -752,7 +753,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
       return
     }
     dbg(`got file | name=${file.name} | type="${file.type}" | size=${Math.round(file.size / 1024)}kb`)
-    if (file.type && !file.type.startsWith('image/')) {
+    if (file.type && !file.type.startsWith('image/') && !/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(file.name)) {
       dbg('rejected: not an image type')
       return
     }
@@ -964,6 +965,13 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           onFocus={() => setTray(false)}
           onBlur={() => setTyping(conv.id, false)}
           onKeyDown={onKey}
+          onPaste={(e) => {
+            const f = [...e.clipboardData.files].find((x) => x.type.startsWith('image/'))
+            if (!f || !imagesOk) return
+            e.preventDefault()
+            dbg('pasted image')
+            void pickImage(f)
+          }}
           enterKeyHint={fine ? 'send' : 'enter'}
           maxLength={2000}
         />
