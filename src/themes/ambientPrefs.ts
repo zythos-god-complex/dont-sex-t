@@ -20,5 +20,5 @@ export function setAmbientPrefs(p: Partial<Prefs>) {
     /* blocked */
   }
 }
-export const PARTICLE_AMBIENTS = ['petals', 'leaves', 'stars', 'bubbles', 'hearts', 'sparkles'] as const
-export const AMBIENT_LABEL: Record<string, string> = { petals: 'petals', leaves: 'leaves', stars: 'stars', bubbles: 'bubbles', hearts: 'hearts', sparkles: 'sparkles' }
+export const PARTICLE_AMBIENTS = ['petals', 'leaves', 'stars', 'bubbles', 'hearts', 'sparkles', 'bats', 'lovebeat', 'party', 'embers'] as const
+export const AMBIENT_LABEL: Record<string, string> = { petals: 'petals', leaves: 'leaves', stars: 'stars', bubbles: 'bubbles', hearts: 'hearts', sparkles: 'sparkles', bats: 'bats', lovebeat: 'hearts', party: 'confetti', embers: 'embers' }

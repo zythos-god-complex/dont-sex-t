@@ -31,8 +31,9 @@ import { voiceOf } from '../voice/voice'
 import { imageOf, imageBody, prepImage, uploadImage } from '../image/image'
 import { ImageBubble } from '../image/ImageBubble'
 import { Confetti, type ConfettiHandle } from './Confetti'
-import { Sticker } from '../stickers/Sticker'
-import { COUPLES, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
+import { LockedSticker, Sticker } from '../stickers/Sticker'
+import { useStore } from '../../lib/store'
+import { COUPLES, NSFW_STICKERS, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
 import { CoupleSticker } from '../stickers/CoupleSticker'
 import { EMOJI_GROUPS } from './emojis'
 import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
@@ -332,6 +333,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
   const cpl = coupleOf(m.body)
   const voice = voiceOf(m.body)
   const img = imageOf(m.body)
+  const spicy = useStore((s) => s.me?.nsfw === true && s.conversations[m.conversation_id]?.peer.nsfw === true)
   const [viewer, setViewer] = useState(false)
   const emoji = stk || cpl || voice || img ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
@@ -448,7 +450,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
               <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {img ? <ImageBubble img={img} open={viewer} onClose={() => setViewer(false)} /> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? <Sticker kind={stk} name={mine ? myName : peerName} size={140} /> : linkify(m.body).map((p, i) =>
+          {img ? <ImageBubble img={img} open={viewer} onClose={() => setViewer(false)} /> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}
@@ -659,6 +661,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const [trayTab, setTrayTab] = useState<'me' | 'us'>('me')
   const [recording, setRecording] = useState(false)
   const myName = useMe()?.username ?? ''
+  const spicyTray = useStore((s) => s.me?.nsfw === true && conv.peer.nsfw === true)
   const [text, setText] = useState('')
   const ta = useRef<HTMLTextAreaElement>(null)
   const lastSent = useRef<{ body: string; at: number } | null>(null)
@@ -761,7 +764,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
               </div>
               <div className={'stk-grid' + (trayTab === 'us' ? ' is-couple' : '')} key={trayTab}>
                 {trayTab === 'me'
-                  ? STICKERS.map((st, i) => (
+                  ? STICKERS.filter((st) => spicyTray || !NSFW_STICKERS.includes(st.id)).map((st, i) => (
                       <motion.button
                         key={st.id}
                         type="button"

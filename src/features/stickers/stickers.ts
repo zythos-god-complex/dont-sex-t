@@ -1,6 +1,6 @@
 import type { FaceMood } from '../../ui/GoofyFace'
 
-export type StickerKind = 'hey' | 'bye' | 'kiss' | 'love' | 'lol' | 'sad' | 'angry' | 'gn' | 'hype' | 'shy' | 'hugs' | 'dead'
+export type StickerKind = 'hey' | 'bye' | 'kiss' | 'love' | 'lol' | 'sad' | 'angry' | 'gn' | 'hype' | 'shy' | 'hugs' | 'dead' | 'hate' | 'lust'
 
 export const STICKERS: { id: StickerKind; caption: string; mood: FaceMood }[] = [
   { id: 'hey', caption: 'hey!', mood: 'happy' },
@@ -15,7 +15,12 @@ export const STICKERS: { id: StickerKind; caption: string; mood: FaceMood }[] = 
   { id: 'dead', caption: 'im dead', mood: 'shocked' },
   { id: 'gn', caption: 'gn', mood: 'sleepy' },
   { id: 'bye', caption: 'bye bye', mood: 'happy' },
+  { id: 'hate', caption: 'i hate u', mood: 'shocked' },
+  { id: 'lust', caption: 'come here', mood: 'wink' },
 ]
+
+/** Stickers only shown when both people have nsfw on. */
+export const NSFW_STICKERS: readonly StickerKind[] = ['lust']
 
 export type CoupleKind =
   | 'c_kiss' | 'c_hug' | 'c_cuddle' | 'c_boop' | 'c_highfive' | 'c_dance'

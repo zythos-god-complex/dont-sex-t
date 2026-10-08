@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import { getTheme } from '../../themes/themes'
 import { useAmbientPrefs } from '../../themes/ambientPrefs'
 
-type Shape = 'petal' | 'leaf' | 'heart' | 'star' | 'bubble' | 'confetti'
+type Shape = 'petal' | 'leaf' | 'heart' | 'star' | 'bubble' | 'confetti' | 'bat' | 'ember'
 type Part = {
   x: number; y: number; vx: number; vy: number; rot: number; vr: number; s: number; c: string; shape: Shape
   state: 'fly' | 'rest' | 'drop'; el?: Element; ox?: number; oy?: number; phase: number
@@ -15,6 +15,10 @@ const LOOK: Record<string, { shape: Shape; colors: string[] }> = {
   sparkles: { shape: 'star', colors: ['#FFFFFF', '#FFE44D', '#FF9FE0', '#8ED6FF'] },
   hearts: { shape: 'heart', colors: ['#FF6FC4', '#8FD0FF', '#FF4F8B', '#FFB3DD'] },
   bubbles: { shape: 'bubble', colors: ['rgba(255,255,255,.85)'] },
+  bats: { shape: 'bat', colors: ['#0B0C10', '#16181F', '#FFD000'] },
+  lovebeat: { shape: 'heart', colors: ['#F0285A', '#FF6B91', '#C70F40', '#FFFFFF'] },
+  party: { shape: 'confetti', colors: ['#8A6BFF', '#FF5CB8', '#FFC83D', '#3DD6B5', '#5BB5FF'] },
+  embers: { shape: 'ember', colors: ['#FFC27A', '#FF6A8E', '#FF3D63'] },
 }
 
 export type ConfettiHandle = { burst: (x: number, y: number) => void; rain: () => void }
@@ -79,6 +83,32 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
         ctx.strokeStyle = 'rgba(255,255,255,.95)'
         ctx.lineWidth = 1.6
         ctx.stroke()
+        break
+      case 'bat': {
+        const f = Math.sin(performance.now() / 70 + p.phase) * 0.5 + 0.5
+        const w = s * 1.3
+        const lift = s * (0.15 + f * 0.6)
+        ctx.moveTo(0, -s * 0.35)
+        ctx.quadraticCurveTo(-w * 0.45, -lift - s * 0.2, -w, -lift)
+        ctx.quadraticCurveTo(-w * 0.75, s * 0.05, -w * 0.55, s * 0.25)
+        ctx.quadraticCurveTo(-w * 0.35, s * 0.05, -s * 0.2, s * 0.35)
+        ctx.lineTo(0, s * 0.6)
+        ctx.lineTo(s * 0.2, s * 0.35)
+        ctx.quadraticCurveTo(w * 0.35, s * 0.05, w * 0.55, s * 0.25)
+        ctx.quadraticCurveTo(w * 0.75, s * 0.05, w, -lift)
+        ctx.quadraticCurveTo(w * 0.45, -lift - s * 0.2, 0, -s * 0.35)
+        ctx.fill()
+        if (p.c !== '#FFD000') {
+          ctx.strokeStyle = 'rgba(255,214,0,.55)'
+          ctx.stroke()
+        }
+        break
+      }
+      case 'ember':
+        ctx.shadowColor = p.c
+        ctx.shadowBlur = s * 1.6
+        ctx.arc(0, 0, s * 0.42, 0, Math.PI * 2)
+        ctx.fill()
         break
       default:
         ctx.fillRect(-s * 0.5, -s * 0.3, s, s * 0.6)

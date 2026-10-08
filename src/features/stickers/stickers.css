@@ -259,3 +259,63 @@
 .stk-pick .cpl .stk-cap { padding: 3px 6px 4px; border-width: 1.8px; box-shadow: 0 2px 0 #17131F; }
 .stk-grid.is-couple { grid-template-columns: repeat(3, 1fr); }
 .stk-toggle.img-tg { margin-left: -10px; }
+
+/* hate: seething, red rage burst, cursing symbols, thumbs down slam */
+.stk-hate .stk-body { animation: stk-seethe .9s ease-in-out infinite; }
+@keyframes stk-seethe {
+  0%, 100% { transform: translate(0, 0) rotate(0) scale(1); filter: none; }
+  10% { transform: translate(-3%, 0) rotate(-4deg) scale(1.04); }
+  20% { transform: translate(3%, 0) rotate(4deg) scale(1.04); }
+  30% { transform: translate(-2%, 0) rotate(-2deg) scale(1.02); }
+  45% { transform: translate(0, 2%) scale(.97, 1.03); filter: saturate(1.6) hue-rotate(-12deg); }
+}
+.stk-hateburst {
+  position: absolute; inset: 0; background: #E5383B; opacity: .9;
+  clip-path: polygon(50% 0, 58% 18%, 77% 6%, 75% 27%, 97% 25%, 85% 42%, 100% 55%, 82% 63%, 92% 82%, 71% 78%, 66% 99%, 52% 84%, 36% 100%, 31% 79%, 10% 86%, 18% 66%, 0 56%, 15% 43%, 4% 25%, 25% 27%, 22% 6%, 41% 18%);
+  animation: stk-hateburst .45s ease-in-out infinite alternate;
+}
+@keyframes stk-hateburst { from { transform: scale(.82) rotate(-6deg); background: #E5383B; } to { transform: scale(.96) rotate(6deg); background: #17131F; } }
+.stk-brow { position: absolute; top: 26%; width: 19%; height: 5%; background: #17131F; border-radius: 3px; z-index: 2; }
+.stk-brow.l { left: 28%; transform: rotate(22deg); }
+.stk-brow.r { right: 28%; transform: rotate(-22deg); }
+.stk-hate .stk-brow { animation: stk-brow-hate .45s ease-in-out infinite alternate; }
+@keyframes stk-brow-hate { to { top: 29%; } }
+.stk-vein { position: absolute; top: 12%; right: 26%; width: 14%; height: 14%; z-index: 2; color: #E5383B;
+  background: conic-gradient(from 45deg, transparent 0 10%, currentColor 0 15%, transparent 0 35%, currentColor 0 40%, transparent 0 60%, currentColor 0 65%, transparent 0 85%, currentColor 0 90%, transparent 0);
+  border-radius: 50%; animation: stk-vein .3s ease-in-out infinite alternate; }
+@keyframes stk-vein { from { transform: scale(.8) rotate(0); } to { transform: scale(1.2) rotate(20deg); } }
+.stk-curse {
+  left: 46%; top: 44%; font: 900 calc(var(--stk-cap, 15px) * 1.5) / 1 var(--font-display); color: #FFC83D; -webkit-text-stroke: 1.5px #17131F;
+  opacity: 0; animation: stk-curse 1.2s ease-out infinite; animation-delay: calc(var(--i) * .2s);
+}
+@keyframes stk-curse {
+  0% { transform: rotate(calc(var(--i) * 60deg - 150deg)) translateY(0) scale(.3); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: rotate(calc(var(--i) * 60deg - 150deg)) translateY(-280%) scale(1.15) rotate(30deg); opacity: 0; }
+}
+.stk-thumb { right: -4%; bottom: 22%; font-size: calc(var(--stk-g, 26px) * 1.3); line-height: 1; transform-origin: 50% 0; animation: stk-slam .9s cubic-bezier(.5,0,.6,1.6) infinite; }
+@keyframes stk-slam { 0%, 100% { transform: translateY(-30%) rotate(-20deg); } 40% { transform: translateY(10%) rotate(8deg) scale(1.15); } 50% { transform: translateY(4%) rotate(4deg); } }
+
+/* lust: smirk + brow wiggle, horns, heat haze, flames, lip prints */
+.stk-lust .stk-body { animation: stk-sway 2.4s ease-in-out infinite; }
+@keyframes stk-sway { 0%, 100% { transform: rotate(-6deg) translateY(0); } 50% { transform: rotate(6deg) translateY(-3%); } }
+.stk-lust .stk-brow { top: 23%; height: 4%; width: 16%; }
+.stk-lust .stk-brow.l { left: 30%; transform: rotate(-14deg); animation: stk-wiggle 1.2s ease-in-out infinite; }
+.stk-lust .stk-brow.r { right: 30%; transform: rotate(10deg); animation: stk-wiggle 1.2s ease-in-out infinite .1s; }
+@keyframes stk-wiggle { 0%, 40%, 100% { translate: 0 0; } 50% { translate: 0 -55%; } 60% { translate: 0 0; } 70% { translate: 0 -55%; } 80% { translate: 0 0; } }
+.stk-heat { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(255,45,85,.6), rgba(160,0,110,.3) 45%, transparent 68%); animation: stk-heat 1.8s ease-in-out infinite; }
+@keyframes stk-heat { 0%, 100% { transform: scale(.85); opacity: .7; } 50% { transform: scale(1.08); opacity: 1; } }
+.stk-flame { bottom: 18%; left: calc(6% + var(--i) * 19%); font-size: calc(var(--stk-g, 26px) * .9); line-height: 1; transform-origin: 50% 100%; animation: stk-flame calc(.5s + var(--i) * .07s) ease-in-out infinite alternate; }
+@keyframes stk-flame { from { transform: scale(.75, .7) rotate(-6deg); opacity: .75; } to { transform: scale(1.05, 1.2) rotate(6deg); opacity: 1; } }
+.stk-lips { left: 50%; top: 40%; font-size: calc(var(--stk-g, 26px) * .9); line-height: 1; opacity: 0; animation: stk-lips 2.1s ease-out infinite; animation-delay: calc(var(--i) * .7s); }
+@keyframes stk-lips {
+  0% { transform: translate(-50%, 0) scale(.2) rotate(0); opacity: 0; }
+  20% { transform: translate(calc(-50% + (var(--i) - 1) * 90%), -80%) scale(1.25) rotate(calc((var(--i) - 1) * 18deg)); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(calc(-50% + (var(--i) - 1) * 150%), -170%) scale(1) rotate(calc((var(--i) - 1) * 30deg)); opacity: 0; }
+}
+
+/* locked (nsfw off on either side) */
+.stk-locked { display: grid; place-items: center; }
+.stk-locked-in { width: 70%; height: 70%; border-radius: 28px; display: grid; place-items: center; font-size: 34px;
+  background: repeating-linear-gradient(45deg, rgba(127,127,127,.18) 0 8px, rgba(127,127,127,.08) 8px 16px); backdrop-filter: blur(8px); }

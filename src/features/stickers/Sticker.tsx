@@ -64,9 +64,27 @@ function StickerImpl({ kind, name, size = 132 }: { kind: StickerKind; name: stri
           </span>
         )}
         {kind === 'angry' && <span className="stk-rage" />}
+        {kind === 'hate' && <span className="stk-hateburst" />}
+        {kind === 'lust' && (
+          <>
+            <span className="stk-heat" />
+            {[0, 1, 2, 3, 4].map((i) => (
+              <i key={i} className="stk-flame" style={{ '--i': i } as CSSProperties}>
+                🔥
+              </i>
+            ))}
+          </>
+        )}
       </span>
       <span className="stk-body">
-        <GoofyFace name={name} size={face} mood={meta.mood} blink={kind !== 'gn' && kind !== 'sad'} />
+        <GoofyFace name={name} size={face} mood={meta.mood} blink={kind !== 'gn' && kind !== 'sad' && kind !== 'hate'} horns={kind === 'lust' ? true : undefined} />
+        {(kind === 'hate' || kind === 'lust') && (
+          <>
+            <i className="stk-brow l" />
+            <i className="stk-brow r" />
+          </>
+        )}
+        {kind === 'hate' && <i className="stk-vein" />}
         {kind === 'hugs' && (
           <>
             <i className="stk-arm l" />
@@ -108,6 +126,22 @@ function StickerImpl({ kind, name, size = 132 }: { kind: StickerKind; name: stri
             </i>
           ))}
         {kind === 'dead' && <i className="stk-ghost">👻</i>}
+        {kind === 'hate' && (
+          <>
+            {['#', '@', '$', '%', '!', '&'].map((c, i) => (
+              <i key={i} className="stk-curse" style={{ '--i': i } as CSSProperties}>
+                {c}
+              </i>
+            ))}
+            <i className="stk-thumb">👎</i>
+          </>
+        )}
+        {kind === 'lust' &&
+          [0, 1, 2].map((i) => (
+            <i key={i} className="stk-lips" style={{ '--i': i } as CSSProperties}>
+              💋
+            </i>
+          ))}
       </span>
       <span className="stk-cap">{meta.caption}</span>
     </span>
@@ -115,3 +149,12 @@ function StickerImpl({ kind, name, size = 132 }: { kind: StickerKind; name: stri
 }
 
 export const Sticker = memo(StickerImpl)
+
+/** What people without nsfw (on both sides) see instead of a spicy sticker. */
+export function LockedSticker({ size = 132 }: { size?: number }) {
+  return (
+    <span className="stk stk-locked" style={{ width: size, height: size }}>
+      <span className="stk-locked-in">🔞</span>
+    </span>
+  )
+}

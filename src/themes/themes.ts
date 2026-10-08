@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 
-export type Ambient = 'none' | 'petals' | 'stars' | 'bubbles' | 'leaves' | 'hearts' | 'sparkles' | 'aurora' | 'scanlines' | 'haze'
+export type Ambient = 'none' | 'petals' | 'stars' | 'bubbles' | 'leaves' | 'hearts' | 'sparkles' | 'aurora' | 'scanlines' | 'haze' | 'bats' | 'lovebeat' | 'party' | 'embers'
 
 export type ThemeDef = {
   id: string
@@ -120,6 +120,41 @@ export const THEMES: ThemeDef[] = [
     composer: '#FFFFFF', composerInk: '#1B2233',
   },
 ]
+
+THEMES.push(
+  {
+    id: 'batman', name: 'batman', scheme: 'dark', ambient: 'bats',
+    bg: 'radial-gradient(70% 45% at 50% 0%, rgba(255,214,0,.13) 0%, transparent 70%), linear-gradient(180deg, #171A22 0%, #0C0E13 60%, #07080B 100%)',
+    ink: '#EEF0F4', meta: 'rgba(238,240,244,.5)', header: 'rgba(10,11,15,.84)',
+    sent: ['#FFE24D', '#FFD000', '#F0B400'], sentInk: '#0B0B0E',
+    recv: '#1C1F27', recvInk: '#EEF0F4', accent: '#FFD000', accentInk: '#0B0B0E',
+    composer: '#171A21', composerInk: '#EEF0F4',
+  },
+  {
+    id: 'love', name: 'love', scheme: 'light', ambient: 'lovebeat',
+    bg: 'radial-gradient(90% 55% at 50% 115%, #FFB0C4 0%, transparent 62%), radial-gradient(70% 45% at 0% 0%, #FFD9E3 0%, transparent 60%), radial-gradient(60% 40% at 100% 20%, #FFE3EA 0%, transparent 60%), #FFF2F5',
+    ink: '#5B0F25', meta: 'rgba(91,15,37,.5)', header: 'rgba(255,242,245,.84)',
+    sent: ['#FF6B91', '#F0285A', '#C70F40'], sentInk: '#FFFFFF',
+    recv: '#FFFFFF', recvInk: '#5B0F25', accent: '#F0285A', accentInk: '#FFFFFF',
+    composer: '#FFFFFF', composerInk: '#5B0F25',
+  },
+  {
+    id: 'bff', name: 'bff', scheme: 'light', ambient: 'party',
+    bg: 'radial-gradient(60% 40% at 0% 0%, #FFE98A 0%, transparent 65%), radial-gradient(60% 45% at 100% 30%, #FFC4EA 0%, transparent 65%), radial-gradient(70% 45% at 30% 100%, #BFE3FF 0%, transparent 65%), #FFF8EC',
+    ink: '#2A1A4A', meta: 'rgba(42,26,74,.5)', header: 'rgba(255,248,236,.84)',
+    sent: ['#8A6BFF', '#FF5CB8', '#FF9F43'], sentInk: '#FFFFFF',
+    recv: '#FFFFFF', recvInk: '#2A1A4A', accent: '#7C5CFF', accentInk: '#FFFFFF',
+    composer: '#FFFFFF', composerInk: '#2A1A4A',
+  },
+  {
+    id: 'lust', name: 'lust', scheme: 'dark', ambient: 'embers',
+    bg: 'radial-gradient(85% 55% at 50% 105%, rgba(190,0,45,.5) 0%, transparent 70%), radial-gradient(60% 40% at 100% 0%, rgba(130,0,95,.38) 0%, transparent 70%), radial-gradient(50% 35% at 0% 30%, rgba(90,0,40,.35) 0%, transparent 70%), #0E0508',
+    ink: '#FFE4EB', meta: 'rgba(255,228,235,.5)', header: 'rgba(14,5,8,.84)',
+    sent: ['#FF3D63', '#C4002F', '#7E0031'], sentInk: '#FFFFFF',
+    recv: '#23101A', recvInk: '#FFE4EB', accent: '#FF2D55', accentInk: '#FFFFFF',
+    composer: '#1B0A12', composerInk: '#FFE4EB',
+  },
+)
 
 export const THEME_IDS = THEMES.map((t) => t.id)
 const byId = new Map(THEMES.map((t) => [t.id, t]))

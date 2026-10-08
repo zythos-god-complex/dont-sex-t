@@ -10,8 +10,8 @@ import { IconAlert, IconArrowDown, IconBack, IconSend, IconSticker, IconUsers } 
 import { getTheme, themeVars } from '../../themes/themes'
 import { Ambient } from '../../themes/Ambient'
 import { goBack } from '../shell/nav'
-import { Sticker } from '../stickers/Sticker'
-import { STICKERS, stickerBody, stickerOf } from '../stickers/stickers'
+import { LockedSticker, Sticker } from '../stickers/Sticker'
+import { NSFW_STICKERS, STICKERS, stickerBody, stickerOf } from '../stickers/stickers'
 import { Crew } from './Crew'
 import { PeoplePicker } from './PeoplePicker'
 import { addPeople, enterRoom, fetchRoom, leaveRoom, loadOlderRoom, retryRoom, roomPeople, roomTyping, sendRoom, useRooms, type Room, type RoomMsg } from './rooms'
@@ -38,7 +38,7 @@ function Bubble({ m, mine, joinPrev, joinNext }: { m: RoomMsg; mine: boolean; jo
         {!mine && <span className="b-face">{!joinNext && <GoofyFace name={name} size={28} blink={false} />}</span>}
         <div className={cls}>
           {stk ? (
-            <Sticker kind={stk} name={name} size={130} />
+            NSFW_STICKERS.includes(stk) ? <LockedSticker size={130} /> : <Sticker kind={stk} name={name} size={130} />
           ) : (
             linkify(m.body).map((p, i) =>
               p.href ? (
@@ -186,7 +186,7 @@ function Composer({ room }: { room: Room }) {
           <motion.div className="stk-tray" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={spring}>
             <div className="stk-tray-in">
               <div className="stk-grid">
-                {STICKERS.map((st) => (
+                {STICKERS.filter((st) => !NSFW_STICKERS.includes(st.id)).map((st) => (
                   <motion.button
                     key={st.id}
                     type="button"
