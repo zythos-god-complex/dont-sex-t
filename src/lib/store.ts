@@ -179,7 +179,7 @@ export function sortConversations(list: Conversation[]): Conversation[] {
 }
 
 function sameProfile(a: Profile, b: Profile): boolean {
-  return a.id === b.id && a.username === b.username && a.gender === b.gender && a.last_seen_at === b.last_seen_at
+  return a.id === b.id && a.username === b.username && a.gender === b.gender && a.last_seen_at === b.last_seen_at && a.show_status === b.show_status && a.show_seen === b.show_seen && JSON.stringify(a.avatar ?? null) === JSON.stringify(b.avatar ?? null)
 }
 
 function sameConversation(a: Conversation, b: Conversation): boolean {
@@ -195,6 +195,10 @@ function sameConversation(a: Conversation, b: Conversation): boolean {
     a.peer_last_read_at === b.peer_last_read_at &&
     a.muted === b.muted &&
     a.unread === b.unread &&
+    a.status === b.status &&
+    a.requester === b.requester &&
+    a.declined_at === b.declined_at &&
+    a.blocked === b.blocked &&
     a.peer === b.peer &&
     a.last_message === b.last_message
   )

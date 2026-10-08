@@ -14,9 +14,9 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { loadOlder, retry, sendMessage, setActiveConv, setTheme, setTyping } from '../../lib/engine'
+import { loadOlder, nameHistory, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
-import { activeAgo, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
+import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
@@ -86,6 +86,7 @@ function ChatView({ conv }: { conv: Conversation }) {
         typing<TypingDots />
       </span>
     )
+  else if (conv.peer.show_status === false) statusLine = null
   else if (status.online) statusLine = status.away ? 'away' : 'online'
   else if (status.lastSeenAt) statusLine = activeAgo(status.lastSeenAt, now)
 
@@ -104,7 +105,7 @@ function ChatView({ conv }: { conv: Conversation }) {
           </button>
         )}
         <div className="chat-peer">
-          <GoofyFace name={peer.username} size={40} presence={status.online ? (status.away ? 'away' : 'online') : null} />
+          <GoofyFace name={peer.username} size={40} presence={conv.peer.show_status !== false && status.online ? (status.away ? 'away' : 'online') : null} />
           <div className="chat-peer-text">
             <span className="chat-peer-name ellipsis">{peer.username}</span>
             <AnimatePresence mode="wait" initial={false}>
@@ -122,7 +123,7 @@ function ChatView({ conv }: { conv: Conversation }) {
       </header>
 
       <MessageList conv={conv} now={now} sinceOnline={status.since} online={status.online} />
-      <Composer conv={conv} onEgg={() => setEgg((n) => n + 1)} />
+      <ChatFooter conv={conv} meId={me?.id ?? null} now={now} onEgg={() => setEgg((n) => n + 1)} />
       <AnimatePresence>{egg > 0 && <EasterEgg key="egg" me={me?.username ?? ''} />}</AnimatePresence>
 
       <Sheet open={settings} onClose={() => setSettings(false)} label="chat settings">
@@ -322,6 +323,68 @@ function EmptyChat({ conv, now, sinceOnline, online }: { conv: Conversation; now
   )
 }
 
+/* ------------------------------------------------------------------ requests / blocks */
+
+function ChatFooter({ conv, meId, now, onEgg }: { conv: Conversation; meId: string | null; now: number; onEgg: () => void }) {
+  const name = conv.peer.username
+  let content: React.ReactNode = null
+  if (conv.blocked === 'me')
+    content = (
+      <>
+        <p>you blocked {name}</p>
+        <div className="req-actions">
+          <button type="button" className="req-yes" onClick={() => void setBlocked(conv.peer.id, false)}>
+            unblock
+          </button>
+        </div>
+      </>
+    )
+  else if (conv.blocked === 'them') content = <p>you can't reply to this chat</p>
+  else if (conv.status === 'pending' && conv.requester === meId)
+    content = (
+      <p>
+        waiting for <b>{name}</b> to accept
+      </p>
+    )
+  else if (conv.status === 'pending' && conv.requester && conv.requester !== meId)
+    content = (
+      <>
+        <p>
+          <b>{name}</b> wants to chat
+        </p>
+        <div className="req-actions">
+          <button type="button" className="req-no" onClick={() => void respondRequest(conv.id, false)}>
+            decline
+          </button>
+          <button type="button" className="req-yes" onClick={() => void respondRequest(conv.id, true)}>
+            accept
+          </button>
+        </div>
+      </>
+    )
+  else if (conv.status === 'declined' && conv.requester === meId && conv.declined_at) {
+    const left = new Date(conv.declined_at).getTime() + 86400000 - now
+    if (left > 0) {
+      const h = Math.floor(left / 3600000)
+      const m = Math.max(1, Math.ceil((left % 3600000) / 60000))
+      content = (
+        <p>
+          declined. try again in{' '}
+          <b className="tnum">
+            {h}h {m}m
+          </b>
+        </p>
+      )
+    }
+  }
+  if (!content) return <Composer conv={conv} onEgg={onEgg} />
+  return (
+    <motion.div className="req" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={spring}>
+      {content}
+    </motion.div>
+  )
+}
+
 /* ------------------------------------------------------------------ composer */
 
 const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
@@ -411,6 +474,28 @@ function Composer({ conv, onEgg }: { conv: Conversation; onEgg: () => void }) {
 
 /* ------------------------------------------------------------------ settings */
 
+function NameHistory({ peerId }: { peerId: string }) {
+  const [list, setList] = useState<{ username: string; changed_at: string }[]>([])
+  useEffect(() => {
+    let live = true
+    nameHistory(peerId).then((l) => live && setList(l || [])).catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [peerId])
+  if (!list.length) return null
+  return (
+    <div className="aka">
+      <span className="aka-label">previously</span>
+      {list.map((h) => (
+        <span key={h.username + h.changed_at} className="aka-name">
+          {h.username} <small>{relTime(h.changed_at)}</small>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function SettingsBody({ conv }: { conv: Conversation }) {
   const [themeOpen, setThemeOpen] = useState(false)
   const push = usePushState(conv.id)
@@ -421,6 +506,7 @@ function SettingsBody({ conv }: { conv: Conversation }) {
       <div className="settings-peer">
         <GoofyFace name={conv.peer.username} size={64} />
         <span className="settings-name">{conv.peer.username}</span>
+        <NameHistory peerId={conv.peer.id} />
       </div>
       <h3 className="settings-label">theme</h3>
       <button type="button" className={'theme-row' + (themeOpen ? ' is-open' : '')} onClick={() => setThemeOpen((v) => !v)} aria-expanded={themeOpen}>
@@ -463,6 +549,10 @@ function SettingsBody({ conv }: { conv: Conversation }) {
         <Toggle label="notifications" on={push === 'on'} disabled={busy || push === 'needs-install' || push === 'unsupported' || push === 'denied'} onChange={() => void togglePush(conv.id)} />
       </div>
       {hint && <p className="settings-hint">{hint}</p>}
+      <button type="button" className={'block-btn' + (conv.blocked === 'me' ? ' is-on' : '')} onClick={() => void setBlocked(conv.peer.id, conv.blocked !== 'me')}>
+        {conv.blocked === 'me' ? 'unblock ' : 'block '}
+        {conv.peer.username}
+      </button>
     </div>
   )
 }

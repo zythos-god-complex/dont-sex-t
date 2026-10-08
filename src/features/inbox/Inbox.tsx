@@ -31,7 +31,11 @@ function Row({ c, active, now, meId }: { c: Conversation; active: boolean; now: 
               <TypingDots /> typing...
             </>
           ) : (
-            messagePreview(c.last_message, meId) || 'say hi'
+            c.status === 'pending' && c.requester && c.requester !== meId ? (
+              <b className="row-req">wants to chat</b>
+            ) : (
+              messagePreview(c.last_message, meId) || 'say hi'
+            )
           )}
         </span>
       </span>
