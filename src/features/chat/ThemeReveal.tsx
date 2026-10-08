@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'motion/react'
 import { getTheme } from '../../themes/themes'
 import { Ambient } from '../../themes/Ambient'
 
@@ -10,84 +10,115 @@ export function setThemeOrigin(x: number, y: number) {
 }
 
 const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const DURATION = 1.05
+const EASE = [0.76, 0, 0.24, 1] as const // expo in-out: slow start, fast middle, feather landing
 
-type Reveal = { id: string; x: string; y: string; key: number }
+type Reveal = { id: string; x: number; y: number; w: number; h: number; r: number; key: number }
+
+/** The expanding liquid circle. Pure transforms (mask scales up, content counter-scales), so it stays 60fps on phones. */
+function Bloom({ rv, onDone }: { rv: Reveal; onDone: () => void }) {
+  const t = getTheme(rv.id)
+  const s = useMotionValue(0.0005)
+  const inv = useTransform(s, (v) => 1 / Math.max(v, 0.0005))
+  const glow = useTransform(s, [0, 0.15, 0.8, 1], [0, 0.55, 0.45, 0])
+  const done = useRef(onDone)
+  done.current = onDone
+  useEffect(() => {
+    const c = animate(s, 1, { duration: DURATION, ease: EASE })
+    // timers, not animation callbacks: iOS Safari sometimes never reports completion
+    const timer = setTimeout(() => done.current(), DURATION * 1000 + 60)
+    return () => {
+      c.stop()
+      clearTimeout(timer)
+    }
+  }, [s])
+  const d = rv.r * 2
+  return (
+    <>
+      <motion.div className="bloom" style={{ left: rv.x - rv.r, top: rv.y - rv.r, width: d, height: d, scale: s }}>
+        <motion.div
+          className="bloom-inner"
+          style={{ left: rv.r - rv.x, top: rv.r - rv.y, width: rv.w, height: rv.h, background: t.bg, scale: inv, transformOrigin: `${rv.x}px ${rv.y}px` }}
+        >
+          <Ambient kind={t.ambient} />
+        </motion.div>
+      </motion.div>
+      <motion.div
+        className="bloom-edge"
+        style={{ left: rv.x - rv.r, top: rv.y - rv.r, width: d, height: d, scale: s, opacity: glow, color: t.accent }}
+      />
+    </>
+  )
+}
 
 /**
- * Chat background with a theme change that blooms out of the tapped swatch (or drops from the
- * header when the other person changed it): a circular wipe, a shockwave ring and a name sticker.
+ * Chat background. A theme change blooms out of the tapped swatch (or pours down from the header
+ * when the other person changed it) as a soft-edged liquid circle while the chat breathes back.
  */
-export function ThemeBackground({ themeId, host }: { themeId: string; host: RefObject<HTMLDivElement | null> }) {
+export function ThemeBackground({ themeId, host, onPhase }: { themeId: string; host: RefObject<HTMLDivElement | null>; onPhase?: (on: boolean) => void }) {
   const [base, setBase] = useState(themeId)
-  const [reveal, setReveal] = useState<Reveal | null>(null)
+  const [rv, setRv] = useState<Reveal | null>(null)
+  const [label, setLabel] = useState<{ name: string; key: number } | null>(null)
   const seq = useRef(0)
 
   useEffect(() => {
-    if (themeId === base && !reveal) return
-    if (reveal?.id === themeId) return
-    if (reduce) {
+    if (themeId === (rv?.id ?? base)) return
+    const el = host.current
+    if (reduce || !el) {
       setBase(themeId)
-      setReveal(null)
+      setRv(null)
       return
     }
-    let x = '50%'
-    let y = '0%'
-    const r = host.current?.getBoundingClientRect()
-    if (pendingOrigin && r) {
-      x = `${((pendingOrigin.x - r.left) / r.width) * 100}%`
-      y = `${((pendingOrigin.y - r.top) / r.height) * 100}%`
+    const b = el.getBoundingClientRect()
+    let x = b.width / 2
+    let y = 0
+    if (pendingOrigin) {
+      x = Math.min(b.width, Math.max(0, pendingOrigin.x - b.left))
+      y = Math.min(b.height, Math.max(0, pendingOrigin.y - b.top))
     }
     pendingOrigin = null
-    if (reveal) setBase(reveal.id)
-    setReveal({ id: themeId, x, y, key: ++seq.current })
+    const r = Math.hypot(Math.max(x, b.width - x), Math.max(y, b.height - y)) + 24
+    if (rv) setBase(rv.id)
+    const key = ++seq.current
+    setRv({ id: themeId, x, y, w: b.width, h: b.height, r, key })
+    onPhase?.(true)
+    setLabel({ name: getTheme(themeId).name, key })
+    const hide = setTimeout(() => setLabel((l) => (l?.key === key ? null : l)), 1700)
+    return () => clearTimeout(hide)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [themeId])
 
   const b = getTheme(base)
-  const n = reveal ? getTheme(reveal.id) : null
+  const t = getTheme(rv?.id ?? base)
   return (
     <>
       <div className="chat-bg" style={{ background: b.bg }}>
         <Ambient kind={b.ambient} />
       </div>
-      {reveal && n && (
-        <motion.div
-          key={reveal.key}
-          className="chat-bg"
-          style={{ background: n.bg }}
-          initial={{ clipPath: `circle(0% at ${reveal.x} ${reveal.y})` }}
-          animate={{ clipPath: `circle(150% at ${reveal.x} ${reveal.y})` }}
-          transition={{ duration: 0.85, ease: [0.7, 0, 0.2, 1] }}
-          onAnimationComplete={() => {
-            setBase(reveal.id)
-            setReveal(null)
-          }}
-        >
-          <Ambient kind={n.ambient} />
-        </motion.div>
+      {rv && (
+        <div className="chat-bg bloom-host">
+          <Bloom
+            key={rv.key}
+            rv={rv}
+            onDone={() => {
+              setBase(rv.id)
+              setRv(null)
+              onPhase?.(false)
+            }}
+          />
+        </div>
       )}
       <AnimatePresence>
-        {reveal && n && (
-          <motion.div key={'fx' + reveal.key} className="theme-fx" initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.3 } }}>
-            {[0, 1].map((i) => (
-              <motion.span
-                key={i}
-                className="theme-ring"
-                style={{ left: reveal.x, top: reveal.y, borderColor: n.accent }}
-                initial={{ scale: 0, opacity: 0.9 }}
-                animate={{ scale: 9, opacity: 0 }}
-                transition={{ duration: 0.9, delay: i * 0.12, ease: 'easeOut' }}
-              />
-            ))}
-            <motion.div
-              className="theme-sticker"
-              style={{ background: n.accent, color: n.accentInk }}
-              initial={{ scale: 0.3, rotate: -18, opacity: 0, y: 20 }}
-              animate={{ scale: [0.3, 1.12, 1], rotate: [-18, 4, -3], opacity: 1, y: 0 }}
-              transition={{ delay: 0.32, duration: 0.55, ease: 'easeOut' }}
-            >
-              {n.name}
-            </motion.div>
+        {label && (
+          <motion.div
+            key={label.key}
+            className="theme-label"
+            style={{ background: t.accent, color: t.accentInk }}
+            initial={{ y: -24, opacity: 0, scale: 0.8, filter: 'blur(6px)' }}
+            animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)', transition: { delay: 0.45, type: 'spring', stiffness: 420, damping: 22 } }}
+            exit={{ y: -12, opacity: 0, scale: 0.92, filter: 'blur(4px)', transition: { duration: 0.28 } }}
+          >
+            {label.name}
           </motion.div>
         )}
       </AnimatePresence>

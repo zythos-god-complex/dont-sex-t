@@ -68,16 +68,6 @@ function ChatView({ conv }: { conv: Conversation }) {
   const [egg, setEgg] = useState(0)
   const chatRef = useRef<HTMLDivElement>(null)
   const [themeBump, setThemeBump] = useState(false)
-  const firstTheme = useRef(true)
-  useEffect(() => {
-    if (firstTheme.current) {
-      firstTheme.current = false
-      return
-    }
-    setThemeBump(true)
-    const t = setTimeout(() => setThemeBump(false), 900)
-    return () => clearTimeout(t)
-  }, [theme.id])
   const me = useMe()
 
   useEffect(() => {
@@ -104,7 +94,7 @@ function ChatView({ conv }: { conv: Conversation }) {
 
   return (
     <div ref={chatRef} className={'chat scheme-' + theme.scheme + (themeBump ? ' theme-bump' : '')} style={themeVars(theme)}>
-      <ThemeBackground themeId={theme.id} host={chatRef} />
+      <ThemeBackground themeId={theme.id} host={chatRef} onPhase={setThemeBump} />
 
       <header className="chat-head">
         {!desktop && (
