@@ -1,8 +1,9 @@
+import type { AvatarConfig } from '../ui/face'
 // JSON shapes returned by the RPCs (SPEC.md "JSON shapes returned by RPCs").
 
 export type Gender = 'm' | 'f'
 
-export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string }
+export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null }
 
 export type Me = Profile & { inbox: string }
 
@@ -74,6 +75,7 @@ export type OnlineUser = {
   gender: Gender
   since: string // ISO, earliest tab join
   away: boolean // true only when every tab of theirs is hidden
+  avatar?: AvatarConfig | null // custom face, when they built one
 }
 
 /** In-app banner for a message that arrived in a conversation that is not open+visible. */

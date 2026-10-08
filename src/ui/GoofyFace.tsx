@@ -1,11 +1,14 @@
 import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
-import { BLOBS, FACE_INK, TONGUE, faceTraits, type FaceTraits, type MouthKind } from './face'
+import { BLOBS, FACE_INK, TONGUE, applyAvatar, faceTraits, type AvatarConfig, type FaceTraits, type MouthKind } from './face'
+import { useAvatarFor } from './avatars'
 
 export type FaceMood = 'neutral' | 'happy' | 'shocked' | 'sleepy' | 'talking' | 'wink'
 export type Look = { x: number; y: number }
 
 type Props = {
   name: string | null | undefined
+  /** explicit face (onboarding builder); undefined = look up this user's custom face */
+  avatar?: AvatarConfig | null
   size?: number
   look?: Look | null
   mood?: FaceMood
@@ -268,8 +271,9 @@ function FaceSvg({ t, look, mood, blink }: { t: FaceTraits; look: Look; mood: Fa
 
 const ZERO: Look = { x: 0, y: 0 }
 
-function GoofyFaceImpl({ name, size = 40, look, mood = 'neutral', presence = null, blink = true, className, style }: Props) {
-  const t = faceTraits(name)
+function GoofyFaceImpl({ name, avatar, size = 40, look, mood = 'neutral', presence = null, blink = true, className, style }: Props) {
+  const custom = useAvatarFor(avatar === undefined ? name : null)
+  const t = applyAvatar(faceTraits(name), avatar !== undefined ? avatar : custom)
   const reduce = usePrefersReducedMotion()
   const effMood = mood === 'wink' ? 'neutral' : mood
   const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : t

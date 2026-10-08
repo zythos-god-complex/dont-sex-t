@@ -1,3 +1,4 @@
+import type { AvatarConfig } from '../ui/face'
 import { REST_URL, SUPABASE_KEY } from './env'
 import type { Conversation, ErrorCode, Gender, Me, Message, Profile } from './types'
 
@@ -95,6 +96,8 @@ export const api = {
     rpc<{ token: string; me: Me }>('gat_join', { p_username: username, p_gender: gender }),
 
   me: (token: string) => rpc<Me>('gat_me', { p_token: token }),
+
+  setAvatar: (token: string, avatar: AvatarConfig | null) => rpc<Me>('gat_set_avatar', { p_token: token, p_avatar: avatar }),
 
   profiles: (token: string, ids: string[]) => rpc<Profile[]>('gat_profiles', { p_token: token, p_ids: ids }),
 

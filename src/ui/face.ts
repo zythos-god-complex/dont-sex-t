@@ -359,3 +359,93 @@ export function faceTilt(username: string | null | undefined, range = 1.5): numb
   const s = faceTraits(username).seed
   return (((s >>> 8) % 1000) / 1000) * range * 2 - range
 }
+
+/* ---------------- custom avatars (built at sign up) ---------------- */
+
+export type TopKind = 'none' | 'antenna' | 'sprout'
+export type AvatarConfig = {
+  v: 1
+  color: string
+  blob: BlobKind
+  eyes: EyeKind
+  mouth: MouthKind
+  brows: BrowKind | null
+  blush: boolean
+  freckles: boolean
+  top: TopKind
+}
+
+export const EYE_KINDS: EyeKind[] = ['pair', 'beady', 'wide', 'mismatch', 'sleepy', 'squint', 'three']
+export const MOUTH_KINDS: MouthKind[] = ['grin', 'bigD', 'tongue', 'o', 'smirk', 'teeth', 'wavy', 'flat']
+export const BROW_KINDS: (BrowKind | null)[] = [null, 'raised', 'worried', 'grumpy', 'uneven']
+export const TOP_KINDS: TopKind[] = ['none', 'antenna', 'sprout']
+
+export function isAvatar(x: unknown): x is AvatarConfig {
+  if (!x || typeof x !== 'object') return false
+  const a = x as Record<string, unknown>
+  return (
+    (FACE_PALETTE as readonly string[]).includes(a.color as string) &&
+    BLOB_KINDS.includes(a.blob as BlobKind) &&
+    EYE_KINDS.includes(a.eyes as EyeKind) &&
+    MOUTH_KINDS.includes(a.mouth as MouthKind) &&
+    BROW_KINDS.includes((a.brows ?? null) as BrowKind | null) &&
+    TOP_KINDS.includes(a.top as TopKind) &&
+    typeof a.blush === 'boolean' &&
+    typeof a.freckles === 'boolean'
+  )
+}
+
+export function avatarFromTraits(t: FaceTraits): AvatarConfig {
+  return {
+    v: 1,
+    color: t.color,
+    blob: t.blob,
+    eyes: t.eyes,
+    mouth: t.mouth,
+    brows: t.brows,
+    blush: t.blush,
+    freckles: t.freckles,
+    top: t.antenna ? 'antenna' : t.sprout ? 'sprout' : 'none',
+  }
+}
+
+export function applyAvatar(t: FaceTraits, a: AvatarConfig | null | undefined): FaceTraits {
+  if (!isAvatar(a)) return t
+  let er = t.er
+  if (a.eyes === 'three' && t.eyes !== 'three') er = 9.1
+  if (a.eyes !== 'three' && t.eyes === 'three') er = 11.8
+  return {
+    ...t,
+    color: a.color,
+    shade: mixHex(a.color, FACE_INK, 0.24),
+    deep: mixHex(a.color, FACE_INK, 0.62),
+    blob: a.blob,
+    eyes: a.eyes,
+    mouth: a.mouth,
+    brows: a.eyes === 'three' ? null : a.brows,
+    blush: a.blush,
+    freckles: a.freckles,
+    antenna: a.top === 'antenna',
+    sprout: a.top === 'sprout',
+    tooth: t.tooth && (a.mouth === 'grin' || a.mouth === 'bigD' || a.mouth === 'smirk'),
+    derp: t.derp && (a.eyes === 'pair' || a.eyes === 'mismatch' || a.eyes === 'wide'),
+    er,
+  }
+}
+
+const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)]
+
+export function randomAvatar(): AvatarConfig {
+  const eyes = pick(EYE_KINDS)
+  return {
+    v: 1,
+    color: pick(FACE_PALETTE),
+    blob: pick(BLOB_KINDS),
+    eyes,
+    mouth: pick(MOUTH_KINDS),
+    brows: eyes === 'three' || Math.random() < 0.6 ? null : pick(BROW_KINDS.slice(1)),
+    blush: Math.random() < 0.5,
+    freckles: Math.random() < 0.25,
+    top: Math.random() < 0.7 ? 'none' : pick(['antenna', 'sprout'] as const),
+  }
+}

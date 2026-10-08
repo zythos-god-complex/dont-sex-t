@@ -1,3 +1,4 @@
+import type { AvatarConfig } from '../ui/face'
 // Everything live: wires realtime + api into the store.
 // Actions are plain exported functions (see bottom). window.__gat exposes them for QA.
 import type { RealtimeChannel } from '@supabase/realtime-js'
@@ -303,7 +304,7 @@ function myMeta() {
   const me = get().me
   if (!me) return null
   if (!lobbySince) lobbySince = new Date().toISOString()
-  return { id: me.id, username: me.username, gender: me.gender, since: lobbySince, away: !visible }
+  return { id: me.id, username: me.username, gender: me.gender, since: lobbySince, away: !visible, avatar: me.avatar ?? null }
 }
 
 function trackMe() {
@@ -1071,8 +1072,16 @@ export function boot(): void {
 }
 
 /** Create a user. Throws ApiError (code: username_taken | username_invalid | gender_invalid | network | server). */
-export async function join(username: string, gender: Gender): Promise<Me> {
+export async function join(username: string, gender: Gender, avatar?: AvatarConfig | null): Promise<Me> {
   const r = await api.join(username.trim(), gender)
+  if (avatar) {
+    r.me = { ...r.me, avatar }
+    try {
+      r.me = await api.setAvatar(r.token, avatar)
+    } catch {
+      /* keep the local face; it still rides along in presence */
+    }
+  }
   gen++
   teardownSession()
   token = r.token

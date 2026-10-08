@@ -86,3 +86,19 @@ export const IconAlert = (p: P) => (
 export function GenderIcon({ g, ...p }: P & { g: 'm' | 'f' }) {
   return g === 'm' ? <IconMale {...p} /> : <IconFemale {...p} />
 }
+
+export const IconDice = (p: P) => (
+  <Svg {...p}>
+    <rect x="4" y="4" width="16" height="16" rx="4.5" />
+    <circle cx="9" cy="9" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="15" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="9" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="9" cy="15" r="1.3" fill="currentColor" stroke="none" />
+  </Svg>
+)
+export const IconBrush = (p: P) => (
+  <Svg {...p}>
+    <path d="M14.5 5.5l4 4L10 18l-4.6.6.6-4.6z" />
+    <path d="M12.5 7.5l4 4" />
+  </Svg>
+)

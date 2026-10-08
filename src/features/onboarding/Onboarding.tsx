@@ -4,8 +4,10 @@ import { join } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { useOnline } from '../../lib/hooks'
 import { GoofyFace, useLookAt, type FaceMood } from '../../ui/GoofyFace'
-import { Wordmark, spring } from '../../ui/kit'
-import { IconArrowRight, IconFemale, IconMale } from '../../ui/icons'
+import { Sheet, Wordmark, spring } from '../../ui/kit'
+import { IconArrowRight, IconBrush, IconDice, IconFemale, IconMale } from '../../ui/icons'
+import { avatarFromTraits, faceTraits, randomAvatar, type AvatarConfig } from '../../ui/face'
+import { FaceBuilder } from './FaceBuilder'
 import type { Gender } from '../../lib/types'
 
 const VALID = /^[A-Za-z0-9_.]{3,20}$/
@@ -18,6 +20,9 @@ export default function Onboarding() {
   const [busy, setBusy] = useState(false)
   const [typing, setTypingState] = useState(false)
   const [wink, setWink] = useState(false)
+  const [avatar, setAvatar] = useState<AvatarConfig | null>(null)
+  const [building, setBuilding] = useState(false)
+  const [spin, setSpin] = useState(0)
   const typingTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const shake = useAnimationControls()
   const [faceRef, look] = useLookAt<HTMLDivElement>()
@@ -59,7 +64,7 @@ export default function Onboarding() {
     if (!gender) return
     setBusy(true)
     try {
-      await join(name, gender)
+      await join(name, gender, avatar)
     } catch (err) {
       setBusy(false)
       if (isApiError(err) && err.code === 'username_taken') fail('taken, try another')
@@ -103,8 +108,25 @@ export default function Onboarding() {
       <div className="ob-hero">
         <motion.div ref={faceRef} className="ob-face" initial={{ scale: 0.6, rotate: -8, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 16 }}>
           <motion.div key={name.toLowerCase() || 'empty'} initial={{ scale: 0.92 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 600, damping: 14 }}>
-            <GoofyFace name={name || null} size={184} look={typing ? { x: 0, y: 0.9 } : look} mood={mood} />
+            <GoofyFace name={name || null} avatar={avatar} size={184} look={typing ? { x: 0, y: 0.9 } : look} mood={mood} />
           </motion.div>
+          <motion.button
+            type="button"
+            className="ob-face-btn ob-dice"
+            aria-label="random face"
+            animate={{ rotate: spin * 360 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+            whileTap={{ scale: 0.88 }}
+            onClick={() => {
+              setSpin((n) => n + 1)
+              setAvatar(randomAvatar())
+            }}
+          >
+            <IconDice size={22} />
+          </motion.button>
+          <motion.button type="button" className="ob-face-btn ob-brush" aria-label="build your face" whileTap={{ scale: 0.88 }} onClick={() => setBuilding(true)}>
+            <IconBrush size={22} />
+          </motion.button>
         </motion.div>
         <Wordmark size={40} />
       </div>
@@ -164,6 +186,15 @@ export default function Onboarding() {
           )}
         </button>
       </motion.form>
+
+      <Sheet open={building} onClose={() => setBuilding(false)} label="build your face">
+        <FaceBuilder
+          name={name || null}
+          value={avatar ?? avatarFromTraits(faceTraits(name || null))}
+          onChange={setAvatar}
+          onDone={() => setBuilding(false)}
+        />
+      </Sheet>
     </div>
   )
 }

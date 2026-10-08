@@ -1,3 +1,4 @@
+import { isAvatar } from '../ui/face'
 import { create } from 'zustand'
 import type {
   ConnectionState,
@@ -248,8 +249,9 @@ export function presenceToOnline(
       const gender: Gender = raw.gender === 'f' ? 'f' : 'm'
       const since = typeof raw.since === 'string' ? raw.since : new Date().toISOString()
       const away = raw.away === true
+      const avatar = isAvatar(raw.avatar) ? raw.avatar : null
       const cur = acc[id]
-      if (!cur) acc[id] = { id, username, gender, since, away }
+      if (!cur) acc[id] = { id, username, gender, since, away, avatar }
       else {
         cur.away = cur.away && away // away only when every tab is away
         if (ts(since) < ts(cur.since)) cur.since = since
@@ -264,9 +266,10 @@ export function presenceToOnline(
     if (p) {
       n.username = p.username
       n.gender = p.gender
+      if (p.avatar !== undefined) n.avatar = isAvatar(p.avatar) ? p.avatar : n.avatar
     }
     const o = prev[id]
-    if (o && o.username === n.username && o.gender === n.gender && o.since === n.since && o.away === n.away) out[id] = o
+    if (o && o.username === n.username && o.gender === n.gender && o.since === n.since && o.away === n.away && JSON.stringify(o.avatar ?? null) === JSON.stringify(n.avatar ?? null)) out[id] = o
     else {
       out[id] = n
       changed = true

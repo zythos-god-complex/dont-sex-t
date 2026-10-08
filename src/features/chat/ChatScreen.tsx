@@ -24,6 +24,7 @@ import { IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, Icon
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
 import { Ambient } from '../../themes/Ambient'
 import { goBack } from '../shell/nav'
+import { EasterEgg } from './EasterEgg'
 
 export type ChatScreenProps = { username: string }
 
@@ -64,6 +65,14 @@ function ChatView({ conv }: { conv: Conversation }) {
   const status = usePeerStatus(peer.id)
   const now = useNow(30000)
   const [settings, setSettings] = useState(false)
+  const [egg, setEgg] = useState(0)
+  const me = useMe()
+
+  useEffect(() => {
+    if (!egg) return
+    const t = setTimeout(() => setEgg(0), 2600)
+    return () => clearTimeout(t)
+  }, [egg])
 
   useEffect(() => {
     setActiveConv(conv.id)
@@ -113,7 +122,8 @@ function ChatView({ conv }: { conv: Conversation }) {
       </header>
 
       <MessageList conv={conv} now={now} sinceOnline={status.since} online={status.online} />
-      <Composer conv={conv} />
+      <Composer conv={conv} onEgg={() => setEgg((n) => n + 1)} />
+      <AnimatePresence>{egg > 0 && <EasterEgg key="egg" me={me?.username ?? ''} />}</AnimatePresence>
 
       <Sheet open={settings} onClose={() => setSettings(false)} label="chat settings">
         <SettingsBody conv={conv} />
@@ -316,9 +326,10 @@ function EmptyChat({ conv, now, sinceOnline, online }: { conv: Conversation; now
 
 const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
 
-function Composer({ conv }: { conv: Conversation }) {
+function Composer({ conv, onEgg }: { conv: Conversation; onEgg: () => void }) {
   const [text, setText] = useState('')
   const ta = useRef<HTMLTextAreaElement>(null)
+  const lastSent = useRef<{ body: string; at: number } | null>(null)
   const has = text.trim().length > 0
 
   const resize = () => {
@@ -337,6 +348,14 @@ function Composer({ conv }: { conv: Conversation }) {
   const send = () => {
     const body = text.trim()
     if (!body) return
+    // Rapid double taps send the same text twice. A user found it and asked us to keep it, so it's an easter egg now.
+    const now = performance.now()
+    const prev = lastSent.current
+    if (prev && prev.body === body && now - prev.at < 400) {
+      onEgg()
+      navigator.vibrate?.([18, 40, 18])
+    }
+    lastSent.current = { body, at: now }
     sendMessage(conv.id, body)
     setText('')
     setTyping(conv.id, false)
