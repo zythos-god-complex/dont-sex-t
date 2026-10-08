@@ -30,6 +30,7 @@ import { COUPLES, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from
 import { CoupleSticker } from '../stickers/CoupleSticker'
 import { EMOJI_GROUPS } from './emojis'
 import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
+import { AMBIENT_LABEL, PARTICLE_AMBIENTS, setAmbientPrefs, useAmbientPrefs } from '../../themes/ambientPrefs'
 
 export type ChatScreenProps = { username: string }
 
@@ -826,6 +827,28 @@ function NameHistory({ peerId }: { peerId: string }) {
   )
 }
 
+function AmbientControls({ themeId }: { themeId: string }) {
+  const kind = getTheme(themeId).ambient
+  const amount = useAmbientPrefs((p) => p.amount)
+  const speed = useAmbientPrefs((p) => p.speed)
+  if (!(PARTICLE_AMBIENTS as readonly string[]).includes(kind)) return null
+  const label = AMBIENT_LABEL[kind]
+  return (
+    <div className="amb-ctl">
+      <label className="amb-row">
+        <span>{label}</span>
+        <input type="range" min={0.25} max={4} step={0.05} value={amount} onChange={(e) => setAmbientPrefs({ amount: +e.target.value })} aria-label={label + ' amount'} />
+        <b className="tnum">{amount < 0.6 ? 'few' : amount > 2.2 ? 'loads' : amount > 1.3 ? 'more' : 'some'}</b>
+      </label>
+      <label className="amb-row">
+        <span>speed</span>
+        <input type="range" min={0.3} max={3} step={0.05} value={speed} onChange={(e) => setAmbientPrefs({ speed: +e.target.value })} aria-label={label + ' speed'} />
+        <b className="tnum">{speed < 0.7 ? 'chill' : speed > 1.8 ? 'zoom' : speed > 1.2 ? 'quick' : 'normal'}</b>
+      </label>
+    </div>
+  )
+}
+
 function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => void }) {
   const [themeOpen, setThemeOpen] = useState(false)
   const push = usePushState(conv.id)
@@ -877,6 +900,7 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
           </motion.div>
         )}
       </AnimatePresence>
+      <AmbientControls themeId={conv.theme} />
       <h3 className="settings-label">notifications</h3>
       <div className="settings-row">
         <IconBell size={22} />

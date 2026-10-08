@@ -602,3 +602,11 @@
 .reply-bar-text b { font: 750 12.5px/1.1 var(--font-display); color: var(--theme-accent); }
 .reply-bar-text span { font: 400 14px/1.25 var(--theme-font); opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .reply-bar-in button { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; opacity: .6; }
+
+/* theme effect controls */
+.amb-ctl { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; padding: 8px 14px; border-radius: 18px; background: var(--bg-2); }
+.amb-row { display: grid; grid-template-columns: 64px 1fr 50px; align-items: center; gap: 10px; height: 40px; font: 650 14px/1 var(--font-display); color: var(--ink); }
+.amb-row b { font: 700 12px/1 var(--font-display); color: var(--ink-2); text-align: right; }
+.amb-row input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 6px; background: var(--line); outline: none; }
+.amb-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--ink); box-shadow: 0 2px 0 var(--ink); }
+.amb-row input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--ink); }

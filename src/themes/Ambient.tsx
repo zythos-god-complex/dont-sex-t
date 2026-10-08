@@ -1,5 +1,6 @@
 import { memo, type CSSProperties } from 'react'
 import type { Ambient as AmbientKind } from './themes'
+import { useAmbientPrefs } from './ambientPrefs'
 
 const COUNT: Partial<Record<AmbientKind, number>> = { petals: 14, stars: 26, bubbles: 12, leaves: 9, hearts: 10, sparkles: 16 }
 
@@ -10,13 +11,15 @@ function rnd(i: number, salt: number) {
 }
 
 function AmbientImpl({ kind }: { kind: AmbientKind }) {
+  const amount = useAmbientPrefs((p) => p.amount)
+  const speed = useAmbientPrefs((p) => p.speed)
   if (kind === 'none') return null
   if (kind === 'aurora') return <div className="amb amb-aurora" aria-hidden="true"><i /><i /><i /></div>
   if (kind === 'scanlines') return <div className="amb amb-scan" aria-hidden="true" />
   if (kind === 'haze') return <div className="amb amb-haze" aria-hidden="true"><i /><i /></div>
-  const n = COUNT[kind] ?? 10
+  const n = Math.max(1, Math.min(80, Math.round((COUNT[kind] ?? 10) * amount)))
   return (
-    <div className={'amb amb-' + kind} aria-hidden="true">
+    <div className={'amb amb-' + kind} aria-hidden="true" style={{ '--spd': speed } as CSSProperties}>
       {Array.from({ length: n }, (_, i) => (
         <i
           key={i}
