@@ -4,6 +4,7 @@ import type { AvatarConfig } from '../ui/face'
 // Actions are plain exported functions (see bottom). window.__gat exposes them for QA.
 import type { RealtimeChannel } from '@supabase/realtime-js'
 import { api, isApiError, isRetryable } from './api'
+import { archiveMsgs, claimArchive, olderMsgs } from './archive'
 import { canPush, channel, getRealtime, onSocket, reconnectNow, removeChannel } from './realtime'
 import { clearSession, readSession, setManifestToken, takeUrlToken, writeSession, writeTempSession } from './session'
 import {
@@ -835,6 +836,7 @@ function fetchLatest(convId: string): Promise<void> {
       return out
     })
     if (isActiveVisible(convId)) markRead(convId)
+    void checkArchiveMore(convId)
   })().finally(() => inflightLatest.delete(convId))
   inflightLatest.set(convId, p)
   return p
@@ -1082,6 +1084,12 @@ export function boot(): void {
       (s.messages !== p.messages || s.conversations !== p.conversations || s.me !== p.me || s.hasMore !== p.hasMore || s.opened !== p.opened)
     )
       schedulePersist()
+    if (s.me?.id && s.me.id !== p.me?.id) void claimArchive(s.me.id)
+    if (s.messages !== p.messages)
+      for (const id in s.messages) {
+        const list = s.messages[id]
+        if (list !== p.messages[id]) archiveMsgs(list.filter((m) => !s.pending[m.id] && !unconfirmed.has(m.id)) as never)
+      }
   })
 
   const urlToken = takeUrlToken()
@@ -1326,6 +1334,21 @@ function retryAllFailed() {
   for (const id of Object.keys(s.pending)) if (s.pending[id] === 'failed') retry(id)
 }
 
+/** If the server ran out but this device has older messages, re-open "load older". */
+async function checkArchiveMore(convId: string): Promise<void> {
+  const s = get()
+  if (s.hasMore[convId] !== false) return
+  const list = s.messages[convId] ?? EMPTY_MESSAGES
+  const oldest = list.find((m) => !s.pending[m.id] && !unconfirmed.has(m.id))
+  const local = await olderMsgs<Message>(convId, oldest ? oldest.created_at : null, oldest ? 1 : PAGE)
+  if (!local.length) return
+  set((st) => ({
+    messages: oldest ? st.messages : { ...st.messages, [convId]: upsertMessages(st.messages[convId], local, { authoritative: false }) },
+    hasMore: { ...st.hasMore, [convId]: true },
+    loaded: st.loaded[convId] ? st.loaded : { ...st.loaded, [convId]: true },
+  }))
+}
+
 /** Load the previous page. Resolves to the number of messages added. */
 export async function loadOlder(convId: string): Promise<number> {
   const s = get()
@@ -1342,10 +1365,16 @@ export async function loadOlder(convId: string): Promise<number> {
   try {
     const rows = (await api.messages(t, convId, oldest.created_at, PAGE)) || []
     if (g !== gen) return 0
+    // the server only keeps 24h; anything older comes from this device's archive
+    let local: Message[] = []
+    if (rows.length < PAGE) {
+      const floor = rows.length ? rows[rows.length - 1].created_at : oldest.created_at
+      local = await olderMsgs<Message>(convId, floor, PAGE)
+    }
     const before = get().messages[convId]?.length ?? 0
     set((st) => ({
-      messages: { ...st.messages, [convId]: upsertMessages(st.messages[convId], rows.slice().reverse()) },
-      hasMore: { ...st.hasMore, [convId]: rows.length === PAGE },
+      messages: { ...st.messages, [convId]: upsertMessages(upsertMessages(st.messages[convId], rows.slice().reverse()), local, { authoritative: false }) },
+      hasMore: { ...st.hasMore, [convId]: rows.length === PAGE || local.length > 0 },
     }))
     return (get().messages[convId]?.length ?? 0) - before
   } catch (e) {
@@ -1504,6 +1533,7 @@ export function setActiveConv(convId: string | null): void {
     const s = get()
     if (s.conversations[convId]) markOpened(convId)
     if (!s.loaded[convId]) void fetchLatest(convId)
+    else void checkArchiveMore(convId)
     markRead(convId)
     dismissToastsFor(convId)
   }

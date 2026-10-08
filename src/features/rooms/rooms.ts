@@ -4,6 +4,7 @@ import { rpc } from '../../lib/api'
 import { getToken, onRoomEvent } from '../../lib/engine'
 import { canPush, channel, removeChannel } from '../../lib/realtime'
 import { useStore } from '../../lib/store'
+import { archiveRoomMsgs, olderRoomMsgs } from '../../lib/archive'
 import type { Profile } from '../../lib/types'
 
 export type RoomMsg = {
@@ -45,6 +46,12 @@ export const useRooms = create<S>(() => ({ rooms: {}, loaded: false, msgs: {}, m
 const get = useRooms.getState
 const set = useRooms.setState
 
+// keep a copy of everything on this device: the server drops room messages after 24h
+useRooms.subscribe((s, p) => {
+  if (s.msgs === p.msgs) return
+  for (const id in s.msgs) if (s.msgs[id] !== p.msgs[id]) archiveRoomMsgs(s.msgs[id] as never)
+})
+
 const tok = () => getToken() ?? ''
 const me = () => useStore.getState().me
 
@@ -65,7 +72,7 @@ function learn(list: (Profile | null | undefined)[]) {
 function putRoom(r: Room) {
   if (!r?.id) return
   const active = get().active === r.id
-  set((s) => ({ rooms: { ...s.rooms, [r.id]: { ...r, unread: active ? 0 : r.unread } } }))
+  set((s) => ({ rooms: { ...s.rooms, [r.id]: { ...r, unread: active ? 0 : r.unread, last_message: r.last_message ?? s.rooms[r.id]?.last_message ?? null } } }))
   if (r.last_message) learn([r.last_message.sender])
 }
 
@@ -76,7 +83,8 @@ export async function loadRooms(): Promise<void> {
     const list = await rpc<Room[]>('gat_rooms', { p_token: tok() })
     const rooms: Record<string, Room> = {}
     const act = get().active
-    for (const r of list) rooms[r.id] = r.id === act ? { ...r, unread: 0 } : r
+    const prev = get().rooms
+    for (const r of list) rooms[r.id] = { ...r, unread: r.id === act ? 0 : r.unread, last_message: r.last_message ?? prev[r.id]?.last_message ?? null }
     set({ rooms, loaded: true })
     learn(list.map((r) => r.last_message?.sender))
   } catch {
@@ -103,8 +111,14 @@ function mergeMsgs(a: RoomMsg[], b: RoomMsg[]): RoomMsg[] {
 
 async function history(id: string, before?: string) {
   const list = await rpc<RoomMsg[]>('gat_room_history', { p_token: tok(), p_room: id, p_before: before ?? null, p_limit: 50 })
-  learn(list.map((m) => m.sender))
-  set((s) => ({ msgs: { ...s.msgs, [id]: mergeMsgs(s.msgs[id] ?? [], list) }, more: { ...s.more, [id]: list.length >= 50 } }))
+  // past the server's 24h window, fall back to this device's copy
+  let local: RoomMsg[] = []
+  if (list.length < 50) {
+    const floor = list[0]?.created_at ?? before ?? get().msgs[id]?.find((m) => !m.state)?.created_at ?? null
+    local = await olderRoomMsgs<RoomMsg>(id, floor, 50)
+  }
+  learn([...list, ...local].map((m) => m.sender))
+  set((s) => ({ msgs: { ...s.msgs, [id]: mergeMsgs(local, mergeMsgs(s.msgs[id] ?? [], list)) }, more: { ...s.more, [id]: list.length >= 50 || local.length > 0 } }))
 }
 
 export async function loadOlderRoom(id: string): Promise<void> {
@@ -153,7 +167,10 @@ export function enterRoom(room: Room): () => void {
   const id = room.id
   set({ active: id })
   markRead(id)
-  void history(id).catch(() => {})
+  void olderRoomMsgs<RoomMsg>(id, null, 50).then((local) => {
+    if (local.length) set((s) => ({ msgs: { ...s.msgs, [id]: mergeMsgs(local, s.msgs[id] ?? []) } }))
+    return history(id)
+  }).catch(() => {})
   const self = me()
   const ch = channel(`gat:r:${room.topic}`, { presence: { key: self?.id ?? '' } })
   ch.on('broadcast', { event: 'rmsg' }, (e) => onIncoming(id, ((e as { payload?: RoomMsg }).payload ?? e) as RoomMsg))

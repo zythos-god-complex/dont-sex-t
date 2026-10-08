@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { fmtDur, type VoiceNote } from './voice'
+import { useMediaSrc } from '../../lib/useMediaSrc'
 
 let current: HTMLAudioElement | null = null
 const SPEEDS = [1, 1.5, 2]
@@ -12,6 +13,7 @@ export function VoiceBubble({ note }: { note: VoiceNote }) {
   const [speed, setSpeed] = useState(1)
   const raf = useRef(0)
   const dur = note.dur || 1
+  const src = useMediaSrc(note.url)
 
   useEffect(
     () => () => {
@@ -32,7 +34,7 @@ export function VoiceBubble({ note }: { note: VoiceNote }) {
     e.stopPropagation()
     let a = audio.current
     if (!a) {
-      a = new Audio(note.url)
+      a = new Audio(src)
       a.preload = 'auto'
       a.onended = () => {
         setPlaying(false)

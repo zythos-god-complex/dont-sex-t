@@ -3,9 +3,11 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import type { ImageMsg } from './image'
 import { IconClose } from '../../ui/icons'
+import { useMediaSrc } from '../../lib/useMediaSrc'
 
 export function ImageBubble({ img, open, onClose }: { img: ImageMsg; open: boolean; onClose: () => void }) {
   const [loaded, setLoaded] = useState(false)
+  const src = useMediaSrc(img.url)
   const ratio = img.w && img.h ? img.w / img.h : 1
   // portrait shots stay narrow, panoramas stay short
   const width = Math.round(Math.min(250, Math.max(150, 250 * Math.min(1, ratio * 1.15))))
@@ -21,7 +23,7 @@ export function ImageBubble({ img, open, onClose }: { img: ImageMsg; open: boole
   return (
     <>
       <span className={'img-b' + (loaded ? ' is-loaded' : '')} style={{ width, height }}>
-        <img src={img.url} alt="" draggable={false} loading="lazy" decoding="async" onLoad={() => setLoaded(true)} />
+        <img src={src} alt="" draggable={false} loading="lazy" decoding="async" onLoad={() => setLoaded(true)} />
       </span>
       {createPortal(
         <AnimatePresence>
@@ -34,7 +36,7 @@ export function ImageBubble({ img, open, onClose }: { img: ImageMsg; open: boole
               onClick={onClose}
             >
               <motion.img
-                src={img.url}
+                src={src}
                 alt=""
                 initial={{ scale: 0.7, y: 30 }}
                 animate={{ scale: 1, y: 0 }}
