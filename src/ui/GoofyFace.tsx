@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { BLOBS, FACE_INK, TONGUE, applyAvatar, faceTraits, type AvatarConfig, type FaceTraits, type MouthKind } from './face'
-import { useAvatarFor } from './avatars'
+import { useAvatarFor, useHornsFor } from './avatars'
 
 export type FaceMood = 'neutral' | 'happy' | 'shocked' | 'sleepy' | 'talking' | 'wink'
 export type Look = { x: number; y: number }
@@ -14,6 +14,8 @@ type Props = {
   mood?: FaceMood
   presence?: 'online' | 'away' | null
   blink?: boolean
+  /** devil horns (nsfw); undefined = look up the user's setting */
+  horns?: boolean
   className?: string
   style?: CSSProperties
 }
@@ -111,7 +113,7 @@ function Mouth({ kind, t, scale = 1 }: { kind: MouthKind; t: FaceTraits; scale?:
   }
 }
 
-function FaceSvg({ t, look, mood, blink }: { t: FaceTraits; look: Look; mood: FaceMood; blink: boolean }) {
+function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; mood: FaceMood; blink: boolean; horns?: boolean }) {
   const geo = BLOBS[t.blob]
   const dx = t.dx
   let eyes: string = t.eyes
@@ -220,6 +222,12 @@ function FaceSvg({ t, look, mood, blink }: { t: FaceTraits; look: Look; mood: Fa
   return (
     <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true" style={{ overflow: 'visible' }}>
       <g transform={`rotate(${t.blobRot} 50 55)`}>
+        {horns && (
+          <g fill="#E5383B" stroke={FACE_INK} strokeWidth={2.6} strokeLinejoin="round">
+            <path d={`M${top[0] - 24} ${top[1] + 12} Q${top[0] - 34} ${top[1] - 6} ${top[0] - 26} ${top[1] - 16} Q${top[0] - 22} ${top[1] - 2} ${top[0] - 10} ${top[1] + 6} Z`} />
+            <path d={`M${top[0] + 24} ${top[1] + 12} Q${top[0] + 34} ${top[1] - 6} ${top[0] + 26} ${top[1] - 16} Q${top[0] + 22} ${top[1] - 2} ${top[0] + 10} ${top[1] + 6} Z`} />
+          </g>
+        )}
         {t.antenna && (
           <g>
             <path d={`M${top[0]} ${top[1] + 4} Q${top[0] + 4} ${top[1] - 6} ${top[0] + 1} ${top[1] - 11}`} stroke={FACE_INK} strokeWidth={2.4} fill="none" strokeLinecap="round" />
@@ -271,15 +279,17 @@ function FaceSvg({ t, look, mood, blink }: { t: FaceTraits; look: Look; mood: Fa
 
 const ZERO: Look = { x: 0, y: 0 }
 
-function GoofyFaceImpl({ name, avatar, size = 40, look, mood = 'neutral', presence = null, blink = true, className, style }: Props) {
+function GoofyFaceImpl({ name, avatar, horns, size = 40, look, mood = 'neutral', presence = null, blink = true, className, style }: Props) {
   const custom = useAvatarFor(avatar === undefined ? name : null)
+  const hornsReg = useHornsFor(name)
+  const showHorns = horns ?? hornsReg
   const t = applyAvatar(faceTraits(name), avatar !== undefined ? avatar : custom)
   const reduce = usePrefersReducedMotion()
   const effMood = mood === 'wink' ? 'neutral' : mood
   const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : t
   return (
     <span className={'gf ' + (className ?? '')} style={{ width: size, height: size, ...style }}>
-      <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} />
+      <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} />
       {presence && <span className={'gf-dot ' + (presence === 'away' ? 'is-away' : 'is-online')} style={{ '--s': `${Math.max(9, Math.round(size * 0.26))}px` } as CSSProperties} />}
     </span>
   )

@@ -16,7 +16,7 @@ function load(): Map {
   }
 }
 
-export const useAvatars = create<{ map: Map }>(() => ({ map: load() }))
+export const useAvatars = create<{ map: Map; horns: Record<string, boolean> }>(() => ({ map: load(), horns: {} }))
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 function save() {
@@ -51,6 +51,20 @@ function collect() {
     useAvatars.setState({ map: next })
     save()
   }
+  const curH = useAvatars.getState().horns
+  let nextH: Record<string, boolean> | null = null
+  const horn = (name: string | undefined, v: boolean | undefined) => {
+    if (!name || v === undefined) return
+    const k = name.toLowerCase()
+    if (!!curH[k] === v && k in curH) return
+    nextH ??= { ...curH }
+    nextH[k] = v
+  }
+  if (s.me) horn(s.me.username, s.me.nsfw === true)
+  for (const id in s.online) horn(s.online[id].username, s.online[id].nsfw)
+  for (const id in s.conversations) horn(s.conversations[id].peer.username, s.conversations[id].peer.nsfw)
+  for (const id in s.profiles) horn(s.profiles[id].username, s.profiles[id].nsfw)
+  if (nextH) useAvatars.setState({ horns: nextH })
 }
 
 useStore.subscribe((s, p) => {
@@ -60,4 +74,8 @@ collect()
 
 export function useAvatarFor(name: string | null | undefined): AvatarConfig | null | undefined {
   return useAvatars((s) => (name ? s.map[name.toLowerCase()] : undefined))
+}
+
+export function useHornsFor(name: string | null | undefined): boolean {
+  return useAvatars((s) => (name ? !!s.horns[name.toLowerCase()] : false))
 }

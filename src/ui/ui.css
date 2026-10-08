@@ -498,3 +498,4 @@
 .aka-name small { color: var(--muted); font-size: 11px; }
 .block-btn { width: 100%; margin-top: 18px; height: 50px; border-radius: 18px; font: 700 16px/1 var(--font-display); color: var(--danger); background: color-mix(in srgb, var(--danger) 9%, transparent); }
 .block-btn.is-on { color: var(--ink); background: var(--bg-2); }
+.nsfw-sub { display: block; margin-top: 4px; font: 600 12px/1 var(--font-display); color: var(--muted); }

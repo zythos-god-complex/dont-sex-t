@@ -179,7 +179,7 @@ export function sortConversations(list: Conversation[]): Conversation[] {
 }
 
 function sameProfile(a: Profile, b: Profile): boolean {
-  return a.id === b.id && a.username === b.username && a.gender === b.gender && a.last_seen_at === b.last_seen_at && a.show_status === b.show_status && a.show_seen === b.show_seen && JSON.stringify(a.avatar ?? null) === JSON.stringify(b.avatar ?? null)
+  return a.id === b.id && a.username === b.username && a.gender === b.gender && a.last_seen_at === b.last_seen_at && a.show_status === b.show_status && a.show_seen === b.show_seen && a.nsfw === b.nsfw && JSON.stringify(a.avatar ?? null) === JSON.stringify(b.avatar ?? null)
 }
 
 function sameConversation(a: Conversation, b: Conversation): boolean {
@@ -255,8 +255,9 @@ export function presenceToOnline(
       const away = raw.away === true
       const avatar = isAvatar(raw.avatar) ? raw.avatar : null
       const show_status = raw.show_status !== false
+      const nsfw = raw.nsfw === true
       const cur = acc[id]
-      if (!cur) acc[id] = { id, username, gender, since, away, avatar, show_status }
+      if (!cur) acc[id] = { id, username, gender, since, away, avatar, show_status, nsfw }
       else {
         cur.away = cur.away && away // away only when every tab is away
         if (ts(since) < ts(cur.since)) cur.since = since
@@ -274,7 +275,7 @@ export function presenceToOnline(
       if (p.avatar !== undefined) n.avatar = isAvatar(p.avatar) ? p.avatar : n.avatar
     }
     const o = prev[id]
-    if (o && o.username === n.username && o.gender === n.gender && o.since === n.since && o.away === n.away && JSON.stringify(o.avatar ?? null) === JSON.stringify(n.avatar ?? null) && o.show_status === n.show_status) out[id] = o
+    if (o && o.username === n.username && o.gender === n.gender && o.since === n.since && o.away === n.away && JSON.stringify(o.avatar ?? null) === JSON.stringify(n.avatar ?? null) && o.show_status === n.show_status && o.nsfw === n.nsfw) out[id] = o
     else {
       out[id] = n
       changed = true

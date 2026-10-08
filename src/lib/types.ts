@@ -3,7 +3,7 @@ import type { AvatarConfig } from '../ui/face'
 
 export type Gender = 'm' | 'f'
 
-export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean }
+export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean; nsfw?: boolean }
 
 export type Me = Profile & { inbox: string }
 
@@ -84,6 +84,7 @@ export type OnlineUser = {
   away: boolean // true only when every tab of theirs is hidden
   avatar?: AvatarConfig | null // custom face, when they built one
   show_status?: boolean
+  nsfw?: boolean
 }
 
 /** In-app banner for a message that arrived in a conversation that is not open+visible. */

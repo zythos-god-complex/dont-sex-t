@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMe } from '../../lib/hooks'
-import { renameMe, saveAvatar, savePrivacy } from '../../lib/engine'
+import { renameMe, saveAvatar, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle } from '../../ui/kit'
@@ -94,6 +94,13 @@ function MeBody({ onClose }: { onClose: () => void }) {
         </div>
       )}
       {err && <p className="ob-error">{err}</p>}
+      <h3 className="settings-label">vibe</h3>
+      <div className="settings-row">
+        <span className="grow">
+          nsfw <small className="nsfw-sub">foul language ok</small>
+        </span>
+        <Toggle label="nsfw" on={me.nsfw === true} onChange={(v) => void saveNsfw(v)} />
+      </div>
       <h3 className="settings-label">privacy</h3>
       <div className="settings-row">
         <span className="grow">show active status</span>

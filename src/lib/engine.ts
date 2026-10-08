@@ -305,7 +305,7 @@ function myMeta() {
   const me = get().me
   if (!me) return null
   if (!lobbySince) lobbySince = new Date().toISOString()
-  return { id: me.id, username: me.username, gender: me.gender, since: lobbySince, away: !visible, avatar: me.avatar ?? null, show_status: me.show_status !== false }
+  return { id: me.id, username: me.username, gender: me.gender, since: lobbySince, away: !visible, avatar: me.avatar ?? null, show_status: me.show_status !== false, nsfw: me.nsfw === true }
 }
 
 function trackMe() {
@@ -1598,4 +1598,12 @@ export async function setBlocked(peerId: string, on: boolean): Promise<void> {
   useBlocks.setState({ blocked: on ? [...new Set([...b.blocked, peerId])] : b.blocked.filter((x) => x !== peerId) })
   await api.block(token, peerId, on)
   void refreshBlocks()
+}
+
+export async function saveNsfw(on: boolean): Promise<void> {
+  if (!token) return
+  const me = get().me
+  if (me) set({ me: { ...me, nsfw: on } })
+  trackMe()
+  updateMe(await api.setNsfw(token, on))
 }
