@@ -16,6 +16,7 @@ export type Message = {
   kind: MessageKind
   body: string
   created_at: string
+  reactions?: Record<string, string> // user id -> emoji
 }
 
 export type Conversation = {

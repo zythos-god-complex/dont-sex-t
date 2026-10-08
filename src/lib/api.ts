@@ -102,6 +102,7 @@ export const api = {
 
   setAvatar: (token: string, avatar: AvatarConfig | null) => rpc<Me>('gat_set_avatar', { p_token: token, p_avatar: avatar }),
   setNsfw: (token: string, on: boolean) => rpc<Me>('gat_set_nsfw', { p_token: token, p_on: on }),
+  react: (token: string, message: string, emoji: string | null) => rpc<unknown>('gat_react', { p_token: token, p_message: message, p_emoji: emoji }),
   joinTemp: (gender: Gender) => rpc<{ token: string; me: Me }>('gat_join_temp', { p_gender: gender }),
   rename: (token: string, username: string) => rpc<Me>('gat_rename', { p_token: token, p_username: username }),
   settings: (token: string, showStatus: boolean | null, showSeen: boolean | null) =>

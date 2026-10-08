@@ -85,7 +85,8 @@ export function sameMessage(a: Message, b: Message): boolean {
     a.kind === b.kind &&
     a.sender_id === b.sender_id &&
     a.conversation_id === b.conversation_id &&
-    ts(a.created_at) === ts(b.created_at)
+    ts(a.created_at) === ts(b.created_at) &&
+    JSON.stringify(a.reactions ?? {}) === JSON.stringify(b.reactions ?? {})
   )
 }
 

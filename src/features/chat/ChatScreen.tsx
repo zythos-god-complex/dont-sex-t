@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
@@ -14,7 +15,7 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { loadOlder, nameHistory, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping } from '../../lib/engine'
+import { loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
@@ -226,7 +227,7 @@ function MessageList({ conv, now, sinceOnline, online }: { conv: Conversation; n
     const joinNext = !!next && sameGroup(m, next) && !needsSeparator(m, next)
     items.push(
       <Fragment key={m.id}>
-        <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} />
+        <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} meId={me?.id ?? null} />
         {isMine && mine?.id === m.id && <MineStatus state={mine.state === 'seen' && me?.show_seen === false ? 'sent' : mine.state} id={m.id} />}
       </Fragment>,
     )
@@ -280,29 +281,147 @@ function MineStatus({ state, id }: { state: 'sending' | 'failed' | 'sent' | 'see
   )
 }
 
-function Bubble({ m, mine, joinPrev, joinNext, peerName }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string }) {
+const REACTIONS = ['❤️', '😂', '💀', '😮', '😢', '😡', '👍']
+
+function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null }) {
   const emoji = emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
   const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : ''].join(' ')
+  const [picker, setPicker] = useState(false)
+  const [burst, setBurst] = useState(0)
+  const press = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
+  const lastTap = useRef(0)
+  const reactions = m.reactions ?? {}
+  const mineR = meId ? reactions[meId] : undefined
+  const counts = new Map<string, number>()
+  for (const e of Object.values(reactions)) counts.set(e, (counts.get(e) ?? 0) + 1)
+  const chips = [...counts.entries()]
+
+  const open = () => {
+    navigator.vibrate?.(12)
+    setPicker(true)
+  }
+  const onDown = (e: React.PointerEvent) => {
+    press.current = { t: setTimeout(open, 380), x: e.clientX, y: e.clientY }
+  }
+  const cancel = () => {
+    if (press.current) clearTimeout(press.current.t)
+    press.current = null
+  }
+  const onMove = (e: React.PointerEvent) => {
+    const p = press.current
+    if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 8) cancel()
+  }
+  const onUp = () => {
+    cancel()
+    const now = Date.now()
+    if (now - lastTap.current < 280) {
+      lastTap.current = 0
+      if (mineR !== '❤️') setBurst((b) => b + 1)
+      react(m.conversation_id, m.id, '❤️')
+    } else lastTap.current = now
+  }
+  const pick = (e: string) => {
+    setPicker(false)
+    if (e !== mineR) setBurst((b) => b + 1)
+    react(m.conversation_id, m.id, e)
+  }
+
   return (
     <motion.div
-      className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '')}
+      className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '') + (chips.length ? ' has-reacts' : '')}
       initial={{ opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 }}
       animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
       transition={spring}
     >
       {!mine && <span className="b-face">{!joinNext && <GoofyFace name={peerName} size={28} blink={false} />}</span>}
-      <div className={cls}>
-        {linkify(m.body).map((p, i) =>
-          p.href ? (
-            <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
-              {p.text}
-            </a>
-          ) : (
-            <Fragment key={i}>{p.text}</Fragment>
-          ),
-        )}
+      <div className="b-wrap">
+        <motion.div
+          className={cls}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={cancel}
+          onPointerLeave={cancel}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            open()
+          }}
+          animate={picker ? { scale: 1.04 } : { scale: 1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+        >
+          {linkify(m.body).map((p, i) =>
+            p.href ? (
+              <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
+                {p.text}
+              </a>
+            ) : (
+              <Fragment key={i}>{p.text}</Fragment>
+            ),
+          )}
+        </motion.div>
+        <AnimatePresence>
+          {burst > 0 && (
+            <motion.span
+              key={burst}
+              className="r-burst"
+              initial={{ scale: 0.2, opacity: 0, y: 0 }}
+              animate={{ scale: [0.2, 1.5, 1.2], opacity: [0, 1, 0], y: -34, rotate: [0, -12, 8] }}
+              transition={{ duration: 0.75, ease: 'easeOut' }}
+              onAnimationComplete={() => setBurst(0)}
+            >
+              {mineR ?? '❤️'}
+            </motion.span>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {chips.length > 0 && (
+            <motion.button
+              type="button"
+              className="b-reacts"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 600, damping: 18 }}
+              onClick={() => setPicker(true)}
+            >
+              {chips.map(([e, n]) => (
+                <motion.span key={e} layout initial={{ scale: 0 }} animate={{ scale: 1 }} className={e === mineR ? 'is-mine' : ''}>
+                  {e}
+                  {n > 1 && <small>{n}</small>}
+                </motion.span>
+              ))}
+            </motion.button>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {picker && (
+            <motion.div
+              className="r-picker"
+              initial={{ opacity: 0, scale: 0.6, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.7, y: 8, transition: { duration: 0.15 } }}
+              transition={{ type: 'spring', stiffness: 520, damping: 26 }}
+            >
+              {REACTIONS.map((e, i) => (
+                <motion.button
+                  key={e}
+                  type="button"
+                  className={'r-opt' + (e === mineR ? ' is-on' : '')}
+                  initial={{ scale: 0, y: 10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  transition={{ delay: 0.03 * i, type: 'spring', stiffness: 700, damping: 16 }}
+                  whileTap={{ scale: 1.5 }}
+                  onClick={() => pick(e)}
+                >
+                  {e}
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+      {picker && createPortal(<div className="r-backdrop" onPointerDown={() => setPicker(false)} />, document.body)}
     </motion.div>
   )
 }

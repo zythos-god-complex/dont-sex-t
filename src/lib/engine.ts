@@ -429,6 +429,10 @@ function ensureInbox(me: Me) {
   let joinedOnce = false
   ch.on('broadcast', { event: 'msg' }, (e) => onDbMsg(unwrap(e)))
   ch.on('broadcast', { event: 'conv' }, (e) => onConvEvent(unwrap(e)))
+  ch.on('broadcast', { event: 'react' }, (e) => {
+    const p = unwrap(e) as unknown as { message_id: string; conversation_id: string; user_id: string; emoji: string | null }
+    if (p?.message_id) applyReaction(p.conversation_id, p.message_id, p.user_id, p.emoji)
+  })
   ch.on('broadcast', { event: 'read' }, (e) => onReadEvent(unwrap(e)))
   ch.on('broadcast', { event: 'theme' }, (e) => onThemeEvent(unwrap(e)))
   ch.subscribe((status) => {
@@ -1606,4 +1610,30 @@ export async function saveNsfw(on: boolean): Promise<void> {
   if (me) set({ me: { ...me, nsfw: on } })
   trackMe()
   updateMe(await api.setNsfw(token, on))
+}
+
+function applyReaction(convId: string, msgId: string, userId: string, emoji: string | null): void {
+  const s = get()
+  const list = s.messages[convId]
+  if (!list) return
+  let hit = false
+  const next = list.map((m) => {
+    if (m.id !== msgId) return m
+    hit = true
+    const r = { ...(m.reactions ?? {}) }
+    if (emoji) r[userId] = emoji
+    else delete r[userId]
+    return { ...m, reactions: r }
+  })
+  if (hit) set({ messages: { ...s.messages, [convId]: next } })
+}
+
+/** React to a message (same emoji again, or null, removes it). Optimistic. */
+export function react(convId: string, msgId: string, emoji: string | null): void {
+  const me = get().me
+  if (!token || !me) return
+  const cur = get().messages[convId]?.find((m) => m.id === msgId)?.reactions?.[me.id] ?? null
+  const next = emoji && emoji !== cur ? emoji : null
+  applyReaction(convId, msgId, me.id, next)
+  api.react(token, msgId, next).catch(() => applyReaction(convId, msgId, me.id, cur))
 }

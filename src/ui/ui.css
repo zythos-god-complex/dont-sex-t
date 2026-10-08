@@ -524,3 +524,29 @@
 @keyframes breatheback { 0% { transform: scale(1); } 45% { transform: scale(.955) translateY(6px); } 100% { transform: scale(1); } }
 @keyframes jelly { 0% { transform: scale(1); } 30% { transform: scale(.95, 1.05); } 60% { transform: scale(1.03, .97); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .theme-bump .b-row, .theme-bump .msgs-wrap, .theme-bump .composer-wrap { animation: none; } }
+
+/* reactions */
+.b-wrap { position: relative; display: flex; flex-direction: column; max-width: min(75%, 520px); }
+.b-row.mine .b-wrap { align-items: flex-end; }
+.b-row.theirs .b-wrap { align-items: flex-start; }
+.b-wrap .b { max-width: 100%; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+.b-row.has-reacts { margin-bottom: 18px; }
+.b-reacts {
+  position: absolute; bottom: -16px; display: inline-flex; gap: 2px; padding: 3px 7px; border-radius: 999px; z-index: 2;
+  background: var(--theme-composer); box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-ink) 6%, transparent), 0 4px 10px -4px rgba(0,0,0,.3);
+  font-size: 14px; line-height: 1;
+}
+.b-row.mine .b-reacts { right: 10px; }
+.b-row.theirs .b-reacts { left: 10px; }
+.b-reacts small { font: 700 11px/1 var(--font-display); color: var(--theme-composer-ink); margin-left: 1px; }
+.r-picker {
+  position: absolute; bottom: calc(100% + 10px); z-index: 41; display: flex; gap: 2px; padding: 6px 8px; border-radius: 999px;
+  background: var(--surface); box-shadow: 0 14px 40px -12px rgba(0,0,0,.45), 0 0 0 1px var(--line);
+}
+.b-row.mine .r-picker { right: 0; transform-origin: 90% 100%; }
+.b-row.theirs .r-picker { left: 0; transform-origin: 10% 100%; }
+.r-opt { width: 40px; height: 40px; border-radius: 50%; font-size: 25px; display: grid; place-items: center; line-height: 1; }
+.r-opt.is-on { background: var(--bg-2); }
+.r-backdrop { position: fixed; inset: 0; z-index: 40; }
+.b-row:has(.r-picker) { position: relative; z-index: 41; }
+.r-burst { position: absolute; top: 20%; left: 50%; margin-left: -14px; font-size: 30px; pointer-events: none; z-index: 3; }
