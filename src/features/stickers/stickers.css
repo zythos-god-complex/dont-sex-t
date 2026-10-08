@@ -319,3 +319,108 @@
 .stk-locked { display: grid; place-items: center; }
 .stk-locked-in { width: 70%; height: 70%; border-radius: 28px; display: grid; place-items: center; font-size: 34px;
   background: repeating-linear-gradient(45deg, rgba(127,127,127,.18) 0 8px, rgba(127,127,127,.08) 8px 16px); backdrop-filter: blur(8px); }
+
+/* ============================================================ hate + lust packs */
+.stk-e { line-height: 1; font-size: calc(var(--stk-g, 26px) * 1); }
+
+/* nope: fast head shake, X stamps */
+.stk-nope .stk-body { animation: fx-headshake .5s ease-in-out infinite; }
+@keyframes fx-headshake { 0%, 100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-9%) rotate(-7deg); } 75% { transform: translateX(9%) rotate(7deg); } }
+.fx-x { left: calc(8% + var(--i) * 30%); top: calc(8% + (var(--i) - 1) * (var(--i) - 1) * 20%); opacity: 0; animation: fx-stamp-in 1.5s ease-out infinite; animation-delay: calc(var(--i) * .5s); }
+@keyframes fx-stamp-in { 0% { transform: scale(2.4) rotate(-20deg); opacity: 0; } 12% { transform: scale(.9) rotate(8deg); opacity: 1; } 20% { transform: scale(1) rotate(0); } 70% { opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+
+/* ew: recoil + green stink + sick */
+.stk-ew .stk-body { animation: fx-recoil 1.6s ease-in-out infinite; }
+@keyframes fx-recoil { 0%, 100% { transform: translateX(0) rotate(0) scale(1); } 30%, 60% { transform: translateX(-12%) rotate(-12deg) scale(.92, 1.04); } }
+.fx-ewglow { position: absolute; inset: 8%; border-radius: 50%; background: radial-gradient(circle, rgba(130,210,70,.5), transparent 65%); }
+.fx-stink { width: 9%; height: 30%; right: calc(4% + var(--i) * 9%); bottom: 30%; opacity: 0; animation: fx-stink 1.8s ease-out infinite; animation-delay: calc(var(--i) * .6s); }
+@keyframes fx-stink { 0% { transform: translateY(20%) scaleY(.5); opacity: 0; } 30% { opacity: .9; } 100% { transform: translateY(-60%) scaleY(1.1); opacity: 0; } }
+.fx-sick { right: 2%; top: 2%; animation: fx-bob 1.6s ease-in-out infinite; }
+@keyframes fx-bob { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-14%) rotate(8deg); } }
+
+/* talk to the hand: palm shoves at you */
+.stk-talkhand .stk-body { animation: fx-snub 2s ease-in-out infinite; }
+@keyframes fx-snub { 0%, 100% { transform: rotate(-8deg) translateX(-4%); } 50% { transform: rotate(-14deg) translateX(-8%); } }
+.fx-palm { width: 46%; height: 54%; right: 2%; top: 18%; transform-origin: 50% 80%; animation: fx-shove 1s cubic-bezier(.3,1.6,.5,1) infinite; }
+@keyframes fx-shove { 0%, 100% { transform: scale(.75) rotate(12deg); } 45% { transform: scale(1.15) rotate(-4deg); } 55% { transform: scale(1.08) rotate(0); } }
+
+/* trash: bin bouncing, flies buzzing */
+.stk-trash .stk-body { animation: stk-tilt 1.6s ease-in-out infinite; }
+.fx-bin { right: 0; bottom: 20%; font-size: calc(var(--stk-g, 26px) * 1.5); transform-origin: 50% 100%; animation: fx-binhop .8s ease-in-out infinite; }
+@keyframes fx-binhop { 0%, 100% { transform: translateY(0) scale(1.05, .95); } 50% { transform: translateY(-18%) scale(.95, 1.05) rotate(6deg); } }
+.fx-fly { right: 12%; bottom: 42%; font-size: calc(var(--stk-g, 26px) * .55); animation: fx-buzz-fly 1.2s linear infinite; animation-delay: calc(var(--i) * -.6s); }
+@keyframes fx-buzz-fly { 0% { transform: rotate(0) translateX(120%) rotate(0); } 100% { transform: rotate(360deg) translateX(120%) rotate(-360deg); } }
+
+/* clown: laughing bounce, red nose, orbiting clowns */
+.stk-clown .stk-body { animation: stk-lol .42s ease-in-out infinite; }
+.fx-nose { position: absolute; left: 50%; top: 52%; width: 15%; height: 15%; margin: -7.5% 0 0 -7.5%; border-radius: 50%; z-index: 3;
+  background: radial-gradient(circle at 35% 30%, #FF8A8A, #E5383B 55%, #A3161A); border: 2px solid #17131F; animation: fx-honk .42s ease-in-out infinite; }
+@keyframes fx-honk { 50% { transform: scale(1.25); } }
+.fx-orbit { left: 42%; top: 38%; animation: fx-orbit 2.4s linear infinite; animation-delay: calc(var(--i) * -.8s); }
+@keyframes fx-orbit { from { transform: rotate(0) translateY(-190%) rotate(0); } to { transform: rotate(360deg) translateY(-190%) rotate(-360deg); } }
+
+/* blocked: turned away, stamp slams */
+.stk-blocked .stk-body { animation: fx-turn 2.2s ease-in-out infinite; }
+@keyframes fx-turn { 0%, 100% { transform: rotate(6deg) translateX(3%); } 50% { transform: rotate(10deg) translateX(6%); } }
+.fx-stamp { left: 50%; top: 42%; font-size: calc(var(--stk-g, 26px) * 2.6); margin: -.5em 0 0 -.5em; animation: fx-slam 2.2s cubic-bezier(.2,.8,.3,1) infinite; }
+@keyframes fx-slam { 0%, 8% { transform: scale(3) rotate(-25deg); opacity: 0; } 20% { transform: scale(.85) rotate(-8deg); opacity: .95; } 26% { transform: scale(1) rotate(-12deg); } 80% { opacity: .95; } 100% { transform: scale(1) rotate(-12deg); opacity: 0; } }
+
+/* loser: L on the forehead, finger jabbing */
+.stk-loser .stk-body { animation: stk-tilt 1.4s ease-in-out infinite; }
+.fx-L { position: absolute; left: 50%; top: 2%; z-index: 3; font: 900 calc(var(--stk-g, 26px) * 1.1) / 1 var(--font-display); color: #B6E35A; -webkit-text-stroke: 2px #17131F;
+  translate: -50% 0; animation: fx-Lwob .7s ease-in-out infinite alternate; }
+@keyframes fx-Lwob { from { transform: rotate(-12deg) scale(1); } to { transform: rotate(10deg) scale(1.15); } }
+.fx-point { right: -2%; top: 40%; font-size: calc(var(--stk-g, 26px) * 1.2); animation: fx-jab .5s ease-in-out infinite; }
+@keyframes fx-jab { 0%, 100% { transform: translateX(0) rotate(-10deg); } 50% { transform: translateX(-24%) rotate(-4deg); } }
+
+/* u up?: night bubble, buzzing phone */
+.stk-uup .stk-body { animation: stk-breathe 2.6s ease-in-out infinite; }
+.fx-night { position: absolute; inset: 4%; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #3B2D7A, #160F35 70%); }
+.fx-night b { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #fff; left: calc(14% + var(--i) * 21%); top: calc(12% + (var(--i) % 2) * 14%); animation: twinkle 1.6s ease-in-out infinite; animation-delay: calc(var(--i) * .4s); }
+.fx-moon { left: 4%; top: 2%; animation: fx-bob 3s ease-in-out infinite; }
+.fx-buzz { right: 0; bottom: 22%; font-size: calc(var(--stk-g, 26px) * 1.15); animation: fx-vibrate .12s linear infinite; filter: drop-shadow(0 0 6px rgba(140,180,255,.9)); }
+@keyframes fx-vibrate { 0%, 100% { transform: rotate(-8deg) translateX(0); } 50% { transform: rotate(8deg) translateX(4%); } }
+
+/* kiss me: pucker lean + lipstick stamps */
+.stk-kissme .stk-body { animation: stk-pucker 1.6s ease-in-out infinite; }
+.fx-smooch { left: calc(4% + var(--i) * 22%); top: calc(4% + (var(--i) % 2) * 50%); font-size: calc(var(--stk-g, 26px) * .95); opacity: 0; animation: fx-stamp-in 2s ease-out infinite; animation-delay: calc(var(--i) * .5s); }
+
+/* thirsty: panting, sweat flying */
+.stk-thirsty .stk-body { animation: fx-pant .35s ease-in-out infinite; }
+@keyframes fx-pant { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.04, .96) translateY(2%); } }
+.fx-splash { left: 42%; top: 28%; font-size: calc(var(--stk-g, 26px) * 1.05); opacity: 0; animation: fx-splash 1.2s ease-out infinite; animation-delay: calc(var(--i) * .3s); }
+@keyframes fx-splash {
+  0% { transform: rotate(calc(var(--i) * 90deg - 135deg)) translateY(0) scale(.4); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: rotate(calc(var(--i) * 90deg - 135deg)) translateY(-230%) scale(1); opacity: 0; }
+}
+
+/* spicy: sweating hot, chilis orbit, steam */
+.stk-spicy .stk-body { animation: stk-shake .24s linear infinite; }
+
+/* peach: wink sway, jiggling peach */
+.stk-peach .stk-body { animation: stk-sway 2s ease-in-out infinite; }
+.fx-jiggle { right: -2%; bottom: 18%; font-size: calc(var(--stk-g, 26px) * 1.6); transform-origin: 50% 100%; animation: fx-jiggle .9s ease-in-out infinite; }
+@keyframes fx-jiggle { 0%, 100% { transform: scale(1, 1); } 20% { transform: scale(1.12, .88); } 40% { transform: scale(.92, 1.08); } 60% { transform: scale(1.05, .95); } 80% { transform: scale(.98, 1.02); } }
+.fx-twinkle { right: calc(4% + var(--i) * 12%); top: calc(6% + var(--i) * 10%); font-size: calc(var(--stk-g, 26px) * .6); animation: fx-tw 1.2s ease-in-out infinite; animation-delay: calc(var(--i) * .4s); }
+@keyframes fx-tw { 0%, 100% { transform: scale(.3) rotate(0); opacity: 0; } 50% { transform: scale(1.1) rotate(30deg); opacity: 1; } }
+
+/* down bad: heart eyes, drool, floating hearts */
+.stk-downbad .stk-body { animation: stk-sway 1.8s ease-in-out infinite; }
+.fx-heye { position: absolute; top: 33%; width: 26%; height: 26%; z-index: 3; animation: stk-beat .8s ease-in-out infinite; }
+.fx-heye.l { left: 18%; }
+.fx-heye.r { right: 18%; }
+.fx-drool { position: absolute; left: 56%; top: 68%; width: 8%; height: 14%; z-index: 3; transform-origin: 50% 0; animation: fx-drool 1.8s ease-in infinite; }
+@keyframes fx-drool { 0% { transform: scaleY(.3); opacity: 0; } 20% { opacity: 1; } 70% { transform: scaleY(1.6) translateY(10%); opacity: 1; } 100% { transform: scaleY(1.6) translateY(80%); opacity: 0; } }
+
+/* naughty: horns, wagging tail, purple glow, imp */
+.stk-naughty .stk-body { animation: stk-sway 2.2s ease-in-out infinite; }
+.fx-devilglow { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(170,40,220,.55), rgba(229,56,59,.25) 45%, transparent 68%); animation: stk-heat 1.8s ease-in-out infinite; }
+.fx-tail { width: 40%; height: 40%; right: 0; bottom: 14%; transform-origin: 10% 90%; animation: fx-wag .6s ease-in-out infinite alternate; }
+@keyframes fx-wag { from { transform: rotate(-14deg); } to { transform: rotate(16deg); } }
+.fx-imp { left: 0; top: 4%; animation: fx-bob 1.4s ease-in-out infinite; }
+
+/* tray tabs with 4 sections */
+.stk-tray-tabs .seg { width: 100%; }
+
+.fx-lovefloat { width: 20%; height: 20%; left: 56%; top: 34%; opacity: 0; animation: stk-float 1.8s ease-out infinite; animation-delay: calc(var(--i) * .6s); }

@@ -1,4 +1,4 @@
-import { memo, type CSSProperties } from 'react'
+import { memo, type CSSProperties, type ReactNode } from 'react'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { useAvatarFor } from '../../ui/avatars'
 import { applyAvatar, faceTraits } from '../../ui/face'
@@ -30,11 +30,127 @@ const Cloud = () => (
   </svg>
 )
 
+const E = ({ c, cls, i, style }: { c: string; cls: string; i?: number; style?: CSSProperties }) => (
+  <i className={'stk-e ' + cls} style={{ '--i': i ?? 0, ...style } as CSSProperties}>
+    {c}
+  </i>
+)
+const many = (n: number, f: (i: number) => ReactNode) => Array.from({ length: n }, (_, i) => f(i))
+
+/** Pack stickers (hate / lust): pieces behind the face, on the face, and in front. */
+function packFx(kind: StickerKind, color: string): { back?: ReactNode; body?: ReactNode; front?: ReactNode } {
+  switch (kind) {
+    case 'nope':
+      return { front: many(3, (i) => <E key={i} c="❌" cls="fx-x" i={i} />) }
+    case 'ew':
+      return {
+        back: <span className="fx-ewglow" />,
+        front: (
+          <>
+            {many(3, (i) => (
+              <i key={i} className="fx-stink" style={{ '--i': i } as CSSProperties}>
+                <svg viewBox="0 0 12 40" width="100%" height="100%">
+                  <path d="M6 38 C1 31 11 25 6 19 C1 13 11 7 6 1" fill="none" stroke="#6BBF3A" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              </i>
+            ))}
+            <E c="🤢" cls="fx-sick" />
+          </>
+        ),
+      }
+    case 'talkhand':
+      return {
+        front: (
+          <i className="fx-palm">
+            <Hand c={color} />
+          </i>
+        ),
+      }
+    case 'trash':
+      return { front: <>{<E c="🗑️" cls="fx-bin" />}{many(2, (i) => <E key={i} c="🪰" cls="fx-fly" i={i} />)}</> }
+    case 'clown':
+      return { body: <i className="fx-nose" />, front: many(3, (i) => <E key={i} c="🤡" cls="fx-orbit" i={i} />) }
+    case 'blocked':
+      return { front: <E c="🚫" cls="fx-stamp" /> }
+    case 'loser':
+      return { body: <i className="fx-L">L</i>, front: <E c="🫵" cls="fx-point" /> }
+    case 'uup':
+      return {
+        back: (
+          <span className="fx-night">
+            {many(4, (i) => <b key={i} style={{ '--i': i } as CSSProperties} />)}
+          </span>
+        ),
+        front: <>{<E c="🌙" cls="fx-moon" />}{<E c="📱" cls="fx-buzz" />}</>,
+      }
+    case 'kissme':
+      return { front: many(4, (i) => <E key={i} c="💋" cls="fx-smooch" i={i} />) }
+    case 'thirsty':
+      return { front: many(4, (i) => <E key={i} c="💦" cls="fx-splash" i={i} />) }
+    case 'spicy':
+      return {
+        back: <span className="stk-heat" />,
+        front: (
+          <>
+            {many(3, (i) => <E key={i} c="🌶️" cls="fx-orbit" i={i} />)}
+            <i className="stk-steam s0" />
+            <i className="stk-steam s1" />
+          </>
+        ),
+      }
+    case 'peach':
+      return { front: <>{<E c="🍑" cls="fx-jiggle" />}{many(3, (i) => <E key={i} c="✨" cls="fx-twinkle" i={i} />)}</> }
+    case 'downbad':
+      return {
+        body: (
+          <>
+            <i className="fx-heye l">
+              <Heart c="#FF2D55" />
+            </i>
+            <i className="fx-heye r">
+              <Heart c="#FF2D55" />
+            </i>
+            <i className="fx-drool">
+              <Drop />
+            </i>
+          </>
+        ),
+        front: many(3, (i) => (
+          <i key={i} className="fx-lovefloat" style={{ '--i': i } as CSSProperties}>
+            <Heart />
+          </i>
+        )),
+      }
+    case 'naughty':
+      return {
+        back: (
+          <>
+            <span className="fx-devilglow" />
+            <i className="fx-tail">
+              <svg viewBox="0 0 60 60" width="100%" height="100%">
+                <path d="M6 54 C30 50 18 26 38 20" fill="none" stroke="#17131F" strokeWidth="7" strokeLinecap="round" />
+                <path d="M6 54 C30 50 18 26 38 20" fill="none" stroke="#E5383B" strokeWidth="4" strokeLinecap="round" />
+                <path d="M34 12 L52 10 L44 28 Z" fill="#E5383B" stroke="#17131F" strokeWidth="2.4" strokeLinejoin="round" />
+              </svg>
+            </i>
+          </>
+        ),
+        front: <E c="😈" cls="fx-imp" />,
+      }
+    default:
+      return {}
+  }
+}
+
+const AWAY: Partial<Record<StickerKind, { x: number; y: number }>> = { talkhand: { x: -1, y: -0.2 }, blocked: { x: 1, y: -0.3 }, uup: { x: 0.6, y: 0.7 } }
+const HORNED: readonly StickerKind[] = ['lust', 'naughty']
+
 function StickerImpl({ kind, name, size = 132 }: { kind: StickerKind; name: string; size?: number }) {
   const meta = STICKERS.find((s) => s.id === kind) ?? STICKERS[0]
   const custom = useAvatarFor(name)
   const color = applyAvatar(faceTraits(name), custom).color
   const face = Math.round(size * 0.66)
+  const fx = packFx(kind, color)
   return (
     <span className={'stk stk-' + kind} style={{ width: size, height: size, '--c': color } as CSSProperties}>
       <span className="stk-fx stk-back">
@@ -65,6 +181,7 @@ function StickerImpl({ kind, name, size = 132 }: { kind: StickerKind; name: stri
         )}
         {kind === 'angry' && <span className="stk-rage" />}
         {kind === 'hate' && <span className="stk-hateburst" />}
+        {fx.back}
         {kind === 'lust' && (
           <>
             <span className="stk-heat" />
@@ -77,7 +194,8 @@ function StickerImpl({ kind, name, size = 132 }: { kind: StickerKind; name: stri
         )}
       </span>
       <span className="stk-body">
-        <GoofyFace name={name} size={face} mood={meta.mood} blink={kind !== 'gn' && kind !== 'sad' && kind !== 'hate'} horns={kind === 'lust' ? true : undefined} />
+        <GoofyFace name={name} size={face} mood={meta.mood} blink={kind !== 'gn' && kind !== 'sad' && kind !== 'hate'} horns={HORNED.includes(kind) ? true : undefined} look={AWAY[kind]} />
+        {fx.body}
         {(kind === 'hate' || kind === 'lust') && (
           <>
             <i className="stk-brow l" />
@@ -126,6 +244,7 @@ function StickerImpl({ kind, name, size = 132 }: { kind: StickerKind; name: stri
             </i>
           ))}
         {kind === 'dead' && <i className="stk-ghost">👻</i>}
+        {fx.front}
         {kind === 'hate' && (
           <>
             {['#', '@', '$', '%', '!', '&'].map((c, i) => (

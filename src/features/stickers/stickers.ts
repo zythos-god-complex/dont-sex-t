@@ -1,26 +1,47 @@
 import type { FaceMood } from '../../ui/GoofyFace'
 
-export type StickerKind = 'hey' | 'bye' | 'kiss' | 'love' | 'lol' | 'sad' | 'angry' | 'gn' | 'hype' | 'shy' | 'hugs' | 'dead' | 'hate' | 'lust'
+export type StickerKind =
+  | 'hey' | 'bye' | 'kiss' | 'love' | 'lol' | 'sad' | 'angry' | 'gn' | 'hype' | 'shy' | 'hugs' | 'dead'
+  | 'hate' | 'nope' | 'ew' | 'talkhand' | 'trash' | 'clown' | 'blocked' | 'loser'
+  | 'lust' | 'uup' | 'kissme' | 'thirsty' | 'spicy' | 'peach' | 'downbad' | 'naughty'
 
-export const STICKERS: { id: StickerKind; caption: string; mood: FaceMood }[] = [
-  { id: 'hey', caption: 'hey!', mood: 'happy' },
-  { id: 'kiss', caption: 'mwah', mood: 'wink' },
-  { id: 'love', caption: 'love ya', mood: 'happy' },
-  { id: 'lust', caption: 'come here', mood: 'wink' },
-  { id: 'hate', caption: 'i hate u', mood: 'shocked' },
-  { id: 'lol', caption: 'lmaooo', mood: 'happy' },
-  { id: 'hugs', caption: 'hugs', mood: 'happy' },
-  { id: 'shy', caption: 'hehe', mood: 'wink' },
-  { id: 'hype', caption: 'lets gooo', mood: 'happy' },
-  { id: 'sad', caption: 'sad', mood: 'sleepy' },
-  { id: 'angry', caption: 'grrr', mood: 'shocked' },
-  { id: 'dead', caption: 'im dead', mood: 'shocked' },
-  { id: 'gn', caption: 'gn', mood: 'sleepy' },
-  { id: 'bye', caption: 'bye bye', mood: 'happy' },
+export type StickerPack = 'me' | 'hate' | 'lust'
+
+export const STICKERS: { id: StickerKind; caption: string; mood: FaceMood; pack: StickerPack }[] = [
+  { id: 'hey', caption: 'hey!', mood: 'happy', pack: 'me' },
+  { id: 'kiss', caption: 'mwah', mood: 'wink', pack: 'me' },
+  { id: 'love', caption: 'love ya', mood: 'happy', pack: 'me' },
+  { id: 'lol', caption: 'lmaooo', mood: 'happy', pack: 'me' },
+  { id: 'hugs', caption: 'hugs', mood: 'happy', pack: 'me' },
+  { id: 'shy', caption: 'hehe', mood: 'wink', pack: 'me' },
+  { id: 'hype', caption: 'lets gooo', mood: 'happy', pack: 'me' },
+  { id: 'sad', caption: 'sad', mood: 'sleepy', pack: 'me' },
+  { id: 'angry', caption: 'grrr', mood: 'shocked', pack: 'me' },
+  { id: 'dead', caption: 'im dead', mood: 'shocked', pack: 'me' },
+  { id: 'gn', caption: 'gn', mood: 'sleepy', pack: 'me' },
+  { id: 'bye', caption: 'bye bye', mood: 'happy', pack: 'me' },
+
+  { id: 'hate', caption: 'i hate u', mood: 'shocked', pack: 'hate' },
+  { id: 'nope', caption: 'nope', mood: 'neutral', pack: 'hate' },
+  { id: 'ew', caption: 'ew', mood: 'shocked', pack: 'hate' },
+  { id: 'talkhand', caption: 'talk to the hand', mood: 'neutral', pack: 'hate' },
+  { id: 'trash', caption: 'ur trash', mood: 'wink', pack: 'hate' },
+  { id: 'clown', caption: 'clown', mood: 'happy', pack: 'hate' },
+  { id: 'blocked', caption: 'blocked', mood: 'neutral', pack: 'hate' },
+  { id: 'loser', caption: 'loser', mood: 'wink', pack: 'hate' },
+
+  { id: 'lust', caption: 'come here', mood: 'wink', pack: 'lust' },
+  { id: 'uup', caption: 'u up?', mood: 'wink', pack: 'lust' },
+  { id: 'kissme', caption: 'kiss me', mood: 'kiss', pack: 'lust' },
+  { id: 'thirsty', caption: 'thirsty', mood: 'happy', pack: 'lust' },
+  { id: 'spicy', caption: 'spicy', mood: 'shocked', pack: 'lust' },
+  { id: 'peach', caption: 'nice', mood: 'wink', pack: 'lust' },
+  { id: 'downbad', caption: 'down bad', mood: 'happy', pack: 'lust' },
+  { id: 'naughty', caption: 'naughty', mood: 'wink', pack: 'lust' },
 ]
 
 /** Stickers only shown when both people have nsfw on. */
-export const NSFW_STICKERS: readonly StickerKind[] = ['lust']
+export const NSFW_STICKERS: readonly StickerKind[] = STICKERS.filter((s) => s.pack === 'lust').map((s) => s.id)
 
 export type CoupleKind =
   | 'c_kiss' | 'c_hug' | 'c_cuddle' | 'c_boop' | 'c_highfive' | 'c_dance'

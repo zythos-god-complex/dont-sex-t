@@ -186,7 +186,7 @@ function Composer({ room }: { room: Room }) {
           <motion.div className="stk-tray" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={spring}>
             <div className="stk-tray-in">
               <div className="stk-grid">
-                {STICKERS.filter((st) => !NSFW_STICKERS.includes(st.id)).map((st) => (
+                {STICKERS.filter((st) => st.pack !== 'lust').map((st) => (
                   <motion.button
                     key={st.id}
                     type="button"

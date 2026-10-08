@@ -667,7 +667,7 @@ const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)
 
 function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversation; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; meId: string | null }) {
   const [tray, setTray] = useState(false)
-  const [trayTab, setTrayTab] = useState<'me' | 'us'>('me')
+  const [trayTab, setTrayTab] = useState<'me' | 'us' | 'hate' | 'lust'>('me')
   const [recording, setRecording] = useState(false)
   const myName = useMe()?.username ?? ''
   const spicyTray = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
@@ -766,14 +766,16 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
                   value={trayTab}
                   onChange={setTrayTab}
                   items={[
-                    { id: 'me', label: 'me' },
-                    { id: 'us', label: 'us two' },
+                    { id: 'me' as const, label: 'me' },
+                    { id: 'us' as const, label: 'us two' },
+                    { id: 'hate' as const, label: 'hate' },
+                    ...(spicyTray ? [{ id: 'lust' as const, label: 'lust' }] : []),
                   ]}
                 />
               </div>
               <div className={'stk-grid' + (trayTab === 'us' ? ' is-couple' : '')} key={trayTab}>
-                {trayTab === 'me'
-                  ? STICKERS.filter((st) => spicyTray || !NSFW_STICKERS.includes(st.id)).map((st, i) => (
+                {trayTab !== 'us'
+                  ? STICKERS.filter((st) => st.pack === (trayTab === 'lust' && !spicyTray ? 'me' : trayTab)).map((st, i) => (
                       <motion.button
                         key={st.id}
                         type="button"

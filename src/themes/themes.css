@@ -187,18 +187,16 @@
 .amb-embers i {
   top: auto; bottom: -12px; width: calc(3px + 3px * var(--s)); height: calc(3px + 3px * var(--s)); border-radius: 50%;
   background: #FFC27A; box-shadow: 0 0 6px 2px rgba(255,90,60,.85), 0 0 16px 5px rgba(255,30,80,.35);
-  animation: em-rise calc(var(--d) * .8 / var(--spd, 1)) linear infinite, em-flick calc(.5s + var(--s) * .4s) ease-in-out infinite alternate;
-  animation-delay: var(--delay), 0s;
+  animation: em-rise calc(var(--d) * 1.2 / var(--spd, 1)) linear infinite; animation-delay: var(--delay);
 }
 .amb-embers i:nth-of-type(3n) { background: #FF6A8E; }
 @keyframes em-rise {
   0% { transform: translate(0, 0); opacity: 0; }
   10% { opacity: 1; }
-  40% { transform: translate(calc(var(--drift) * .6), -40vh); }
-  70% { transform: translate(calc(var(--drift) * -.2), -75vh); opacity: .8; }
+  85% { opacity: .8; }
   100% { transform: translate(var(--drift), -110vh); opacity: 0; }
 }
-@keyframes em-flick { from { scale: .7; filter: brightness(.9); } to { scale: 1.25; filter: brightness(1.6); } }
-.amb-embers .amb-rider { font-size: 22px; opacity: .5; filter: saturate(1.2) drop-shadow(0 0 8px rgba(255,40,90,.6)); }
+.amb-embers .amb-rider { font-size: 22px; opacity: .5; filter: saturate(1.2) drop-shadow(0 0 8px rgba(255,40,90,.6)); animation-name: rider-smooth; }
+@keyframes rider-smooth { from { transform: translateY(0); } to { transform: translateY(-122vh); } }
 
 @media (prefers-reduced-motion: reduce) { .amb i, .amb b, .amb span, .amb::after, .amb svg g { animation: none !important; } }
