@@ -39,6 +39,8 @@ export type Conversation = {
   requester?: string | null
   declined_at?: string | null
   blocked?: 'me' | 'them' | null
+  my_voice?: boolean
+  peer_voice?: boolean
 }
 
 export const THEME_IDS = [

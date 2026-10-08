@@ -1614,6 +1614,18 @@ export async function setBlocked(peerId: string, on: boolean): Promise<void> {
   void refreshBlocks()
 }
 
+export async function setVoice(convId: string, on: boolean): Promise<void> {
+  if (!token) return
+  const c = get().conversations[convId]
+  if (c) set({ conversations: { ...get().conversations, [convId]: { ...c, my_voice: on } } })
+  try {
+    onConvEvent(await api.setVoice(token, convId, on))
+  } catch {
+    const c2 = get().conversations[convId]
+    if (c2) set({ conversations: { ...get().conversations, [convId]: { ...c2, my_voice: !on } } })
+  }
+}
+
 export async function saveNsfw(on: boolean): Promise<void> {
   if (!token) return
   const me = get().me

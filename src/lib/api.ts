@@ -110,6 +110,7 @@ export const api = {
   nameHistory: (token: string, userId: string) => rpc<{ username: string; changed_at: string }[]>('gat_name_history_of', { p_token: token, p_user: userId }),
   respond: (token: string, conv: string, accept: boolean) => rpc<Conversation>('gat_respond', { p_token: token, p_conversation: conv, p_accept: accept }),
   block: (token: string, peer: string, on: boolean) => rpc<{ blocked: boolean }>('gat_block', { p_token: token, p_peer: peer, p_on: on }),
+  setVoice: (token: string, conv: string, on: boolean) => rpc<Record<string, unknown>>('gat_set_voice', { p_token: token, p_conversation: conv, p_on: on }),
   blockList: (token: string) => rpc<{ blocked: string[]; blocked_by: string[] }>('gat_block_list', { p_token: token }),
 
   profiles: (token: string, ids: string[]) => rpc<Profile[]>('gat_profiles', { p_token: token, p_ids: ids }),

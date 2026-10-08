@@ -15,7 +15,7 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping } from '../../lib/engine'
+import { loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
@@ -657,6 +657,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const ta = useRef<HTMLTextAreaElement>(null)
   const lastSent = useRef<{ body: string; at: number } | null>(null)
   const has = text.trim().length > 0
+  const voiceOk = !!conv.my_voice && !!conv.peer_voice
 
   const resize = () => {
     const el = ta.current
@@ -818,7 +819,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           maxLength={2000}
         />
         <AnimatePresence mode="popLayout" initial={false}>
-          {!has && (
+          {!has && voiceOk && (
             <motion.button
               key="mic"
               type="button"
@@ -839,7 +840,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
               <IconMic size={21} />
             </motion.button>
           )}
-          {has && (
+          {(has || !voiceOk) && (
             <motion.button
               key="send"
               className="send"
@@ -966,6 +967,15 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
         <Toggle label="notifications" on={push === 'on'} disabled={busy || push === 'needs-install' || push === 'unsupported' || push === 'denied'} onChange={() => void togglePush(conv.id)} />
       </div>
       {hint && <p className="settings-hint">{hint}</p>}
+      <h3 className="settings-label">voice notes</h3>
+      <div className="settings-row">
+        <IconMic size={22} />
+        <span className="grow">voice notes</span>
+        <Toggle label="voice notes" on={!!conv.my_voice} onChange={(v) => void setVoice(conv.id, v)} />
+      </div>
+      <p className="settings-hint">
+        {conv.peer_voice ? (conv.my_voice ? 'on for both of you' : `${conv.peer.username} has it on`) : conv.my_voice ? `waiting on ${conv.peer.username}` : `${conv.peer.username} has it off`}
+      </p>
       <button type="button" className={'block-btn' + (conv.blocked === 'me' ? ' is-on' : '')} onClick={() => void setBlocked(conv.peer.id, conv.blocked !== 'me')}>
         {conv.blocked === 'me' ? 'unblock ' : 'block '}
         {conv.peer.username}
