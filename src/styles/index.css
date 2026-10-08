@@ -1,0 +1,7 @@
+/* Bricolage with the optical-size axis: the display cut gets its quirky
+   personality automatically at big sizes (font-optical-sizing: auto). */
+@import '@fontsource-variable/bricolage-grotesque/opsz.css';
+@import './tokens.css';
+@import './base.css';
+@import '../ui/ui.css';
+@import '../themes/themes.css';

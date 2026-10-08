@@ -683,29 +683,11 @@ begin
         ua = excluded.ua,
         created_at = now();
 
-  -- keep at most 10 per user (drop oldest)
-  delete from public.gat_push_subs
-   where endpoint in (
-     select endpoint from public.gat_push_subs
-      where user_id = u.id
-      order by created_at desc, endpoint
-      offset 10
-   );
+  -- the 10-per-user cap is added in 20261008100100_gat_push_cleanup.sql
 end;
 $$;
 
-create function public.gat_push_unsubscribe(p_token text, p_endpoint text)
-returns void
-language plpgsql
-security definer
-set search_path = public, extensions, pg_temp
-as $$
-declare
-  u public.gat_users := public.gat_auth(p_token);
-begin
-  delete from public.gat_push_subs where endpoint = p_endpoint and user_id = u.id;
-end;
-$$;
+-- gat_push_unsubscribe: see 20261008100100_gat_push_cleanup.sql
 
 -- ---------------------------------------------------------------------------
 -- Server-only RPCs (secret-gated; called by api/push.ts with the publishable key)
@@ -775,22 +757,7 @@ begin
 end;
 $$;
 
-create function public.gat_push_prune(p_secret text, p_endpoints text[])
-returns void
-language plpgsql
-security definer
-set search_path = public, extensions, pg_temp
-as $$
-declare
-  v_secret text;
-begin
-  select value into v_secret from public.gat_config where key = 'push_secret';
-  if v_secret is null or v_secret = '' or p_secret is null or p_secret <> v_secret then
-    raise exception 'forbidden' using errcode = 'P0001';
-  end if;
-  delete from public.gat_push_subs where endpoint = any (coalesce(p_endpoints, '{}'::text[]));
-end;
-$$;
+-- gat_push_prune: see 20261008100100_gat_push_cleanup.sql
 
 -- ---------------------------------------------------------------------------
 -- Function privileges
@@ -820,9 +787,7 @@ revoke all on function
   public.gat_mute(text, uuid, boolean),
   public.gat_heartbeat(text, uuid, boolean),
   public.gat_push_subscribe(text, text, text, text, text),
-  public.gat_push_unsubscribe(text, text),
-  public.gat_push_claim(text, uuid),
-  public.gat_push_prune(text, text[])
+  public.gat_push_claim(text, uuid)
 from public;
 
 grant execute on function
@@ -839,9 +804,7 @@ grant execute on function
   public.gat_mute(text, uuid, boolean),
   public.gat_heartbeat(text, uuid, boolean),
   public.gat_push_subscribe(text, text, text, text, text),
-  public.gat_push_unsubscribe(text, text),
-  public.gat_push_claim(text, uuid),
-  public.gat_push_prune(text, text[])
+  public.gat_push_claim(text, uuid)
 to anon, authenticated;
 
 notify pgrst, 'reload schema';
