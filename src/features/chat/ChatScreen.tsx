@@ -21,7 +21,7 @@ import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, nee
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
+import { IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
@@ -33,6 +33,7 @@ import { ImageBubble } from '../image/ImageBubble'
 import { Confetti, type ConfettiHandle } from './Confetti'
 import { LockedSticker, Sticker } from '../stickers/Sticker'
 import { useStore } from '../../lib/store'
+import { MAX_PINS, togglePin, usePins } from '../inbox/pins'
 import { COUPLES, NSFW_STICKERS, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
 import { CoupleSticker } from '../stickers/CoupleSticker'
 import { EMOJI_GROUPS } from './emojis'
@@ -974,6 +975,23 @@ function AmbientControls({ themeId }: { themeId: string }) {
   )
 }
 
+function PinRow({ convId }: { convId: string }) {
+  const pins = usePins((s) => s.ids)
+  const on = pins.includes(convId)
+  const full = !on && pins.length >= MAX_PINS
+  return (
+    <>
+      <h3 className="settings-label">pin</h3>
+      <div className="settings-row">
+        <IconPin size={22} filled={on} />
+        <span className="grow">pin chat</span>
+        <Toggle label="pin chat" on={on} disabled={full} onChange={() => togglePin(convId)} />
+      </div>
+      {full && <p className="settings-hint">{MAX_PINS} pinned already</p>}
+    </>
+  )
+}
+
 function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => void }) {
   const [themeOpen, setThemeOpen] = useState(false)
   const push = usePushState(conv.id)
@@ -1026,6 +1044,7 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
         )}
       </AnimatePresence>
       <AmbientControls themeId={conv.theme} />
+      <PinRow convId={conv.id} />
       <h3 className="settings-label">notifications</h3>
       <div className="settings-row">
         <IconBell size={22} />

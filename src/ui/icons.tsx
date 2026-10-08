@@ -152,3 +152,9 @@ export const IconUsers = (p: P) => (
     <path d="M15.5 5.2a3.4 3.4 0 010 6.6M17.6 14.8c2 .6 3.2 2.3 3.6 4.7" />
   </Svg>
 )
+export const IconPin = ({ filled, ...p }: P & { filled?: boolean }) => (
+  <Svg {...p}>
+    <path d="M9.2 3.5h5.6l-.9 5.2 3.6 3.4v1.6H6.5v-1.6l3.6-3.4z" fill={filled ? 'currentColor' : 'none'} />
+    <path d="M12 13.7v6.8" />
+  </Svg>
+)

@@ -670,3 +670,9 @@
 .img-up { display: flex; align-items: center; gap: 10px; margin: 0 12px 8px auto; width: fit-content; padding: 6px 12px 6px 6px; border-radius: 16px; background: var(--surface, rgba(127,127,127,.15)); font-size: 13px; font-weight: 700; }
 .img-up img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
 .img-up.is-err { color: #E5484D; }
+
+/* pinned dms */
+.row-item.is-pinned { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.row-time { display: inline-flex; align-items: center; gap: 4px; }
+.row-pin { color: var(--accent); rotate: 35deg; }
+.row-item { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
