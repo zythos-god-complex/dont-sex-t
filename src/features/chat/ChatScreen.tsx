@@ -86,7 +86,7 @@ function ChatView({ conv }: { conv: Conversation }) {
         typing<TypingDots />
       </span>
     )
-  else if (conv.peer.show_status === false) statusLine = null
+  else if (conv.peer.show_status === false || me?.show_status === false) statusLine = null
   else if (status.online) statusLine = status.away ? 'away' : 'online'
   else if (status.lastSeenAt) statusLine = activeAgo(status.lastSeenAt, now)
 
@@ -105,7 +105,7 @@ function ChatView({ conv }: { conv: Conversation }) {
           </button>
         )}
         <div className="chat-peer">
-          <GoofyFace name={peer.username} size={40} presence={conv.peer.show_status !== false && status.online ? (status.away ? 'away' : 'online') : null} />
+          <GoofyFace name={peer.username} size={40} presence={conv.peer.show_status !== false && me?.show_status !== false && status.online ? (status.away ? 'away' : 'online') : null} />
           <div className="chat-peer-text">
             <span className="chat-peer-name ellipsis">{peer.username}</span>
             <AnimatePresence mode="wait" initial={false}>
@@ -229,7 +229,7 @@ function MessageList({ conv, now, sinceOnline, online }: { conv: Conversation; n
     items.push(
       <Fragment key={m.id}>
         <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} />
-        {isMine && mine?.id === m.id && <MineStatus state={mine.state} id={m.id} />}
+        {isMine && mine?.id === m.id && <MineStatus state={mine.state === 'seen' && me?.show_seen === false ? 'sent' : mine.state} id={m.id} />}
       </Fragment>,
     )
   }

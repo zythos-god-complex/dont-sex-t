@@ -18,7 +18,7 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
   const unread = useUnreadFrom(u.id)
   const [ref, look] = useLookAt<HTMLButtonElement>()
   const tilt = faceTilt(u.username, 1.6)
-  const showStatus = useStore((s) => s.profiles[u.id]?.show_status !== false && u.show_status !== false)
+  const showStatus = useStore((s) => s.me?.show_status !== false && s.profiles[u.id]?.show_status !== false && u.show_status !== false)
   return (
     <motion.button
       ref={ref}

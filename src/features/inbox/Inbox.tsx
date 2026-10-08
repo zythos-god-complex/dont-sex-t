@@ -11,7 +11,8 @@ export type InboxProps = { variant: 'screen' | 'rail' }
 
 function Row({ c, active, now, meId }: { c: Conversation; active: boolean; now: number; meId: string | null }) {
   const [, nav] = useLocation()
-  const online = useIsOnline(c.peer.id)
+  const hide = useMe()?.show_status === false || c.peer.show_status === false
+  const online = useIsOnline(c.peer.id) && !hide
   const typing = usePeerTyping(c.id)
   const unread = c.unread > 0
   const when = c.last_message?.created_at ?? c.last_message_at ?? c.created_at
