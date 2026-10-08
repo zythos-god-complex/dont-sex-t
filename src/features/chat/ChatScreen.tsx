@@ -678,101 +678,40 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const has = text.trim().length > 0
   const voiceOk = !!conv.my_voice && !!conv.peer_voice
   const imagesOk = !!conv.my_images && !!conv.peer_images
-  const fileIn = useRef<HTMLInputElement>(null)
   const [upload, setUpload] = useState<{ preview: string; err?: boolean } | null>(null)
-  // TEMP photo debug: every step is posted into the chat as a 🐞 message
-  const dbg = (t: string) => sendMessage(conv.id, '🐞 ' + t, null)
-  const picking = useRef(false)
-  useEffect(() => {
-    try {
-      const was = sessionStorage.getItem('gat.dbg.pick')
-      if (was) {
-        sessionStorage.removeItem('gat.dbg.pick')
-        setTimeout(() => dbg('page RELOADED while picker was open (picked at ' + was + ')'), 1500)
-      }
-    } catch {
-      /* ignore */
-    }
-    const onFocus = () => {
-      if (!picking.current || document.visibilityState !== 'visible') return
-      setTimeout(() => {
-        if (picking.current && document.visibilityState === 'visible') {
-          picking.current = false
-          dbg('picker closed, but NO change event fired')
-        }
-      }, 2500)
-    }
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onFocus)
-    return () => {
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onFocus)
-    }
-  }, [conv.id])
+  // A fresh native input per tap, no accept filter: on some Android phones the gallery app never
+  // returns the photo to Chrome, while the system document picker does. Some Androids only fire 'input'.
   const openPicker = () => {
-    picking.current = true
-    try {
-      sessionStorage.setItem('gat.dbg.pick', new Date().toLocaleTimeString())
-    } catch {
-      /* ignore */
-    }
-    dbg('tap photo btn v3 (no accept filter)')
-    // a brand new input every time, outside React, listening to both change and input
     const el = document.createElement('input')
     el.type = 'file'
-    // no accept filter: Android then opens its own document picker instead of handing off to the
-    // OEM gallery app, which on some phones never returns the photo to Chrome
     el.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0'
     let handled = false
-    const take = (ev: Event) => {
+    const take = () => {
       if (handled) return
       handled = true
-      dbg(`${ev.type} event fired | files=${el.files?.length ?? 0}`)
       void pickImage(el.files?.[0])
       setTimeout(() => el.remove(), 1000)
     }
     el.addEventListener('change', take)
     el.addEventListener('input', take)
-    el.addEventListener('cancel', () => {
-      picking.current = false
-      dbg('picker sent CANCEL event')
-      el.remove()
-    })
+    el.addEventListener('cancel', () => el.remove())
     document.body.appendChild(el)
     el.click()
   }
   const pickImage = async (file: File | undefined) => {
-    picking.current = false
-    try {
-      sessionStorage.removeItem('gat.dbg.pick')
-    } catch {
-      /* ignore */
-    }
-    if (!file) {
-      dbg('change fired but no file')
-      return
-    }
-    dbg(`got file | name=${file.name} | type="${file.type}" | size=${Math.round(file.size / 1024)}kb`)
-    if (file.type && !file.type.startsWith('image/') && !/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(file.name)) {
-      dbg('rejected: not an image type')
-      return
-    }
+    if (!file) return
+    if (file.type && !file.type.startsWith('image/') && !/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(file.name)) return
     const preview = URL.createObjectURL(file)
     setUpload({ preview })
     const reply = replyTo
     onClearReply()
-    let step = 'decode'
     try {
       const { blob, w, h } = await prepImage(file)
-      dbg(`decoded ok | ${w}x${h} | out=${blob.type} ${Math.round(blob.size / 1024)}kb`)
-      step = 'upload'
       const url = await uploadImage(blob, meId ?? 'anon')
-      dbg('uploaded ok')
       sendMessage(conv.id, imageBody(url, w, h), reply)
       setUpload(null)
       URL.revokeObjectURL(preview)
-    } catch (e) {
-      dbg(`FAILED at ${step} | ${e instanceof Error ? e.name + ': ' + e.message : String(e)}`)
+    } catch {
       setUpload({ preview, err: true })
       setTimeout(() => {
         setUpload(null)
@@ -939,19 +878,6 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
             <IconImage size={24} />
           </button>
         )}
-        <input
-          ref={fileIn}
-          type="file"
-          accept="image/*"
-          className="file-in"
-          tabIndex={-1}
-          aria-hidden="true"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            e.target.value = ''
-            void pickImage(f)
-          }}
-        />
         <textarea
           ref={ta}
           rows={1}
@@ -965,13 +891,6 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           onFocus={() => setTray(false)}
           onBlur={() => setTyping(conv.id, false)}
           onKeyDown={onKey}
-          onPaste={(e) => {
-            const f = [...e.clipboardData.files].find((x) => x.type.startsWith('image/'))
-            if (!f || !imagesOk) return
-            e.preventDefault()
-            dbg('pasted image')
-            void pickImage(f)
-          }}
           enterKeyHint={fine ? 'send' : 'enter'}
           maxLength={2000}
         />
