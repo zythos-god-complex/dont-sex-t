@@ -10,105 +10,97 @@ export function setThemeOrigin(x: number, y: number) {
 }
 
 const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-const DURATION = 0.85
 
-type Reveal = { id: string; x: number; y: number; w: number; h: number; r: number; key: number }
-
-/** Circular wipe from the tap point (CSS keyframes so iOS Safari animates it too) plus two shockwave rings. */
-function Bloom({ rv, onDone }: { rv: Reveal; onDone: () => void }) {
-  const t = getTheme(rv.id)
-  const done = useRef(onDone)
-  done.current = onDone
-  useEffect(() => {
-    // timers, not animation callbacks: iOS Safari sometimes never reports completion
-    const timer = setTimeout(() => done.current(), DURATION * 1000 + 60)
-    return () => clearTimeout(timer)
-  }, [])
-  const vars = { '--x': `${rv.x}px`, '--y': `${rv.y}px`, '--d': `${DURATION}s` } as React.CSSProperties
-  return (
-    <>
-      <div className="wipe" style={{ ...vars, background: t.bg }}>
-        <Ambient kind={t.ambient} />
-      </div>
-      {[0, 1].map((i) => (
-        <motion.span
-          key={i}
-          className="theme-ring"
-          style={{ left: rv.x, top: rv.y, borderColor: t.accent }}
-          initial={{ scale: 0, opacity: 0.9 }}
-          animate={{ scale: 9, opacity: 0 }}
-          transition={{ duration: 0.9, delay: i * 0.12, ease: 'easeOut' }}
-        />
-      ))}
-    </>
-  )
-}
+type Reveal = { id: string; x: string; y: string; key: number }
 
 /**
- * Chat background. A theme change blooms out of the tapped swatch (or pours down from the header
- * when the other person changed it) as a soft-edged liquid circle while the chat breathes back.
+ * Chat background with a theme change that blooms out of the tapped swatch (or drops from the
+ * header when the other person changed it): a circular wipe, shockwave rings and a name pill that drops in under the header.
  */
 export function ThemeBackground({ themeId, host, onPhase }: { themeId: string; host: RefObject<HTMLDivElement | null>; onPhase?: (on: boolean) => void }) {
-  const [base, setBase] = useState(themeId)
-  const [rv, setRv] = useState<Reveal | null>(null)
   const [label, setLabel] = useState<{ name: string; key: number } | null>(null)
+  const [base, setBase] = useState(themeId)
+  const [reveal, setReveal] = useState<Reveal | null>(null)
   const seq = useRef(0)
 
   useEffect(() => {
-    if (themeId === (rv?.id ?? base)) return
-    const el = host.current
-    if (reduce || !el) {
+    if (themeId === base && !reveal) return
+    if (reveal?.id === themeId) return
+    if (reduce) {
       setBase(themeId)
-      setRv(null)
+      setReveal(null)
       return
     }
-    const b = el.getBoundingClientRect()
-    let x = b.width / 2
-    let y = 0
-    if (pendingOrigin) {
-      x = Math.min(b.width, Math.max(0, pendingOrigin.x - b.left))
-      y = Math.min(b.height, Math.max(0, pendingOrigin.y - b.top))
+    let x = '50%'
+    let y = '0%'
+    const r = host.current?.getBoundingClientRect()
+    if (pendingOrigin && r) {
+      x = `${((pendingOrigin.x - r.left) / r.width) * 100}%`
+      y = `${((pendingOrigin.y - r.top) / r.height) * 100}%`
     }
     pendingOrigin = null
-    const r = Math.hypot(Math.max(x, b.width - x), Math.max(y, b.height - y)) + 24
-    if (rv) setBase(rv.id)
+    if (reveal) setBase(reveal.id)
     const key = ++seq.current
-    setRv({ id: themeId, x, y, w: b.width, h: b.height, r, key })
+    setReveal({ id: themeId, x, y, key })
     onPhase?.(true)
     setLabel({ name: getTheme(themeId).name, key })
+    // timers, not animation callbacks: iOS Safari sometimes never reports completion
+    const done = setTimeout(() => {
+      setBase(themeId)
+      setReveal((r) => (r?.key === key ? null : r))
+      onPhase?.(false)
+    }, 920)
     const hide = setTimeout(() => setLabel((l) => (l?.key === key ? null : l)), 1600)
-    return () => clearTimeout(hide)
+    return () => {
+      clearTimeout(done)
+      clearTimeout(hide)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [themeId])
 
   const b = getTheme(base)
-  const t = getTheme(rv?.id ?? base)
+  const n = reveal ? getTheme(reveal.id) : null
   return (
     <>
       <div className="chat-bg" style={{ background: b.bg }}>
         <Ambient kind={b.ambient} />
       </div>
-      {rv && (
-        <div className="chat-bg bloom-host">
-          <Bloom
-            key={rv.key}
-            rv={rv}
-            onDone={() => {
-              setBase(rv.id)
-              setRv(null)
-              onPhase?.(false)
-            }}
-          />
-        </div>
+      {reveal && n && (
+        <motion.div
+          key={reveal.key}
+          className="chat-bg"
+          style={{ background: n.bg }}
+          initial={{ clipPath: `circle(0% at ${reveal.x} ${reveal.y})` }}
+          animate={{ clipPath: `circle(150% at ${reveal.x} ${reveal.y})` }}
+          transition={{ duration: 0.85, ease: [0.7, 0, 0.2, 1] }}
+        >
+          <Ambient kind={n.ambient} />
+        </motion.div>
       )}
+      <AnimatePresence>
+        {reveal && n && (
+          <motion.div key={'fx' + reveal.key} className="theme-fx" initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.3 } }}>
+            {[0, 1].map((i) => (
+              <motion.span
+                key={i}
+                className="theme-ring"
+                style={{ left: reveal.x, top: reveal.y, borderColor: n.accent }}
+                initial={{ scale: 0, opacity: 0.9 }}
+                animate={{ scale: 9, opacity: 0 }}
+                transition={{ duration: 0.9, delay: i * 0.12, ease: 'easeOut' }}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {label && (
           <motion.div
             key={label.key}
             className="theme-label"
-            style={{ background: t.accent, color: t.accentInk }}
+            style={{ background: getTheme(themeId).accent, color: getTheme(themeId).accentInk }}
             initial={{ y: -24, opacity: 0, scale: 0.8, filter: 'blur(6px)' }}
-            animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)', transition: { delay: 0.45, type: 'spring', stiffness: 420, damping: 22 } }}
+            animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)', transition: { delay: 0.3, type: 'spring', stiffness: 420, damping: 22 } }}
             exit={{ y: -12, opacity: 0, scale: 0.92, filter: 'blur(4px)', transition: { duration: 0.28 } }}
           >
             {label.name}
