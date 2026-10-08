@@ -6,6 +6,8 @@ export const STICKERS: { id: StickerKind; caption: string; mood: FaceMood }[] = 
   { id: 'hey', caption: 'hey!', mood: 'happy' },
   { id: 'kiss', caption: 'mwah', mood: 'wink' },
   { id: 'love', caption: 'love ya', mood: 'happy' },
+  { id: 'lust', caption: 'come here', mood: 'wink' },
+  { id: 'hate', caption: 'i hate u', mood: 'shocked' },
   { id: 'lol', caption: 'lmaooo', mood: 'happy' },
   { id: 'hugs', caption: 'hugs', mood: 'happy' },
   { id: 'shy', caption: 'hehe', mood: 'wink' },
@@ -15,8 +17,6 @@ export const STICKERS: { id: StickerKind; caption: string; mood: FaceMood }[] = 
   { id: 'dead', caption: 'im dead', mood: 'shocked' },
   { id: 'gn', caption: 'gn', mood: 'sleepy' },
   { id: 'bye', caption: 'bye bye', mood: 'happy' },
-  { id: 'hate', caption: 'i hate u', mood: 'shocked' },
-  { id: 'lust', caption: 'come here', mood: 'wink' },
 ]
 
 /** Stickers only shown when both people have nsfw on. */

@@ -118,7 +118,7 @@
   margin: 0 4px 8px; padding: 10px 6px 6px; border-radius: 24px; background: var(--theme-composer); color: var(--theme-composer-ink);
   box-shadow: 0 10px 30px -14px rgba(0,0,0,.35); border: 1px solid color-mix(in srgb, var(--theme-ink) 8%, transparent);
 }
-.stk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; max-height: 270px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.stk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; max-height: min(350px, 46vh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
 .stk-grid::-webkit-scrollbar { display: none; }
 .stk-pick { display: grid; place-items: center; padding: 2px 0; border-radius: 18px; -webkit-tap-highlight-color: transparent; }
 .stk-pick:active { background: color-mix(in srgb, var(--theme-composer-ink) 7%, transparent); }

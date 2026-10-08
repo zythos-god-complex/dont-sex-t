@@ -314,6 +314,15 @@ function MineStatus({ state, id }: { state: 'sending' | 'failed' | 'sent' | 'see
   )
 }
 
+/** Live nsfw flag for the other person: presence is freshest, the conversation snapshot can be stale. */
+function peerNsfw(s: ReturnType<typeof useStore.getState>, peer: Conversation['peer'] | undefined): boolean {
+  if (!peer) return false
+  const live = s.online[peer.id]?.nsfw
+  if (typeof live === 'boolean') return live
+  const prof = s.profiles[peer.id]?.nsfw
+  return (typeof prof === 'boolean' ? prof : peer.nsfw) === true
+}
+
 const REACTIONS = ['❤️', '😂', '💀', '😮', '😢', '👍']
 
 function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null; onReply: (m: Message) => void }) {
@@ -333,7 +342,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
   const cpl = coupleOf(m.body)
   const voice = voiceOf(m.body)
   const img = imageOf(m.body)
-  const spicy = useStore((s) => s.me?.nsfw === true && s.conversations[m.conversation_id]?.peer.nsfw === true)
+  const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, s.conversations[m.conversation_id]?.peer))
   const [viewer, setViewer] = useState(false)
   const emoji = stk || cpl || voice || img ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
@@ -661,7 +670,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const [trayTab, setTrayTab] = useState<'me' | 'us'>('me')
   const [recording, setRecording] = useState(false)
   const myName = useMe()?.username ?? ''
-  const spicyTray = useStore((s) => s.me?.nsfw === true && conv.peer.nsfw === true)
+  const spicyTray = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
   const [text, setText] = useState('')
   const ta = useRef<HTMLTextAreaElement>(null)
   const lastSent = useRef<{ body: string; at: number } | null>(null)
