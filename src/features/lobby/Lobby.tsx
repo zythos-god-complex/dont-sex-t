@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, useLocation } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
 import { useNow, useOnline, useTypingToMe, useUnreadFrom, useUnreadTotal, type OnlineFilter } from '../../lib/hooks'
@@ -7,7 +7,8 @@ import type { OnlineUser } from '../../lib/types'
 import { GoofyFace, useLookAt } from '../../ui/GoofyFace'
 import { faceTilt } from '../../ui/face'
 import { Badge, Segmented, TypingDots, Wordmark, spring, useIsDesktop } from '../../ui/kit'
-import { GenderIcon, IconDm } from '../../ui/icons'
+import { GenderIcon, IconDm, IconRooms } from '../../ui/icons'
+import { loadRooms, useRoomsUnread } from '../rooms/rooms'
 import { MeButton } from '../shell/MeSheet'
 import { useBlocks } from '../../lib/engine'
 import { useStore } from '../../lib/store'
@@ -61,6 +62,8 @@ export default function Lobby() {
   const blockedBy = useBlocks((b) => b.blockedBy)
   const list = all.filter((u) => !blocked.includes(u.id) && !blockedBy.includes(u.id))
   const unread = useUnreadTotal()
+  const roomsUnread = useRoomsUnread()
+  useEffect(() => void loadRooms(), [])
   const now = useNow(30000)
 
   const emptyCopy =
@@ -72,6 +75,10 @@ export default function Lobby() {
         <header className="m-head">
           <Wordmark size={22} />
           <div className="m-head-actions">
+            <Link href="/rooms" className="icon-btn dm-btn" aria-label="rooms">
+              <IconRooms size={25} />
+              <Badge n={roomsUnread} className="dm-badge" />
+            </Link>
             <Link href="/dm" className="icon-btn dm-btn" aria-label="dms">
               <IconDm size={25} />
               <Badge n={unread} className="dm-badge" />

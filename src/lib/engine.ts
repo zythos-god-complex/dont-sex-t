@@ -435,6 +435,10 @@ function ensureInbox(me: Me) {
   })
   ch.on('broadcast', { event: 'read' }, (e) => onReadEvent(unwrap(e)))
   ch.on('broadcast', { event: 'theme' }, (e) => onThemeEvent(unwrap(e)))
+  ch.on('broadcast', { event: 'room' }, (e) => {
+    const p = unwrap(e)
+    roomSubs.forEach((f) => f(p))
+  })
   ch.subscribe((status) => {
     if (status === 'SUBSCRIBED') {
       if (joinedOnce) scheduleGapFill()
@@ -466,6 +470,14 @@ function ensureConvChannel(c: Conversation) {
     }
   })
   convCh.set(c.id, entry)
+}
+
+const roomSubs = new Set<(room: Record<string, unknown>) => void>()
+
+/** Private room snapshots pushed to my inbox (created, added, new message). */
+export function onRoomEvent(f: (room: Record<string, unknown>) => void): () => void {
+  roomSubs.add(f)
+  return () => void roomSubs.delete(f)
 }
 
 const confettiSubs = new Set<(convId: string) => void>()

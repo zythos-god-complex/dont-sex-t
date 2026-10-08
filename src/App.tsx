@@ -9,16 +9,19 @@ import Onboarding from './features/onboarding/Onboarding'
 import Lobby from './features/lobby/Lobby'
 import Inbox from './features/inbox/Inbox'
 import ChatScreen from './features/chat/ChatScreen'
+import RoomsScreen from './features/rooms/RoomsScreen'
+import RoomChat from './features/rooms/RoomChat'
+import { useRoomsUnread } from './features/rooms/rooms'
 import Toasts from './features/toasts/Toasts'
 import { Badge, Wordmark, useIsDesktop } from './ui/kit'
-import { IconLive } from './ui/icons'
+import { IconLive, IconRooms } from './ui/icons'
 import { bindVisualViewport, trackNav } from './features/shell/nav'
 import { MeButton } from './features/shell/MeSheet'
 import { refreshBlocks } from './lib/engine'
 
 function depthOf(path: string): number {
-  if (path.startsWith('/dm/')) return 2
-  if (path === '/dm') return 1
+  if (path.startsWith('/dm/') || path.startsWith('/rooms/')) return 2
+  if (path === '/dm' || path === '/rooms') return 1
   return 0
 }
 
@@ -48,7 +51,7 @@ function MobileApp() {
     <div className="m-stack">
       <AnimatePresence initial={false} custom={dir}>
         <motion.div
-          key={loc.startsWith('/dm/') ? 'chat:' + loc : loc}
+          key={loc.startsWith('/dm/') ? 'chat:' + loc : loc.startsWith('/rooms/') ? 'room:' + loc : loc}
           className="m-screen"
           custom={dir}
           variants={{
@@ -66,6 +69,10 @@ function MobileApp() {
             <Route path="/dm">
               <Inbox variant="screen" />
             </Route>
+            <Route path="/rooms/:id">{(p) => <RoomChat id={p.id} />}</Route>
+            <Route path="/rooms">
+              <RoomsScreen />
+            </Route>
             <Route>
               <Lobby />
             </Route>
@@ -79,8 +86,11 @@ function MobileApp() {
 function DesktopApp() {
   const me = useMe()
   const [inChat, params] = useRoute('/dm/:username')
+  const [inRoom, roomParams] = useRoute('/rooms/:id')
+  const [inRooms] = useRoute('/rooms')
   const [, nav] = useLocation()
   const unread = useUnreadTotal()
+  const roomsUnread = useRoomsUnread()
   return (
     <div className="d-backdrop">
       <div className="d-frame">
@@ -95,9 +105,14 @@ function DesktopApp() {
               </div>
             )}
           </div>
-          <button className={'d-live' + (!inChat ? ' is-on' : '')} onClick={() => nav('/')}>
+          <button className={'d-live' + (!inChat && !inRoom && !inRooms ? ' is-on' : '')} onClick={() => nav('/')}>
             <IconLive size={20} />
             <span>live</span>
+          </button>
+          <button className={'d-live' + (inRoom || inRooms ? ' is-on' : '')} onClick={() => nav('/rooms')}>
+            <IconRooms size={20} />
+            <span>rooms</span>
+            <Badge n={roomsUnread} />
           </button>
           <div className="d-rail-head">
             <span>dms</span>
@@ -108,14 +123,14 @@ function DesktopApp() {
         <main className="d-main">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
-              key={inChat ? 'chat:' + params!.username : 'lobby'}
+              key={inChat ? 'chat:' + params!.username : inRoom ? 'room:' + roomParams!.id : inRooms ? 'rooms' : 'lobby'}
               className="d-pane"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.18 }}
             >
-              {inChat ? <ChatScreen username={decodeURIComponent(params!.username)} /> : <Lobby />}
+              {inChat ? <ChatScreen username={decodeURIComponent(params!.username)} /> : inRoom ? <RoomChat id={roomParams!.id} /> : inRooms ? <RoomsScreen /> : <Lobby />}
             </motion.div>
           </AnimatePresence>
         </main>
