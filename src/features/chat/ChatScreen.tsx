@@ -25,6 +25,7 @@ import { IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowD
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
+import { Confetti, type ConfettiHandle } from './Confetti'
 import { Sticker } from '../stickers/Sticker'
 import { COUPLES, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
 import { CoupleSticker } from '../stickers/CoupleSticker'
@@ -73,6 +74,22 @@ function ChatView({ conv }: { conv: Conversation }) {
   const [settings, setSettings] = useState(false)
   const [egg, setEgg] = useState(0)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
+  const confetti = useRef<ConfettiHandle>(null)
+  const taps = useRef<{ n: number; t: number; x: number; y: number }>({ n: 0, t: 0, x: 0, y: 0 })
+  const onChatTap = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, textarea, .sheet, .panel, .r-picker')) return
+    const k = taps.current
+    const now = performance.now()
+    if (now - k.t < 360 && Math.hypot(e.clientX - k.x, e.clientY - k.y) < 60) k.n++
+    else k.n = 1
+    k.t = now
+    k.x = e.clientX
+    k.y = e.clientY
+    if (k.n >= 4) {
+      k.n = 0
+      confetti.current?.burst(e.clientX, e.clientY)
+    }
+  }
   useEffect(() => setReplyTo(null), [conv.id])
   const chatRef = useRef<HTMLDivElement>(null)
   const [themeBump, setThemeBump] = useState(false)
@@ -101,7 +118,8 @@ function ChatView({ conv }: { conv: Conversation }) {
   else if (status.lastSeenAt) statusLine = activeAgo(status.lastSeenAt, now)
 
   return (
-    <div ref={chatRef} className={'chat scheme-' + theme.scheme + (themeBump ? ' theme-bump' : '')} style={themeVars(theme)}>
+    <div ref={chatRef} onPointerDown={onChatTap} className={'chat scheme-' + theme.scheme + (themeBump ? ' theme-bump' : '')} style={themeVars(theme)}>
+      <Confetti ref={confetti} themeId={theme.id} host={() => chatRef.current} />
       <ThemeBackground themeId={theme.id} host={chatRef} onPhase={setThemeBump} />
 
       <header className="chat-head">
