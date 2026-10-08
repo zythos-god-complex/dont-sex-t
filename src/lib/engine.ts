@@ -454,6 +454,10 @@ function ensureConvChannel(c: Conversation) {
   const convId = c.id
   ch.on('broadcast', { event: 'typing' }, (e) => onPeerTyping(convId, unwrap(e)))
   ch.on('broadcast', { event: 'msg' }, (e) => onPeerBroadcastMsg(convId, unwrap(e)))
+  ch.on('broadcast', { event: 'react' }, (e) => {
+    const p = unwrap(e) as unknown as { message_id: string; user_id: string; emoji: string | null }
+    if (p?.message_id && p.user_id === get().conversations[convId]?.peer.id) applyReaction(convId, p.message_id, p.user_id, p.emoji)
+  })
   ch.subscribe((status) => {
     if (status === 'SUBSCRIBED') {
       if (entry.joinedOnce) scheduleGapFill()
@@ -1635,5 +1639,6 @@ export function react(convId: string, msgId: string, emoji: string | null): void
   const cur = get().messages[convId]?.find((m) => m.id === msgId)?.reactions?.[me.id] ?? null
   const next = emoji && emoji !== cur ? emoji : null
   applyReaction(convId, msgId, me.id, next)
+  broadcast(convId, 'react', { message_id: msgId, user_id: me.id, emoji: next })
   api.react(token, msgId, next).catch(() => applyReaction(convId, msgId, me.id, cur))
 }

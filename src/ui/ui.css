@@ -500,30 +500,29 @@
 .block-btn.is-on { color: var(--ink); background: var(--bg-2); }
 .nsfw-sub { display: block; margin-top: 4px; font: 600 12px/1 var(--font-display); color: var(--muted); }
 
-/* theme change: liquid bloom */
-.bloom-host { z-index: -1; }
-.bloom { position: absolute; border-radius: 50%; overflow: hidden; will-change: transform; transform-origin: 50% 50%; }
-.bloom-inner { position: absolute; will-change: transform; overflow: hidden; }
-.bloom-edge {
-  position: absolute; border-radius: 50%; pointer-events: none; will-change: transform, opacity; z-index: 1;
-  box-shadow: 0 0 0 2px currentColor, 0 0 34px 8px currentColor, inset 0 0 40px 6px currentColor;
+/* theme change: circular wipe + rings */
+.bloom-host { z-index: -1; overflow: hidden; }
+.wipe {
+  position: absolute; inset: 0; overflow: hidden;
+  -webkit-clip-path: circle(0px at var(--x) var(--y)); clip-path: circle(0px at var(--x) var(--y));
+  animation: wipe var(--d) cubic-bezier(.7,0,.2,1) forwards;
 }
+@keyframes wipe {
+  from { -webkit-clip-path: circle(0px at var(--x) var(--y)); clip-path: circle(0px at var(--x) var(--y)); }
+  to { -webkit-clip-path: circle(150vmax at var(--x) var(--y)); clip-path: circle(150vmax at var(--x) var(--y)); }
+}
+.theme-ring { position: absolute; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 3px solid; pointer-events: none; }
 .theme-label {
   position: absolute; left: 50%; top: calc(var(--safe-t) + 78px); translate: -50% 0; z-index: 5; pointer-events: none;
   font: 780 15px/1 var(--font-display); letter-spacing: -0.01em; padding: 9px 14px 10px; border-radius: 999px;
   box-shadow: 0 10px 30px -10px rgba(0,0,0,.45); white-space: nowrap;
 }
 @media (min-width: 960px) { .theme-label { top: 88px; } }
-/* the chat breathes back while the new theme pours in, then settles with a soft jelly */
-.theme-bump .msgs-wrap, .theme-bump .composer-wrap, .theme-bump .req {
-  animation: breatheback 1.05s cubic-bezier(.76,0,.24,1) both;
-}
-.theme-bump .b-row { animation: jelly .9s .45s cubic-bezier(.3,1.5,.5,1) both; }
+.theme-bump .b-row { animation: jelly .7s .2s cubic-bezier(.3,1.5,.5,1) both; }
 .theme-bump .b-row:nth-last-child(2n) { animation-delay: .52s; }
 .theme-bump .b-row:nth-last-child(3n) { animation-delay: .6s; }
-@keyframes breatheback { 0% { transform: scale(1); } 45% { transform: scale(.955) translateY(6px); } 100% { transform: scale(1); } }
 @keyframes jelly { 0% { transform: scale(1); } 30% { transform: scale(.95, 1.05); } 60% { transform: scale(1.03, .97); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .theme-bump .b-row, .theme-bump .msgs-wrap, .theme-bump .composer-wrap { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .theme-bump .b-row { animation: none; } }
 
 /* reactions */
 .b-wrap { position: relative; display: flex; flex-direction: column; max-width: min(75%, 520px); }
@@ -550,3 +549,9 @@
 .r-backdrop { position: fixed; inset: 0; z-index: 40; }
 .b-row:has(.r-picker) { position: relative; z-index: 41; }
 .r-burst { position: absolute; top: 20%; left: 50%; margin-left: -14px; font-size: 30px; pointer-events: none; z-index: 3; }
+.r-more { color: var(--ink-2); background: var(--bg-2); }
+.emoji-sheet { padding-bottom: 6px; }
+.emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+.emoji-cell { aspect-ratio: 1; font-size: 26px; line-height: 1; border-radius: 12px; display: grid; place-items: center; }
+.emoji-cell:active { background: var(--bg-2); transform: scale(1.2); }
+.emoji-cell.is-on { background: var(--bg-2); }

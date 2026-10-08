@@ -21,10 +21,11 @@ import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, nee
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
+import { IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
+import { EMOJI_GROUPS } from './emojis'
 import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
 
 export type ChatScreenProps = { username: string }
@@ -281,7 +282,7 @@ function MineStatus({ state, id }: { state: 'sending' | 'failed' | 'sent' | 'see
   )
 }
 
-const REACTIONS = ['❤️', '😂', '💀', '😮', '😢', '😡', '👍']
+const REACTIONS = ['❤️', '😂', '💀', '😮', '😢', '👍']
 
 function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null }) {
   const emoji = emojiOnlyCount(m.body)
@@ -289,6 +290,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; m
   const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : ''].join(' ')
   const [picker, setPicker] = useState(false)
   const [burst, setBurst] = useState(0)
+  const [more, setMore] = useState(false)
   const press = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
   const lastTap = useRef(0)
   const reactions = m.reactions ?? {}
@@ -417,11 +419,49 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId }: { m: Message; m
                   {e}
                 </motion.button>
               ))}
+              <motion.button
+                type="button"
+                className="r-opt r-more"
+                aria-label="more emojis"
+                initial={{ scale: 0, rotate: -90 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 600, damping: 16 }}
+                onClick={() => {
+                  setPicker(false)
+                  setMore(true)
+                }}
+              >
+                <IconSmilePlus size={22} />
+              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
       {picker && createPortal(<div className="r-backdrop" onPointerDown={() => setPicker(false)} />, document.body)}
+      <Sheet open={more} onClose={() => setMore(false)} label="pick an emoji">
+        <div className="emoji-sheet">
+          {EMOJI_GROUPS.map((g) => (
+            <div key={g.name}>
+              <h3 className="settings-label">{g.name}</h3>
+              <div className="emoji-grid">
+                {g.list.map((e, i) => (
+                  <button
+                    key={e + i}
+                    type="button"
+                    className={'emoji-cell' + (e === mineR ? ' is-on' : '')}
+                    onClick={() => {
+                      setMore(false)
+                      pick(e)
+                    }}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Sheet>
     </motion.div>
   )
 }

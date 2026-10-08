@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { getTheme } from '../../themes/themes'
 import { Ambient } from '../../themes/Ambient'
 
@@ -10,43 +10,36 @@ export function setThemeOrigin(x: number, y: number) {
 }
 
 const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-const DURATION = 1.05
-const EASE = [0.76, 0, 0.24, 1] as const // expo in-out: slow start, fast middle, feather landing
+const DURATION = 0.85
 
 type Reveal = { id: string; x: number; y: number; w: number; h: number; r: number; key: number }
 
-/** The expanding liquid circle. Pure transforms (mask scales up, content counter-scales), so it stays 60fps on phones. */
+/** Circular wipe from the tap point (CSS keyframes so iOS Safari animates it too) plus two shockwave rings. */
 function Bloom({ rv, onDone }: { rv: Reveal; onDone: () => void }) {
   const t = getTheme(rv.id)
-  const s = useMotionValue(0.0005)
-  const inv = useTransform(s, (v) => 1 / Math.max(v, 0.0005))
-  const glow = useTransform(s, [0, 0.15, 0.8, 1], [0, 0.55, 0.45, 0])
   const done = useRef(onDone)
   done.current = onDone
   useEffect(() => {
-    const c = animate(s, 1, { duration: DURATION, ease: EASE })
     // timers, not animation callbacks: iOS Safari sometimes never reports completion
     const timer = setTimeout(() => done.current(), DURATION * 1000 + 60)
-    return () => {
-      c.stop()
-      clearTimeout(timer)
-    }
-  }, [s])
-  const d = rv.r * 2
+    return () => clearTimeout(timer)
+  }, [])
+  const vars = { '--x': `${rv.x}px`, '--y': `${rv.y}px`, '--d': `${DURATION}s` } as React.CSSProperties
   return (
     <>
-      <motion.div className="bloom" style={{ left: rv.x - rv.r, top: rv.y - rv.r, width: d, height: d, scale: s }}>
-        <motion.div
-          className="bloom-inner"
-          style={{ left: rv.r - rv.x, top: rv.r - rv.y, width: rv.w, height: rv.h, background: t.bg, scale: inv, transformOrigin: `${rv.x}px ${rv.y}px` }}
-        >
-          <Ambient kind={t.ambient} />
-        </motion.div>
-      </motion.div>
-      <motion.div
-        className="bloom-edge"
-        style={{ left: rv.x - rv.r, top: rv.y - rv.r, width: d, height: d, scale: s, opacity: glow, color: t.accent }}
-      />
+      <div className="wipe" style={{ ...vars, background: t.bg }}>
+        <Ambient kind={t.ambient} />
+      </div>
+      {[0, 1].map((i) => (
+        <motion.span
+          key={i}
+          className="theme-ring"
+          style={{ left: rv.x, top: rv.y, borderColor: t.accent }}
+          initial={{ scale: 0, opacity: 0.9 }}
+          animate={{ scale: 9, opacity: 0 }}
+          transition={{ duration: 0.9, delay: i * 0.12, ease: 'easeOut' }}
+        />
+      ))}
     </>
   )
 }
@@ -83,7 +76,7 @@ export function ThemeBackground({ themeId, host, onPhase }: { themeId: string; h
     setRv({ id: themeId, x, y, w: b.width, h: b.height, r, key })
     onPhase?.(true)
     setLabel({ name: getTheme(themeId).name, key })
-    const hide = setTimeout(() => setLabel((l) => (l?.key === key ? null : l)), 1700)
+    const hide = setTimeout(() => setLabel((l) => (l?.key === key ? null : l)), 1600)
     return () => clearTimeout(hide)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [themeId])

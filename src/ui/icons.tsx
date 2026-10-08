@@ -102,3 +102,9 @@ export const IconBrush = (p: P) => (
     <path d="M12.5 7.5l4 4" />
   </Svg>
 )
+export const IconSmilePlus = (p: P) => (
+  <Svg {...p}>
+    <path d="M20.5 12A8.5 8.5 0 1 1 12 3.5" />
+    <path d="M8.5 14.5c.9 1.2 2.1 1.8 3.5 1.8s2.6-.6 3.5-1.8M9 10h.01M15 10h.01M18.5 3v5M16 5.5h5" />
+  </Svg>
+)
