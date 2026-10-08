@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { BLOBS, FACE_INK, TONGUE, applyAvatar, faceTraits, type AvatarConfig, type FaceTraits, type MouthKind } from './face'
 import { useAvatarFor, useHornsFor } from './avatars'
 
-export type FaceMood = 'neutral' | 'happy' | 'shocked' | 'sleepy' | 'talking' | 'wink'
+export type FaceMood = 'neutral' | 'happy' | 'shocked' | 'sleepy' | 'talking' | 'wink' | 'kiss'
 export type Look = { x: number; y: number }
 
 type Props = {
@@ -107,6 +107,13 @@ function Mouth({ kind, t, scale = 1 }: { kind: MouthKind; t: FaceTraits; scale?:
           {t.tooth && <rect x={-3} y={-1.5} width={6} height={3.8} rx={0.8} fill={W} />}
         </g>
       )
+    case 'pucker' as MouthKind:
+      // kissy lips pushed out past the cheek toward the partner (mirrored faces point the other way)
+      return (
+        <g transform={`translate(40 -4) scale(${scale * 1.15})`}>
+          <path d="M-1 -4.5 C3 -6.5 6 -3 4.2 -0.6 C6.4 1.6 4 5.8 -0.6 4.2 C-2.2 3.2 -1.4 1.2 0.2 0 C-1.6 -1.2 -2.6 -3.4 -1 -4.5 Z" fill="#FF6F91" stroke={FACE_INK} strokeWidth={2} strokeLinejoin="round" />
+        </g>
+      )
     case 'flat':
     default:
       return <path transform={`scale(${scale})`} d="M-7.5 2 H7.5" fill="none" {...common} />
@@ -126,7 +133,8 @@ function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; m
     r *= 1.08
   }
   if (mood === 'talking') mouth = 'o'
-  if (mood === 'sleepy') eyes = 'closed'
+  if (mood === 'sleepy' || mood === 'kiss') eyes = 'closed'
+  if (mood === 'kiss') mouth = 'pucker' as MouthKind
   const derpL: Look = t.derp ? { x: look.x - 0.6, y: look.y + 0.2 } : look
   const derpR: Look = t.derp ? { x: look.x + 0.7, y: look.y - 0.3 } : look
 
@@ -286,7 +294,7 @@ function GoofyFaceImpl({ name, avatar, horns, size = 40, look, mood = 'neutral',
   const t = applyAvatar(faceTraits(name), avatar !== undefined ? avatar : custom)
   const reduce = usePrefersReducedMotion()
   const effMood = mood === 'wink' ? 'neutral' : mood
-  const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : t
+  const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : mood === 'kiss' ? { ...t, blush: true } : t
   return (
     <span className={'gf ' + (className ?? '')} style={{ width: size, height: size, ...style }}>
       <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} />

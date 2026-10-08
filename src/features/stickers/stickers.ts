@@ -23,7 +23,7 @@ export type CoupleKind =
 
 /** a = the sender, b = the other person */
 export const COUPLES: { id: CoupleKind; caption: string; a: FaceMood; b: FaceMood }[] = [
-  { id: 'c_kiss', caption: 'mwah', a: 'wink', b: 'happy' },
+  { id: 'c_kiss', caption: 'mwah', a: 'kiss', b: 'kiss' },
   { id: 'c_hug', caption: 'hugs', a: 'happy', b: 'happy' },
   { id: 'c_cuddle', caption: 'cuddles', a: 'sleepy', b: 'wink' },
   { id: 'c_cheek', caption: 'smooch', a: 'wink', b: 'shocked' },

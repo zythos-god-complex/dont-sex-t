@@ -32,15 +32,23 @@ function CoupleImpl({ kind, a, b, size = 168 }: { kind: CoupleKind; a: string; b
         )}
       </span>
       <span className="cpl-a">
-        <GoofyFace name={a} size={face} mood={meta.a} blink={meta.a !== 'sleepy'} />
+        <GoofyFace name={a} size={face} mood={meta.a} blink={meta.a !== 'sleepy' && meta.a !== 'kiss'} />
       </span>
       <span className="cpl-b">
         <span className="cpl-flip">
-          <GoofyFace name={b} size={face} mood={meta.b} blink={meta.b !== 'sleepy'} />
+          <GoofyFace name={b} size={face} mood={meta.b} blink={meta.b !== 'sleepy' && meta.b !== 'kiss'} />
         </span>
       </span>
       <span className="stk-fx cpl-front">
-        {(kind === 'c_kiss' || kind === 'c_hug' || kind === 'c_cuddle' || kind === 'c_forehead' || kind === 'c_missyou') &&
+        {kind === 'c_kiss' && (
+          <>
+            <i className="cpl-smack" />
+            <i className="cpl-kissheart">
+              <Heart />
+            </i>
+          </>
+        )}
+        {(kind === 'c_hug' || kind === 'c_cuddle' || kind === 'c_forehead' || kind === 'c_missyou') &&
           [0, 1, 2].map((i) => (
             <i key={i} className="cpl-heart" style={{ '--i': i } as CSSProperties}>
               <Heart c={i === 1 ? '#FF9ECF' : '#FF4F8B'} />

@@ -137,11 +137,34 @@
 .cpl-heart { width: 15%; height: 15%; left: 42.5%; top: 2%; opacity: 0; animation: cpl-heart 2.4s ease-out infinite; animation-delay: calc(var(--i) * .3s + .8s); }
 @keyframes cpl-heart { 0% { transform: translateY(40%) scale(.3); opacity: 0; } 15% { opacity: 1; transform: translateY(0) scale(1.15); } 60% { opacity: 1; } 100% { transform: translate(calc((var(--i) - 1) * 70%), -110%) scale(.8) rotate(calc((var(--i) - 1) * 18deg)); opacity: 0; } }
 
-/* kiss: lean in, smooch, hearts pop */
-.cpl-k-kiss .cpl-a { animation: cpl-kiss-a 2.4s cubic-bezier(.6,0,.3,1) infinite; }
-.cpl-k-kiss .cpl-b { animation: cpl-kiss-b 2.4s cubic-bezier(.6,0,.3,1) infinite; }
-@keyframes cpl-kiss-a { 0%, 15%, 90%, 100% { transform: translateX(0) rotate(0); } 35%, 70% { transform: translateX(13%) rotate(10deg); } 45% { transform: translateX(15%) rotate(12deg) scale(1.04, .96); } }
-@keyframes cpl-kiss-b { 0%, 15%, 90%, 100% { transform: translateX(0) rotate(0); } 35%, 70% { transform: translateX(-13%) rotate(-10deg); } 45% { transform: translateX(-15%) rotate(-12deg) scale(1.04, .96); } }
+/* kiss: start apart, glide together until the puckered lips meet in the middle, smack, heart */
+.cpl-k-kiss .cpl-a { animation: cpl-kiss-a 3s cubic-bezier(.55,0,.25,1) infinite; }
+.cpl-k-kiss .cpl-b { animation: cpl-kiss-b 3s cubic-bezier(.55,0,.25,1) infinite; }
+@keyframes cpl-kiss-a {
+  0%, 10% { transform: translateX(0%) rotate(0deg); }
+  34% { transform: translateX(15%) rotate(0deg); }
+  38% { transform: translateX(16.5%) scale(1.03, .97); }
+  44%, 68% { transform: translateX(15.5%); }
+  90%, 100% { transform: translateX(0%) rotate(0deg); }
+}
+@keyframes cpl-kiss-b {
+  0%, 10% { transform: translateX(-0%) rotate(0deg); }
+  34% { transform: translateX(-15%) rotate(0deg); }
+  38% { transform: translateX(-16.5%) scale(1.03, .97); }
+  44%, 68% { transform: translateX(-15.5%); }
+  90%, 100% { transform: translateX(-0%) rotate(0deg); }
+}
+.cpl-smack { left: 50%; top: 42%; width: 14px; height: 14px; margin: -7px; border-radius: 50%; border: 2.5px solid #FF4F8B; opacity: 0; animation: cpl-smack 3s ease-out infinite; }
+@keyframes cpl-smack { 0%, 35% { transform: scale(.2); opacity: 0; } 38% { opacity: 1; } 54% { transform: scale(3.4); opacity: 0; } 100% { opacity: 0; } }
+.cpl-kissheart { left: 50%; top: 4%; width: 20%; height: 20%; margin-left: -10%; opacity: 0; animation: cpl-kissheart 3s ease-out infinite; }
+@keyframes cpl-kissheart {
+  0%, 36% { transform: translateY(80%) scale(0); opacity: 0; }
+  43% { transform: translateY(0) scale(1.25); opacity: 1; }
+  50% { transform: translateY(-6%) scale(.95); }
+  58% { transform: translateY(-12%) scale(1.1); }
+  82% { transform: translateY(-60%) scale(1); opacity: 0; }
+  100% { opacity: 0; }
+}
 
 /* hug: rush in, squeeze, sway */
 .cpl-k-hug .cpl-a { animation: cpl-hug-a 2.2s ease-in-out infinite; }
