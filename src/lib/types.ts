@@ -41,6 +41,8 @@ export type Conversation = {
   blocked?: 'me' | 'them' | null
   my_voice?: boolean
   peer_voice?: boolean
+  my_images?: boolean
+  peer_images?: boolean
 }
 
 export const THEME_IDS = [

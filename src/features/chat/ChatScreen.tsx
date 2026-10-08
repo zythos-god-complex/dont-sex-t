@@ -15,19 +15,21 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, sendConfetti, onPeerConfetti } from '../../lib/engine'
+import { loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
+import { IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
 import { THEMES, getTheme, themeVars } from '../../themes/themes'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
 import { Recorder } from '../voice/Recorder'
 import { VoiceBubble } from '../voice/VoiceBubble'
 import { voiceOf } from '../voice/voice'
+import { imageOf, imageBody, prepImage, uploadImage } from '../image/image'
+import { ImageBubble } from '../image/ImageBubble'
 import { Confetti, type ConfettiHandle } from './Confetti'
 import { Sticker } from '../stickers/Sticker'
 import { COUPLES, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
@@ -329,9 +331,11 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
   const stk = stickerOf(m.body)
   const cpl = coupleOf(m.body)
   const voice = voiceOf(m.body)
-  const emoji = stk || cpl || voice ? 0 : emojiOnlyCount(m.body)
+  const img = imageOf(m.body)
+  const [viewer, setViewer] = useState(false)
+  const emoji = stk || cpl || voice || img ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
-  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', voice ? 'b-voice' : ''].join(' ')
+  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', voice ? 'b-voice' : '', img ? 'b-img' : ''].join(' ')
   const [picker, setPicker] = useState(false)
   const [burst, setBurst] = useState(0)
   const [more, setMore] = useState(false)
@@ -376,7 +380,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
     } else {
       lastTap.current = now
       clearTimeout(tapTimer.current)
-      tapTimer.current = setTimeout(() => setActions((a) => !a), 290)
+      tapTimer.current = setTimeout(() => (img ? setViewer(true) : setActions((a) => !a)), 290)
     }
   }
   const pick = (e: string) => {
@@ -444,7 +448,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
               <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? <Sticker kind={stk} name={mine ? myName : peerName} size={140} /> : linkify(m.body).map((p, i) =>
+          {img ? <ImageBubble img={img} open={viewer} onClose={() => setViewer(false)} /> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? <Sticker kind={stk} name={mine ? myName : peerName} size={140} /> : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}
@@ -660,6 +664,29 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const lastSent = useRef<{ body: string; at: number } | null>(null)
   const has = text.trim().length > 0
   const voiceOk = !!conv.my_voice && !!conv.peer_voice
+  const imagesOk = !!conv.my_images && !!conv.peer_images
+  const fileIn = useRef<HTMLInputElement>(null)
+  const [upload, setUpload] = useState<{ preview: string; err?: boolean } | null>(null)
+  const pickImage = async (file: File | undefined) => {
+    if (!file || !file.type.startsWith('image/')) return
+    const preview = URL.createObjectURL(file)
+    setUpload({ preview })
+    const reply = replyTo
+    onClearReply()
+    try {
+      const { blob, w, h } = await prepImage(file)
+      const url = await uploadImage(blob, meId ?? 'anon')
+      sendMessage(conv.id, imageBody(url, w, h), reply)
+      setUpload(null)
+      URL.revokeObjectURL(preview)
+    } catch {
+      setUpload({ preview, err: true })
+      setTimeout(() => {
+        setUpload(null)
+        URL.revokeObjectURL(preview)
+      }, 2200)
+    }
+  }
 
   const resize = () => {
     const el = ta.current
@@ -790,6 +817,14 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           />
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {upload && (
+          <motion.div key="up" className={'img-up' + (upload.err ? ' is-err' : '')} initial={{ opacity: 0, y: 12, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.9 }}>
+            <img src={upload.preview} alt="" />
+            {upload.err ? 'failed' : <TypingDots />}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="composer" style={recording ? { display: 'none' } : undefined}>
         <button
           type="button"
@@ -804,6 +839,21 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
         >
           <IconSticker size={24} />
         </button>
+        {imagesOk && (
+          <button type="button" className="stk-toggle img-tg" aria-label="photo" disabled={!!upload} onPointerDown={(e) => e.preventDefault()} onClick={() => fileIn.current?.click()}>
+            <IconImage size={24} />
+          </button>
+        )}
+        <input
+          ref={fileIn}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            void pickImage(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
         <textarea
           ref={ta}
           rows={1}
@@ -977,6 +1027,15 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
       </div>
       <p className="settings-hint">
         {conv.peer_voice ? (conv.my_voice ? 'on for both of you' : `${conv.peer.username} has it on`) : conv.my_voice ? `waiting on ${conv.peer.username}` : `${conv.peer.username} has it off`}
+      </p>
+      <h3 className="settings-label">photos</h3>
+      <div className="settings-row">
+        <IconImage size={22} />
+        <span className="grow">photos</span>
+        <Toggle label="photos" on={!!conv.my_images} onChange={(v) => void setImages(conv.id, v)} />
+      </div>
+      <p className="settings-hint">
+        {conv.peer_images ? (conv.my_images ? 'on for both of you' : `${conv.peer.username} has it on`) : conv.my_images ? `waiting on ${conv.peer.username}` : `${conv.peer.username} has it off`}
       </p>
       <button type="button" className={'block-btn' + (conv.blocked === 'me' ? ' is-on' : '')} onClick={() => void setBlocked(conv.peer.id, conv.blocked !== 'me')}>
         {conv.blocked === 'me' ? 'unblock ' : 'block '}

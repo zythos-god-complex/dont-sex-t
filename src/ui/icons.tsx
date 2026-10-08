@@ -121,6 +121,13 @@ export const IconSticker = (p: P) => (
     <path d="M9 10h.01M15 10h.01M9 14.5c1 .8 2 1 3 1" />
   </Svg>
 )
+export const IconImage = (p: P) => (
+  <Svg {...p}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="4" />
+    <circle cx="9" cy="10" r="1.7" />
+    <path d="M20.5 15.5l-4.6-4.3-8.4 8.3" />
+  </Svg>
+)
 export const IconMic = (p: P) => (
   <Svg {...p}>
     <rect x="9" y="3" width="6" height="12" rx="3" />

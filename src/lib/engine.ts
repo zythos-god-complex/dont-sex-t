@@ -1639,6 +1639,18 @@ export async function setVoice(convId: string, on: boolean): Promise<void> {
   }
 }
 
+export async function setImages(convId: string, on: boolean): Promise<void> {
+  if (!token) return
+  const c = get().conversations[convId]
+  if (c) set({ conversations: { ...get().conversations, [convId]: { ...c, my_images: on } } })
+  try {
+    onConvEvent(await api.setImages(token, convId, on))
+  } catch {
+    const c2 = get().conversations[convId]
+    if (c2) set({ conversations: { ...get().conversations, [convId]: { ...c2, my_images: !on } } })
+  }
+}
+
 export async function saveNsfw(on: boolean): Promise<void> {
   if (!token) return
   const me = get().me

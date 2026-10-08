@@ -203,6 +203,8 @@ function sameConversation(a: Conversation, b: Conversation): boolean {
     a.blocked === b.blocked &&
     a.my_voice === b.my_voice &&
     a.peer_voice === b.peer_voice &&
+    a.my_images === b.my_images &&
+    a.peer_images === b.peer_images &&
     a.peer === b.peer &&
     a.last_message === b.last_message
   )

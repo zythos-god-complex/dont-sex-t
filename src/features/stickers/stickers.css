@@ -258,3 +258,4 @@
 .stk-pick .cpl { --stk-cap: 10px; }
 .stk-pick .cpl .stk-cap { padding: 3px 6px 4px; border-width: 1.8px; box-shadow: 0 2px 0 #17131F; }
 .stk-grid.is-couple { grid-template-columns: repeat(3, 1fr); }
+.stk-toggle.img-tg { margin-left: -10px; }

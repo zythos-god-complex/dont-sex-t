@@ -50,5 +50,6 @@ export const stickerBody = (k: StickerKind | CoupleKind) => `[[sticker:${k}]]`
 /** Human text for previews, quotes, toasts. */
 export function displayBody(body: string): string {
   if (/^\[\[voice:/.test(body)) return 'voice message'
+  if (/^\[\[img:/.test(body)) return 'photo'
   return stickerOf(body) || coupleOf(body) ? 'sent a sticker' : body
 }
