@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { AnimatePresence, motion, useAnimationControls } from 'motion/react'
-import { join } from '../../lib/engine'
+import { join, joinTemp } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { useOnline } from '../../lib/hooks'
 import { GoofyFace, useLookAt, type FaceMood } from '../../ui/GoofyFace'
@@ -71,6 +71,18 @@ export default function Onboarding() {
       if (isApiError(err) && err.code === 'username_taken') fail('taken, try another')
       else if (isApiError(err) && err.code === 'username_invalid') fail('3 to 20 letters, numbers, _ or .')
       else fail('something broke, try again')
+    }
+  }
+
+  const goTemp = async () => {
+    if (busy) return
+    if (!gender) return fail('pick male or female first')
+    setBusy(true)
+    try {
+      await joinTemp(gender)
+    } catch {
+      setBusy(false)
+      fail('something broke, try again')
     }
   }
 
@@ -188,6 +200,12 @@ export default function Onboarding() {
               <IconArrowRight size={22} />
             </>
           )}
+        </button>
+        <button type="button" className="temp-btn" disabled={busy} onClick={goTemp}>
+          <span className="temp-ghost">
+            <GoofyFace name="goof.ghost" size={22} blink={false} />
+          </span>
+          temp mode
         </button>
       </motion.form>
 
