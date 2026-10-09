@@ -7,7 +7,7 @@ type Shape = 'petal' | 'leaf' | 'heart' | 'star' | 'bubble' | 'confetti' | 'bat'
 type Part = {
   x: number; y: number; vx: number; vy: number; rot: number; vr: number; s: number; c: string; shape: Shape; img?: HTMLImageElement
   state: 'fly' | 'rest' | 'drop' | 'slide'; el?: Element; ox?: number; oy?: number; phase: number
-  sv?: number; cx?: number; top?: number; left?: number
+  sv?: number; cx?: number; top?: number; edge?: number; dir?: number
 }
 
 const LOOK: Record<string, { shape: Shape; colors: string[] }> = {
@@ -154,15 +154,16 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
         p.y = r.top + p.oy!
         continue
       }
-      // riding down a tilted bubble: follow its top edge toward the low (left) end, then fall off
+      // riding down a tilted bubble: follow its top edge toward the low end (yours left, theirs right), then fall off
       if (p.state === 'slide') {
+        const d = p.dir!
         p.sv = Math.min(p.sv! + 0.2, 7)
-        p.x -= p.sv
-        p.y = p.top! + (p.cx! - p.x) * TILT - p.s * 0.45
-        p.rot -= p.sv * 0.03
-        if (p.x < p.left! - 2) {
+        p.x += d * p.sv
+        p.y = p.top! + d * (p.x - p.cx!) * TILT - p.s * 0.45
+        p.rot += d * p.sv * 0.03
+        if (d < 0 ? p.x < p.edge! - 2 : p.x > p.edge! + 2) {
           p.state = 'drop'
-          p.vx = -p.sv * 0.8
+          p.vx = d * p.sv * 0.8
           p.vy = p.sv * 0.3
         }
         continue
@@ -197,22 +198,24 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
       ph.released = true
       setTimeout(() => {
         if (ph.landing === 'slide') {
-          const tilted = new Map<Element, DOMRect>()
+          const tilted = new Map<Element, { r: DOMRect; d: number }>()
           for (const p of parts.current)
             if (p.state === 'rest') {
-              let r = tilted.get(p.el!)
-              if (!r) tilted.set(p.el!, (r = p.el!.getBoundingClientRect()))
+              let t = tilted.get(p.el!)
+              if (!t) tilted.set(p.el!, (t = { r: p.el!.getBoundingClientRect(), d: p.el!.closest('.b-row')?.classList.contains('mine') ? -1 : 1 }))
               p.state = 'slide'
               p.sv = 0.2 + Math.random() * 0.8
-              p.cx = r.left + r.width / 2
-              p.top = r.top
-              p.left = r.left
+              p.cx = t.r.left + t.r.width / 2
+              p.top = t.r.top
+              p.dir = t.d
+              p.edge = t.d < 0 ? t.r.left : t.r.right
             }
-          tilted.forEach((_, el) => {
-            el.classList.remove('b-tilt')
+          tilted.forEach(({ d }, el) => {
+            const cls = d < 0 ? 'b-tilt' : 'b-tilt-r'
+            el.classList.remove('b-tilt', 'b-tilt-r')
             void (el as HTMLElement).offsetWidth
-            el.classList.add('b-tilt')
-            setTimeout(() => el.classList.remove('b-tilt'), 1500)
+            el.classList.add(cls)
+            setTimeout(() => el.classList.remove(cls), 1500)
           })
           navigator.vibrate?.(10)
           return

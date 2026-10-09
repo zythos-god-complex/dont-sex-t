@@ -720,6 +720,8 @@
 /* confetti landing: slide. Uses the standalone rotate property so it never fights the bubble's drag transform */
 .b.b-tilt { animation: b-tilt 1.5s cubic-bezier(.3,.7,.3,1); }
 @keyframes b-tilt { 0% { rotate: 0deg; } 18%, 62% { rotate: -9deg; } 100% { rotate: 0deg; } }
+.b.b-tilt-r { animation: b-tilt-r 1.5s cubic-bezier(.3,.7,.3,1); }
+@keyframes b-tilt-r { 0% { rotate: 0deg; } 18%, 62% { rotate: 9deg; } 100% { rotate: 0deg; } }
 .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--bg); gap: 2px; }
 .seg button { padding: 7px 14px; border-radius: 999px; font: 700 14px/1 var(--font-display); color: var(--muted); -webkit-tap-highlight-color: transparent; }
 .seg button.is-on { background: var(--ink); color: var(--bg); }
