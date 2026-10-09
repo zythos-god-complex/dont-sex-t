@@ -225,6 +225,8 @@ export function ModeButton() {
 function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conversation; now: number; sinceOnline: string | null; online: boolean; onReply: (m: Message) => void }) {
   const me = useMe()
   const allMsgs = useMessages(conv.id)
+  // only messages that arrive while the chat is open animate in; opening a chat paints instantly
+  const openedAt = useRef(Date.now())
   const msgs = useMemo(() => allMsgs.filter((x) => x.body !== '[[unsent]]'), [allMsgs])
   const typing = usePeerTyping(conv.id)
   const mine = useMyLastStatus(conv.id)
@@ -316,7 +318,7 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
     const joinNext = !!next && sameGroup(m, next) && !needsSeparator(m, next)
     items.push(
       <Fragment key={m.id}>
-        <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} meId={me?.id ?? null} onReply={onReply} />
+        <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} meId={me?.id ?? null} onReply={onReply} fresh={Date.parse(m.created_at) > openedAt.current - 5000} />
         {isMine && mine?.id === m.id && <MineStatus state={mine.state === 'seen' && me?.show_seen === false ? 'sent' : mine.state} id={m.id} />}
       </Fragment>,
     )
@@ -381,7 +383,7 @@ function peerNsfw(s: ReturnType<typeof useStore.getState>, peer: Conversation['p
 
 const REACTIONS = ['❤️', '😂', '💀', '😮', '😢', '👍']
 
-function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null; onReply: (m: Message) => void }) {
+function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null; onReply: (m: Message) => void; fresh?: boolean }) {
   const [actions, setActions] = useState(false)
   const moved = useRef(false)
   const tapTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -471,7 +473,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
     <motion.div
       data-mid={m.id}
       className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '') + (chips.length ? ' has-reacts' : '')}
-      initial={{ opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 }}
+      initial={fresh ? { opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 } : false}
       animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
       transition={spring}
     >

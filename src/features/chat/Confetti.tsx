@@ -249,7 +249,7 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
     const th = getTheme(themeRef.current)
     return LOOK[th.ambient] ?? { shape: 'confetti' as Shape, colors: [th.sent[0], th.sent[1], th.sent[2], th.accent] }
   }
-  const count = () => Math.round(110 * Math.min(2.5, Math.max(0.5, useAmbientPrefs.getState().amount)))
+  const count = () => Math.round((document.documentElement.dataset.lite ? 60 : 110) * Math.min(2.5, Math.max(0.5, useAmbientPrefs.getState().amount)))
   const add = (lk: { shape: Shape; colors: string[] }, i: number, x: number, y: number, vx: number, vy: number) => {
     const c = lk.colors[i % lk.colors.length]
     const doodle = lk.shape === 'doodle'

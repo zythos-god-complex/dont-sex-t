@@ -65,7 +65,8 @@ export const useThemeMode = (): ThemeMode => useModeStore((s) => s.mode)
 export function flipModeFrom(x: number, y: number, commit: (fn: () => void) => void) {
   const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown }
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (!doc.startViewTransition || reduce) {
+  // lite phones skip the full-screen snapshot the circular reveal needs
+  if (!doc.startViewTransition || reduce || document.documentElement.dataset.lite) {
     toggleMode()
     return
   }

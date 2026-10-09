@@ -24,5 +24,22 @@ export default defineConfig({
   plugins: [react(), versionFile()],
   define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
   server: { host: true, port: 5173 },
-  build: { target: 'es2022', sourcemap: false },
+  build: {
+    // older iPhones (iOS 14+) and Android WebViews (Chrome 87+) still run the app
+    target: ['es2020', 'safari14', 'chrome87', 'firefox78'],
+    sourcemap: false,
+    rolldownOptions: {
+      output: {
+        // libraries rarely change; keep them in their own cached files so a deploy only re-downloads app code
+        codeSplitting: {
+          groups: [
+            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+            { name: 'motion', test: /node_modules[\\/](motion|motion-dom|motion-utils|framer-motion)[\\/]/ },
+            { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ },
+            { name: 'vendor', test: /node_modules[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
 })

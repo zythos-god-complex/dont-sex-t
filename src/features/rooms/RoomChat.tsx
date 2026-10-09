@@ -22,7 +22,7 @@ const EMPTY: RoomMsg[] = []
 const group = (a: RoomMsg | undefined, b: RoomMsg | undefined) =>
   !!a && !!b && a.sender_id === b.sender_id && Math.abs(Date.parse(b.created_at) - Date.parse(a.created_at)) < 180000 && !needsSeparator(a, b)
 
-function Bubble({ m, mine, joinPrev, joinNext, mod }: { m: RoomMsg; mine: boolean; joinPrev: boolean; joinNext: boolean; mod?: boolean }) {
+function Bubble({ m, mine, joinPrev, joinNext, mod, fresh }: { m: RoomMsg; mine: boolean; joinPrev: boolean; joinNext: boolean; mod?: boolean; fresh?: boolean }) {
   const [arm, setArm] = useState(false)
   const name = m.sender?.username ?? ''
   const stk = stickerOf(m.body)
@@ -34,7 +34,7 @@ function Bubble({ m, mine, joinPrev, joinNext, mod }: { m: RoomMsg; mine: boolea
       {!mine && !joinPrev && <span className="b-who">{name}</span>}
       <motion.div
         className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '')}
-        initial={{ opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 }}
+        initial={fresh ? { opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 } : false}
         animate={{ opacity: m.state === 'sending' ? 0.7 : 1, x: 0, y: 0, scale: 1 }}
         transition={spring}
       >
@@ -75,6 +75,7 @@ function List({ room }: { room: Room }) {
   const all = useRooms((s) => s.msgs[room.id]) ?? EMPTY
   const msgs = useMemo(() => all.filter((m) => m.kind !== 'removed'), [all])
   const mod = me?.admin === true && room.kind === 'public'
+  const openedAt = useRef(Date.now())
   const more = useRooms((s) => !!s.more[room.id])
   const typers = useRooms((s) => s.typing[room.id])
   const typing = typers ? Object.values(typers) : []
@@ -121,7 +122,7 @@ function List({ room }: { room: Room }) {
   for (let i = 0; i < msgs.length; i++) {
     const m = msgs[i]
     if (needsSeparator(msgs[i - 1], m)) items.push(<div key={'sep' + m.id} className="sep">{daySeparator(m.created_at, now)}</div>)
-    items.push(<Bubble key={m.id} m={m} mine={m.sender_id === me?.id} joinPrev={group(msgs[i - 1], m)} joinNext={group(m, msgs[i + 1])} mod={mod} />)
+    items.push(<Bubble key={m.id} m={m} mine={m.sender_id === me?.id} joinPrev={group(msgs[i - 1], m)} joinNext={group(m, msgs[i + 1])} mod={mod} fresh={Date.parse(m.created_at) > openedAt.current - 5000} />)
   }
 
   return (

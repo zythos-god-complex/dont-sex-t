@@ -1,16 +1,13 @@
 import './styles/index.css'
 import { Analytics } from '@vercel/analytics/react'
 import UpdateBanner from './features/update/UpdateBanner'
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Route, Switch, useLocation, useRoute } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
 import { useConnection, useMe, useStatus, useUnreadTotal } from './lib/hooks'
-import Onboarding from './features/onboarding/Onboarding'
 import Lobby from './features/lobby/Lobby'
 import Inbox from './features/inbox/Inbox'
 import ChatScreen from './features/chat/ChatScreen'
-import RoomsScreen from './features/rooms/RoomsScreen'
-import RoomChat from './features/rooms/RoomChat'
 import { useRoomsUnread } from './features/rooms/rooms'
 import Toasts from './features/toasts/Toasts'
 import { Badge, Wordmark, useIsDesktop } from './ui/kit'
@@ -18,6 +15,18 @@ import { IconLive, IconRooms } from './ui/icons'
 import { bindVisualViewport, trackNav } from './features/shell/nav'
 import { MeButton } from './features/shell/MeSheet'
 import { refreshBlocks } from './lib/engine'
+
+// screens most visits never open load on demand, then get warmed up when the phone is idle
+const loadOnboarding = () => import('./features/onboarding/Onboarding')
+const loadRooms = () => import('./features/rooms/RoomsScreen')
+const loadRoomChat = () => import('./features/rooms/RoomChat')
+const Onboarding = lazy(loadOnboarding)
+const RoomsScreen = lazy(loadRooms)
+const RoomChat = lazy(loadRoomChat)
+if (typeof window !== 'undefined') {
+  const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 4000 }) : setTimeout(cb, 2500))
+  window.addEventListener('load', () => idle(() => void loadRooms().then(loadRoomChat).catch(() => {})), { once: true })
+}
 
 function depthOf(path: string): number {
   if (path.startsWith('/dm/') || path.startsWith('/rooms/')) return 2
@@ -69,9 +78,9 @@ function MobileApp() {
             <Route path="/dm">
               <Inbox variant="screen" />
             </Route>
-            <Route path="/rooms/:id">{(p) => <RoomChat id={p.id} />}</Route>
+            <Route path="/rooms/:id">{(p) => <Suspense fallback={null}><RoomChat id={p.id} /></Suspense>}</Route>
             <Route path="/rooms">
-              <RoomsScreen />
+              <Suspense fallback={null}><RoomsScreen /></Suspense>
             </Route>
             <Route>
               <Lobby />
@@ -130,7 +139,7 @@ function DesktopApp() {
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.18 }}
             >
-              {inChat ? <ChatScreen username={decodeURIComponent(params!.username)} /> : inRoom ? <RoomChat id={roomParams!.id} /> : inRooms ? <RoomsScreen /> : <Lobby />}
+              {inChat ? <ChatScreen username={decodeURIComponent(params!.username)} /> : inRoom ? <Suspense fallback={null}><RoomChat id={roomParams!.id} /></Suspense> : inRooms ? <Suspense fallback={null}><RoomsScreen /></Suspense> : <Lobby />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -159,7 +168,7 @@ export default function App() {
   if (status === 'onboarding')
     return (
       <>
-        <Onboarding />
+        <Suspense fallback={null}><Onboarding /></Suspense>
         <UpdateBanner />
         <Analytics />
       <UpdateBanner />

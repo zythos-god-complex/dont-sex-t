@@ -5,6 +5,14 @@ import { boot } from './lib/engine'
 import { registerSW } from './lib/push'
 import App from './App.tsx'
 
+// Budget phones (few cores / little RAM / data saver) get lite mode: no live blur, lighter effects.
+{
+  const n = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } }
+  // deviceMemory only exists on Chromium (Android); iPhones never trip this and keep the full effects
+  const lite = (n.deviceMemory !== undefined && (n.deviceMemory <= 2 || (n.hardwareConcurrency || 8) <= 4)) || n.connection?.saveData === true
+  if (lite) document.documentElement.dataset.lite = '1'
+}
+
 // Hydrate from cache + open the socket before the first paint.
 boot()
 
