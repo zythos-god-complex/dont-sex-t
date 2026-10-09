@@ -7,6 +7,27 @@ export const config = {
 }
 
 const COOKIE = 'gat_gate'
+// accounts that walk straight in (their login cookie is checked against the database)
+const ALLOW = (process.env.SITE_ALLOW || 'ember,admin').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+const SUPABASE_URL = (process.env.VITE_SUPABASE_URL || 'https://afxnqxxntxfawcgxmyac.supabase.co').replace(/\/+$/, '')
+const SUPABASE_KEY = process.env.VITE_SUPABASE_KEY || 'sb_publishable_wCY80oH-5UNwFCgyE3O2iQ_FBlU57ws'
+
+/** Username behind a GoofyAhhTalk login token, or null (bad, banned or unreachable). */
+async function whoIs(token: string): Promise<string | null> {
+  if (!/^[A-Za-z0-9_-]{20,128}$/.test(token)) return null
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/gat_me`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify({ p_token: token }),
+    })
+    if (!r.ok) return null
+    const me = (await r.json()) as { username?: string }
+    return typeof me?.username === 'string' ? me.username : null
+  } catch {
+    return null
+  }
+}
 
 async function sha(text: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('gat-gate-v2:' + text))
@@ -80,6 +101,21 @@ export default async function middleware(req: Request): Promise<Response | undef
   }
 
   if (cookieOf(req, COOKIE) === want) return // unlocked: serve the site as usual
+
+  // allowed accounts skip the password: unlock and reload the same page
+  const token = cookieOf(req, 'gat_t') || url.searchParams.get('t')
+  if (token && req.method === 'GET') {
+    const name = await whoIs(token)
+    if (name && ALLOW.includes(name.toLowerCase()))
+      return new Response(null, {
+        status: 307,
+        headers: {
+          location: url.pathname + url.search,
+          'set-cookie': `${COOKIE}=${want}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`,
+          'cache-control': 'no-store',
+        },
+      })
+  }
   // assets and json behind the gate just fail; pages get the password screen
   const accept = req.headers.get('accept') || ''
   if (!accept.includes('text/html')) return new Response('locked', { status: 401, headers: { 'cache-control': 'no-store' } })
