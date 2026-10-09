@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation } from 'wouter'
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'motion/react'
 import {
@@ -15,7 +15,7 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti, openOnce } from '../../lib/engine'
+import { clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti, openOnce, unsend } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
@@ -214,7 +214,8 @@ export function ModeButton() {
 
 function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conversation; now: number; sinceOnline: string | null; online: boolean; onReply: (m: Message) => void }) {
   const me = useMe()
-  const msgs = useMessages(conv.id)
+  const allMsgs = useMessages(conv.id)
+  const msgs = useMemo(() => allMsgs.filter((x) => x.body !== '[[unsent]]'), [allMsgs])
   const typing = usePeerTyping(conv.id)
   const mine = useMyLastStatus(conv.id)
   const hasMore = useHasMore(conv.id)
@@ -389,6 +390,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
   const img = imageOf(m.body)
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, s.conversations[m.conversation_id]?.peer))
   const [viewer, setViewer] = useState(false)
+  const admin = useStore((s) => s.me?.admin === true)
   const gone = m.body === GONE
   const once = !!img?.once
   // view once: 5s after opening it closes itself, and closing (any way) burns it for both
@@ -534,6 +536,11 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
               <button type="button" aria-label="reply" onClick={() => { setActions(false); onReply(m) }}>
                 <IconReply size={19} />
               </button>
+              {mine && admin && (
+                <button type="button" aria-label="unsend" onClick={() => { setActions(false); void unsend(m) }}>
+                  <IconClose size={19} />
+                </button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,0 +1,3 @@
+-- Admin unsend in DMs: the admin can pull back their own messages for both people. The body becomes
+-- [[unsent]] (clients hide it) and any photo/voice file is deleted from storage.
+-- Applied live as migration gat_unsend: public.gat_unsend(p_token text, p_msg uuid).

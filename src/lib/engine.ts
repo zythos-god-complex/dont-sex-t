@@ -1724,6 +1724,18 @@ export async function setImages(convId: string, on: boolean): Promise<void> {
   }
 }
 
+/** Admin only: pull back one of your own DM messages for both people. */
+export async function unsend(msg: Message): Promise<void> {
+  if (!token) return
+  const put = (m: Message) => set((st) => ({ messages: { ...st.messages, [m.conversation_id]: upsertMessages(st.messages[m.conversation_id], [m]) } }))
+  put({ ...msg, body: '[[unsent]]' })
+  try {
+    put(await api.unsend(token, msg.id))
+  } catch {
+    put(msg)
+  }
+}
+
 /** View-once photo was seen: the server deletes the file and turns the message into [[img-gone]] for both. */
 export async function openOnce(msg: Message): Promise<void> {
   if (!token) return
