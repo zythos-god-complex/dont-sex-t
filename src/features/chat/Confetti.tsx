@@ -25,8 +25,8 @@ const LOOK: Record<string, { shape: Shape; colors: string[] }> = {
 
 const TILT = Math.tan((9 * Math.PI) / 180) // bubble tilt for the slide landing, matches .b-tilt
 
-export type Landing = 'shake' | 'slide'
-/** landing: whose style plays (the tapper's, so both screens match); missing = this device's setting */
+import type { Landing } from '../../themes/ambientPrefs'
+/** landing: whose style plays (the tapper's, so both screens match); missing = shake */
 export type ConfettiHandle = { burst: (x: number, y: number, landing?: Landing) => void; rain: (landing?: Landing) => void }
 
 /** Theme particle burst that lands on message bubbles and gets shaken off. */
@@ -196,7 +196,7 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
     if (!ph.released && (flying === 0 || t > 3.4) && t > 1.4) {
       ph.released = true
       setTimeout(() => {
-        if ((ph.landing ?? useAmbientPrefs.getState().landing) === 'slide') {
+        if (ph.landing === 'slide') {
           const tilted = new Map<Element, DOMRect>()
           for (const p of parts.current)
             if (p.state === 'rest') {

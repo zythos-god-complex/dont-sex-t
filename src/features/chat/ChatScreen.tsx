@@ -43,7 +43,7 @@ import { Aura } from '../../ui/Aura'
 import { useFlairFor } from '../../ui/flair'
 import { ProfileCard } from '../profile/ProfileCard'
 import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
-import { AMBIENT_LABEL, PARTICLE_AMBIENTS, setAmbientPrefs, useAmbientPrefs } from '../../themes/ambientPrefs'
+import { AMBIENT_LABEL, PARTICLE_AMBIENTS, landingFor, setAmbientPrefs, setLanding, useAmbientPrefs } from '../../themes/ambientPrefs'
 
 export type ChatScreenProps = { username: string }
 
@@ -100,7 +100,7 @@ function ChatView({ conv }: { conv: Conversation }) {
     k.y = e.clientY
     if (k.n >= 4) {
       k.n = 0
-      const landing = useAmbientPrefs.getState().landing
+      const landing = landingFor(conv.id)
       confetti.current?.burst(k.x, k.y, landing)
       sendConfetti(conv.id, { x: Math.min(1, Math.max(0, k.x / window.innerWidth)), y: Math.min(1, Math.max(0, k.y / window.innerHeight)) }, landing)
     }
@@ -1054,6 +1054,23 @@ function NameHistory({ peerId }: { peerId: string }) {
   )
 }
 
+/** Shake or slide: what the bubbles do with tap-4 confetti in this chat (the tapper's pick plays on both screens). */
+function LandingControl({ convId }: { convId: string }) {
+  const landing = useAmbientPrefs((p) => p.landing[convId] ?? 'shake')
+  return (
+    <div className="settings-row" style={{ marginTop: 8 }}>
+      <span className="grow">confetti</span>
+      <span className="seg">
+        {(['shake', 'slide'] as const).map((k) => (
+          <button key={k} type="button" className={landing === k ? 'is-on' : ''} onClick={() => setLanding(convId, k)}>
+            {k}
+          </button>
+        ))}
+      </span>
+    </div>
+  )
+}
+
 function AmbientControls({ themeId }: { themeId: string }) {
   const kind = getTheme(themeId).ambient
   const amount = useAmbientPrefs((p) => p.amount)
@@ -1184,6 +1201,7 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
         )}
       </AnimatePresence>
       <AmbientControls themeId={conv.theme} />
+      <LandingControl convId={conv.id} />
       <PinRow convId={conv.id} />
       <h3 className="settings-label">notifications</h3>
       <div className="settings-row">
