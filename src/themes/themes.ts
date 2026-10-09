@@ -43,7 +43,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(circle at 1px 1px, rgba(246,241,234,.06) 1px, transparent 0) 0 0/22px 22px, #121016',
       ink: '#F1ECE4', meta: 'rgba(241,236,228,.52)', header: 'rgba(18,16,22,.86)',
-      sent: ['#E8B53A', '#E58A38', '#E0645A'], sentInk: '#17131F',
+      sent: ['#6E3F1C', '#6D2F24', '#64243A'], sentInk: '#F1ECE4',
       recv: '#221E29', recvInk: '#F1ECE4', accent: '#FF6A47', accentInk: '#17131F',
       composer: '#1D1923', composerInk: '#F1ECE4',
     },
@@ -60,7 +60,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(110% 70% at 100% 0%, rgba(120,30,70,.38) 0%, transparent 60%), radial-gradient(90% 60% at 0% 100%, rgba(90,20,55,.35) 0%, transparent 60%), #160B12',
       ink: '#F8E1EA', meta: 'rgba(248,225,234,.52)', header: 'rgba(22,11,18,.86)',
-      sent: ['#BE3E75', '#AB346A', '#92285B'], sentInk: '#FFF4F8',
+      sent: ['#702445', '#6A2041', '#5F1C3C'], sentInk: '#F8E1EA',
       recv: '#2A1620', recvInk: '#F8E1EA', accent: '#E25C93', accentInk: '#1A0A12',
       composer: '#22121B', composerInk: '#F8E1EA',
     },
@@ -77,7 +77,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(90% 60% at 80% 0%, #1A2552 0%, transparent 60%), linear-gradient(180deg, #0B1026 0%, #070A14 100%)',
       ink: '#E2E6FA', meta: 'rgba(226,230,250,.52)', header: 'rgba(11,16,38,.84)',
-      sent: ['#3769D6', '#3156C8', '#3F3AB8'], sentInk: '#F4F6FF',
+      sent: ['#213B73', '#1F326B', '#201D5D'], sentInk: '#E2E6FA',
       recv: '#1A2142', recvInk: '#E2E6FA', accent: '#5B84FF', accentInk: '#0A0F26',
       composer: '#141A35', composerInk: '#E2E6FA',
     },
@@ -94,7 +94,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(90% 60% at 0% 0%, rgba(80,110,40,.32) 0%, transparent 60%), radial-gradient(80% 60% at 100% 100%, rgba(90,70,40,.25) 0%, transparent 60%), #11150D',
       ink: '#E6EDD8', meta: 'rgba(230,237,216,.52)', header: 'rgba(17,21,13,.86)',
-      sent: ['#577B32', '#4F752B', '#426624'], sentInk: '#F6FAEE',
+      sent: ['#364C1F', '#354E1D', '#334F1C'], sentInk: '#E6EDD8',
       recv: '#1F2718', recvInk: '#E6EDD8', accent: '#8DBA55', accentInk: '#11150D',
       composer: '#1A2114', composerInk: '#E6EDD8',
     },
@@ -111,7 +111,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(90% 60% at 50% 0%, rgba(20,110,115,.35) 0%, transparent 65%), linear-gradient(180deg, #06191C 0%, #041114 100%)',
       ink: '#D8F3F1', meta: 'rgba(216,243,241,.52)', header: 'rgba(6,25,28,.86)',
-      sent: ['#157C74', '#126E70', '#0E5C66'], sentInk: '#F0FBFA',
+      sent: ['#18534E', '#185253', '#195057'], sentInk: '#D8F3F1',
       recv: '#0F2A2E', recvInk: '#D8F3F1', accent: '#3CC8BE', accentInk: '#04171A',
       composer: '#0C2327', composerInk: '#D8F3F1',
     },
@@ -128,7 +128,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(70% 50% at 20% 20%, rgba(110,80,200,.28) 0%, transparent 70%), radial-gradient(60% 50% at 90% 80%, rgba(70,90,190,.22) 0%, transparent 70%), #110E1C',
       ink: '#E9E3FB', meta: 'rgba(233,227,251,.52)', header: 'rgba(17,14,28,.86)',
-      sent: ['#6E5BD0', '#5D4EC2', '#4D47B2'], sentInk: '#F6F3FF',
+      sent: ['#2E2173', '#2C2366', '#262357'], sentInk: '#E9E3FB',
       recv: '#211B34', recvInk: '#E9E3FB', accent: '#9C8AF5', accentInk: '#110E1C',
       composer: '#1B162B', composerInk: '#E9E3FB',
     },
@@ -162,7 +162,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(80% 60% at 0% 0%, rgba(160,40,120,.3) 0%, transparent 60%), radial-gradient(80% 60% at 100% 100%, rgba(40,100,170,.28) 0%, transparent 60%), #150E1A',
       ink: '#FBE4F3', meta: 'rgba(251,228,243,.52)', header: 'rgba(21,14,26,.86)',
-      sent: ['#C23B88', '#9047B8', '#396FB7'], sentInk: '#FFF5FB',
+      sent: ['#712250', '#4E2663', '#1D395D'], sentInk: '#FBE4F3',
       recv: '#26192D', recvInk: '#FBE4F3', accent: '#F062B4', accentInk: '#150E1A',
       composer: '#1F1525', composerInk: '#FBE4F3',
     },
@@ -179,7 +179,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(80% 60% at 100% 0%, rgba(150,130,20,.26) 0%, transparent 60%), radial-gradient(70% 60% at 0% 100%, rgba(90,130,20,.22) 0%, transparent 60%), #13120A',
       ink: '#F8F3D2', meta: 'rgba(248,243,210,.52)', header: 'rgba(19,18,10,.86)',
-      sent: ['#D9C02C', '#AFC22A', '#7AB23A'], sentInk: '#1A1904',
+      sent: ['#44531A', '#2B5320', '#1C4B32'], sentInk: '#F8F3D2',
       recv: '#24220F', recvInk: '#F8F3D2', accent: '#F2D43A', accentInk: '#1A1904',
       composer: '#1D1B0C', composerInk: '#F8F3D2',
     },
@@ -196,7 +196,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'linear-gradient(180deg, #06121A 0%, #050B10 100%)',
       ink: '#DCF7EE', meta: 'rgba(220,247,238,.52)', header: 'rgba(6,18,26,.84)',
-      sent: ['#2BBF8E', '#1FA3A0', '#2090BB'], sentInk: '#03201A',
+      sent: ['#185340', '#185352', '#1C4C5F'], sentInk: '#DCF7EE',
       recv: '#13222B', recvInk: '#DCF7EE', accent: '#3DE0A6', accentInk: '#03201A',
       composer: '#0F1B22', composerInk: '#DCF7EE',
     },
@@ -213,7 +213,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(90% 60% at 50% 0%, #1F4A35 0%, transparent 70%), #0D1D15',
       ink: '#DFEFE3', meta: 'rgba(223,239,227,.52)', header: 'rgba(13,29,21,.86)',
-      sent: ['#6FCC85', '#47B271', '#2D9663'], sentInk: '#06170D',
+      sent: ['#1D532A', '#205033', '#195236'], sentInk: '#DFEFE3',
       recv: '#18332A', recvInk: '#DFEFE3', accent: '#53C77F', accentInk: '#06170D',
       composer: '#132A20', composerInk: '#DFEFE3',
     },
@@ -230,7 +230,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'linear-gradient(135deg, #151A24 0%, #252C3B 24%, #12161F 50%, #222938 76%, #141822 100%)',
       ink: '#E3E9F5', meta: 'rgba(227,233,245,.52)', header: 'rgba(21,26,36,.86)',
-      sent: ['#3473A7', '#6A5BC4', '#AC4C99'], sentInk: '#F5F8FF',
+      sent: ['#224B6D', '#2E2465', '#55264C'], sentInk: '#E3E9F5',
       recv: '#242B3A', recvInk: '#E3E9F5', accent: '#7C9BFF', accentInk: '#10141D',
       composer: '#1D2330', composerInk: '#E3E9F5',
     },
@@ -247,7 +247,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(70% 45% at 50% 0%, rgba(255,214,0,.11) 0%, transparent 70%), linear-gradient(180deg, #171A22 0%, #0C0E13 60%, #07080B 100%)',
       ink: '#E9EBF0', meta: 'rgba(233,235,240,.52)', header: 'rgba(10,11,15,.86)',
-      sent: ['#F2D23A', '#EBC000', '#D9A400'], sentInk: '#0B0B0E',
+      sent: ['#2C303A', '#272A33', '#212430'], sentInk: '#F2C800',
       recv: '#1C1F27', recvInk: '#E9EBF0', accent: '#F2C800', accentInk: '#0B0B0E',
       composer: '#171A21', composerInk: '#E9EBF0',
     },
@@ -264,7 +264,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(90% 55% at 50% 115%, rgba(170,20,60,.42) 0%, transparent 62%), radial-gradient(70% 45% at 0% 0%, rgba(110,20,45,.3) 0%, transparent 60%), #18090F',
       ink: '#FADDE5', meta: 'rgba(250,221,229,.52)', header: 'rgba(24,9,15,.86)',
-      sent: ['#C93A63', '#B01E4A', '#900E39'], sentInk: '#FFF2F5',
+      sent: ['#732139', '#6B1F36', '#5F1C32'], sentInk: '#FADDE5',
       recv: '#2A121B', recvInk: '#FADDE5', accent: '#F05A82', accentInk: '#18090F',
       composer: '#22101A', composerInk: '#FADDE5',
     },
@@ -281,7 +281,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(60% 40% at 0% 0%, rgba(150,120,20,.22) 0%, transparent 65%), radial-gradient(60% 45% at 100% 30%, rgba(160,40,120,.24) 0%, transparent 65%), radial-gradient(70% 45% at 30% 100%, rgba(40,100,170,.24) 0%, transparent 65%), #14101D',
       ink: '#ECE6FA', meta: 'rgba(236,230,250,.52)', header: 'rgba(20,16,29,.86)',
-      sent: ['#6248CC', '#B83A86', '#AC5B27'], sentInk: '#FBF8FF',
+      sent: ['#312173', '#69214C', '#5F361C'], sentInk: '#ECE6FA',
       recv: '#231D32', recvInk: '#ECE6FA', accent: '#9479FF', accentInk: '#14101D',
       composer: '#1D182A', composerInk: '#ECE6FA',
     },
@@ -298,7 +298,7 @@ const SPECS: ThemeSpec[] = [
     dark: {
       bg: 'radial-gradient(85% 55% at 50% 105%, rgba(170,0,42,.42) 0%, transparent 70%), radial-gradient(60% 40% at 100% 0%, rgba(120,0,88,.32) 0%, transparent 70%), radial-gradient(50% 35% at 0% 30%, rgba(80,0,36,.3) 0%, transparent 70%), #0E0508',
       ink: '#F9DFE6', meta: 'rgba(249,223,230,.52)', header: 'rgba(14,5,8,.86)',
-      sent: ['#D12744', '#B0062C', '#7E0031'], sentInk: '#FFF2F5',
+      sent: ['#73212F', '#6B1F30', '#5F1C36'], sentInk: '#F9DFE6',
       recv: '#23101A', recvInk: '#F9DFE6', accent: '#F03558', accentInk: '#FFF2F5',
       composer: '#1B0A12', composerInk: '#F9DFE6',
     },

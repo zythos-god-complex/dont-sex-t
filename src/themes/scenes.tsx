@@ -178,19 +178,46 @@ export function BffScene({ n }: { n: number }) {
   )
 }
 
-// ------------------------------------------------------------------ lust: low light
+// ------------------------------------------------------------------ lust: velvet drapes
 
-/** A warm low glow with embers drifting up. */
+// fold lines: start spread across the top, pinch into the tieback, flare out to the floor
+const FOLDS = [10, 26, 42, 58, 74, 90].map((x, i) => {
+  const tx = 18 + i * 3.2
+  return `M${x} 0 C${x} 120 ${tx + 6} 210 ${tx} 252 C${tx + 4} 300 ${x * 0.7 + 4} 350 ${x * 0.62 + 2} 400`
+})
+const Drape = ({ side }: { side: 'l' | 'r' }) => (
+  <span className={'ls-drape ' + side}>
+    <svg viewBox="0 0 100 400" width="100%" height="100%" preserveAspectRatio="none">
+      <g transform={side === 'r' ? 'translate(100 0) scale(-1 1)' : undefined}>
+        <path d="M0 0 H100 C100 120 46 214 30 252 C44 290 70 350 72 400 H0 Z" className="ls-cloth" />
+        {FOLDS.map((d, i) => (
+          <path key={i} d={d} className={i % 2 ? 'ls-fold-lo' : 'ls-fold-hi'} />
+        ))}
+        <path d="M0 0 H100 C100 120 46 214 30 252 C44 290 70 350 72 400" className="ls-hem" />
+        {/* strokes only, so the drawing survives the stretch to screen height */}
+        <path d="M0 247 Q16 256 34 249" className="ls-tie" />
+        <path d="M31 251 V284" className="ls-cord" />
+        <path d="M31 286 V289" className="ls-knot" />
+        <path d="M31 293 V306" className="ls-tassel" />
+      </g>
+    </svg>
+  </span>
+)
+
+/** Velvet drapes framing the chat, candle-warm light that breathes, tiny embers. */
 export function LustScene({ n }: { n: number }) {
   return (
     <div className="amb sc-lust" aria-hidden="true">
       <span className="ls-lamp" />
+      <span className="ls-flicker" />
+      <Drape side="l" />
+      <Drape side="r" />
       {Array.from({ length: n }, (_, i) => (
         <i
           key={i}
           className="ls-ember"
           style={v({
-            '--x': `${Math.round(rnd(i, 1) * 100)}%`,
+            '--x': `${Math.round(18 + rnd(i, 1) * 64)}%`,
             '--d': `${(14 + rnd(i, 2) * 10).toFixed(1)}s`,
             '--delay': `${(-rnd(i, 3) * 20).toFixed(1)}s`,
             '--drift': `${Math.round((rnd(i, 6) - 0.5) * 60)}px`,

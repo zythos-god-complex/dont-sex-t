@@ -95,26 +95,58 @@
   100% { transform: translate(var(--drift), 112vh) rotateZ(calc(var(--r) + 360deg)) rotateX(1080deg); }
 }
 
-/* ------------------------------------------------------------ lust: low light */
-.sc-lust .ls-lamp { position: absolute; inset: 0; background: radial-gradient(80% 40% at 50% 100%, rgba(255,80,110,.2), transparent 70%), radial-gradient(60% 30% at 80% 20%, rgba(255,150,90,.08), transparent 70%); }
+/* ------------------------------------------------------------ lust: velvet drapes */
+.sc-lust .ls-lamp { position: absolute; inset: 0; background: radial-gradient(70% 38% at 50% 100%, rgba(255,96,70,.2), transparent 70%), radial-gradient(60% 50% at 50% 45%, rgba(120,10,40,.25), transparent 75%); }
+/* candlelight: one layer, opacity only */
+.sc-lust .ls-flicker {
+  position: absolute; inset: 0; background: radial-gradient(55% 30% at 50% 100%, rgba(255,150,80,.16), transparent 70%);
+  animation: ls-flicker calc(3.2s / var(--spd, 1)) steps(1, end) infinite;
+}
+@keyframes ls-flicker { 0% { opacity: .7; } 18% { opacity: 1; } 31% { opacity: .82; } 47% { opacity: .95; } 63% { opacity: .75; } 80% { opacity: 1; } }
+.sc-lust .ls-drape {
+  position: absolute; top: -2%; bottom: -1%; width: min(24vw, 120px);
+  transform-origin: 50% 0; animation: ls-sway calc(9s / var(--spd, 1)) ease-in-out infinite; will-change: transform;
+}
+.sc-lust .ls-drape.l { left: 0; }
+.sc-lust .ls-drape.r { right: 0; animation-delay: calc(-4.5s / var(--spd, 1)); }
+@keyframes ls-sway { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(.7deg); } }
+.sc-lust .ls-drape.r { animation-name: ls-sway-r; }
+@keyframes ls-sway-r { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-.7deg); } }
+.sc-lust .ls-cloth { fill: #5E0A22; }
+.sc-lust .ls-fold-hi { fill: none; stroke: rgba(255,110,140,.16); stroke-width: 5; vector-effect: non-scaling-stroke; }
+.sc-lust .ls-fold-lo { fill: none; stroke: rgba(10,0,4,.42); stroke-width: 6; vector-effect: non-scaling-stroke; }
+.sc-lust .ls-hem { fill: none; stroke: rgba(255,120,150,.28); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.sc-lust .ls-tie { fill: none; stroke: #C9973A; stroke-width: 5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.sc-lust .ls-cord { stroke: #C9973A; stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.sc-lust .ls-knot { stroke: #C9973A; stroke-width: 7; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.sc-lust .ls-tassel { stroke: #B5852F; stroke-width: 9; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .sc-lust .ls-ember {
   position: absolute; left: var(--x); bottom: -6px; width: 3px; height: 3px; border-radius: 50%;
   background: #FFC9A0; box-shadow: 0 0 4px 1px rgba(255,80,90,.6);
   animation: ls-rise calc(var(--d) / var(--spd, 1)) linear infinite; animation-delay: var(--delay);
 }
 @keyframes ls-rise { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: .8; } 85% { opacity: .5; } 100% { transform: translate(var(--drift), -100vh); opacity: 0; } }
-.scheme-light .sc-lust .ls-lamp { background: radial-gradient(80% 40% at 50% 100%, rgba(255,120,150,.22), transparent 70%); }
+/* lust by day: blush satin and champagne light */
+.scheme-light .sc-lust .ls-lamp { background: radial-gradient(70% 38% at 50% 100%, rgba(255,140,120,.2), transparent 70%); }
+.scheme-light .sc-lust .ls-flicker { background: radial-gradient(55% 30% at 50% 100%, rgba(255,190,140,.18), transparent 70%); }
+.scheme-light .sc-lust .ls-cloth { fill: #E7A3B5; }
+.scheme-light .sc-lust .ls-fold-hi { stroke: rgba(255,255,255,.42); }
+.scheme-light .sc-lust .ls-fold-lo { stroke: rgba(120,20,50,.2); }
+.scheme-light .sc-lust .ls-hem { stroke: rgba(120,20,50,.3); }
+.scheme-light .sc-lust :is(.ls-tie, .ls-cord, .ls-knot, .ls-tassel) { stroke: #C99A45; }
 .scheme-light .sc-lust .ls-ember { background: #F26A8A; box-shadow: 0 0 3px 1px rgba(230,40,90,.35); }
 
 /* ==================================================================== signature theme chat looks */
 
-/* batman: comic speech balloons */
-.chat.theme-batman .b.theirs:not(.b-sticker):not(.b-emoji) {
+/* batman: comic speech balloons by day, graphite with a yellow edge by night */
+.chat.theme-batman .b:not(.b-sticker):not(.b-emoji) { font-weight: 600; }
+.chat.theme-batman.scheme-light .b.theirs:not(.b-sticker):not(.b-emoji) {
   --theme-recv: #F6F1DF; --theme-recv-ink: #0E0F13; --theme-meta: rgba(14,15,19,.5);
   border: 2.5px solid #050608; box-shadow: 4px 4px 0 rgba(0,0,0,.65);
-  font-weight: 600;
 }
-.chat.theme-batman .b.mine:not(.b-sticker):not(.b-emoji) { border: 2.5px solid #050608; box-shadow: 4px 4px 0 rgba(0,0,0,.65); font-weight: 600; }
+.chat.theme-batman.scheme-light .b.mine:not(.b-sticker):not(.b-emoji) { border: 2.5px solid #050608; box-shadow: 4px 4px 0 rgba(0,0,0,.65); }
+.chat.theme-batman.scheme-dark .b.theirs:not(.b-sticker):not(.b-emoji) { border: 2px solid rgba(233,235,240,.12); box-shadow: 3px 3px 0 rgba(0,0,0,.5); }
+.chat.theme-batman.scheme-dark .b.mine:not(.b-sticker):not(.b-emoji) { border: 2px solid rgba(242,200,0,.45); box-shadow: 3px 3px 0 rgba(0,0,0,.5); }
 .chat.theme-batman.scheme-dark .composer { border: 2px solid rgba(255,214,0,.35); }
 .chat.theme-batman.scheme-light .composer { border: 2px solid #12151C; box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
 .chat.theme-batman .chat-head { border-bottom: 2px solid rgba(255,214,0,.22); }
@@ -122,6 +154,7 @@
 
 /* love: soft blush glow */
 .chat.theme-love .b.mine:not(.b-sticker):not(.b-emoji) { box-shadow: 0 8px 22px -10px rgba(240,40,90,.65); }
+.chat.theme-love.scheme-dark .b.mine:not(.b-sticker):not(.b-emoji) { box-shadow: 0 0 0 1px rgba(240,90,130,.22); }
 .chat.theme-love .b.theirs:not(.b-sticker):not(.b-emoji) { box-shadow: 0 0 0 1.5px rgba(240,40,90,.14), 0 6px 18px -12px rgba(240,40,90,.5); }
 
 /* bff: chunky toy bubbles, same ink + offset as the app's buttons */
@@ -129,12 +162,9 @@
 .chat.theme-bff .b.jn:not(.b-sticker):not(.b-emoji) { margin-bottom: 3px; }
 .chat.theme-bff .composer { border: 2px solid #2A1A4A; box-shadow: 0 3px 0 #2A1A4A; }
 
-/* lust: dark glass + neon */
-.chat.theme-lust.scheme-dark .b.theirs:not(.b-sticker):not(.b-emoji) {
-  --theme-recv: rgba(46,14,30,.72);
-  border: 1px solid rgba(255,90,140,.28); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-}
-.chat.theme-lust.scheme-dark .b.mine:not(.b-sticker):not(.b-emoji) { box-shadow: 0 0 0 1px rgba(255,140,170,.35), 0 0 22px -4px rgba(255,45,85,.7); }
+/* lust: thin neon edge at night (no backdrop blur, it costs a repaint per bubble) */
+.chat.theme-lust.scheme-dark .b.theirs:not(.b-sticker):not(.b-emoji) { border: 1px solid rgba(255,90,140,.22); }
+.chat.theme-lust.scheme-dark .b.mine:not(.b-sticker):not(.b-emoji) { box-shadow: 0 0 0 1px rgba(255,120,160,.28); }
 .chat.theme-lust.scheme-light .b.theirs:not(.b-sticker):not(.b-emoji) { box-shadow: 0 0 0 1.5px rgba(200,16,63,.16), 0 6px 18px -12px rgba(200,16,63,.45); }
 .chat.theme-lust.scheme-light .b.mine:not(.b-sticker):not(.b-emoji) { box-shadow: 0 8px 22px -10px rgba(200,16,63,.6); }
 .chat.theme-lust.scheme-dark .composer { border-color: rgba(255,90,140,.3); box-shadow: 0 0 24px -10px rgba(255,45,85,.6); }
