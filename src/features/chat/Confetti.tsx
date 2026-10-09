@@ -1,10 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import { getTheme } from '../../themes/themes'
 import { useAmbientPrefs } from '../../themes/ambientPrefs'
+import { FLOATS, doodleSprite } from '../../themes/doodles'
 
-type Shape = 'petal' | 'leaf' | 'heart' | 'star' | 'bubble' | 'confetti' | 'bat' | 'ember'
+type Shape = 'petal' | 'leaf' | 'heart' | 'star' | 'bubble' | 'confetti' | 'bat' | 'ember' | 'doodle'
 type Part = {
-  x: number; y: number; vx: number; vy: number; rot: number; vr: number; s: number; c: string; shape: Shape
+  x: number; y: number; vx: number; vy: number; rot: number; vr: number; s: number; c: string; shape: Shape; img?: HTMLImageElement
   state: 'fly' | 'rest' | 'drop'; el?: Element; ox?: number; oy?: number; phase: number
 }
 
@@ -18,19 +19,21 @@ const LOOK: Record<string, { shape: Shape; colors: string[] }> = {
   bats: { shape: 'bat', colors: ['#0B0C10', '#16181F', '#FFD000'] },
   lovebeat: { shape: 'heart', colors: ['#F0285A', '#FF6B91', '#C70F40', '#FFFFFF'] },
   party: { shape: 'confetti', colors: ['#8A6BFF', '#FF5CB8', '#FFC83D', '#3DD6B5', '#5BB5FF'] },
-  embers: { shape: 'ember', colors: ['#FFC27A', '#FF6A8E', '#FF3D63'] },
+  embers: { shape: 'doodle', colors: ['#FF6A8E', '#FF3D63', '#FFB36B', '#F062B4'] },
 }
 
 export type ConfettiHandle = { burst: (x: number, y: number) => void; rain: () => void }
 
 /** Theme particle burst that lands on message bubbles and gets shaken off. */
-export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () => HTMLElement | null }>(function Confetti({ themeId, host }, ref) {
+export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () => HTMLElement | null; spicy?: boolean }>(function Confetti({ themeId, host, spicy = false }, ref) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const parts = useRef<Part[]>([])
   const raf = useRef(0)
   const phase = useRef<{ start: number; released: boolean } | null>(null)
   const themeRef = useRef(themeId)
   themeRef.current = themeId
+  const spicyRef = useRef(spicy)
+  spicyRef.current = spicy
 
   useEffect(() => () => cancelAnimationFrame(raf.current), [])
 
@@ -104,6 +107,9 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
         }
         break
       }
+      case 'doodle':
+        if (p.img?.complete) ctx.drawImage(p.img, -s / 2, -s / 2, s, s)
+        break
       case 'ember':
         ctx.shadowColor = p.c
         ctx.shadowBlur = s * 1.6
@@ -202,17 +208,22 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
     return LOOK[th.ambient] ?? { shape: 'confetti' as Shape, colors: [th.sent[0], th.sent[1], th.sent[2], th.accent] }
   }
   const count = () => Math.round(110 * Math.min(2.5, Math.max(0.5, useAmbientPrefs.getState().amount)))
-  const add = (lk: { shape: Shape; colors: string[] }, i: number, x: number, y: number, vx: number, vy: number) =>
+  const add = (lk: { shape: Shape; colors: string[] }, i: number, x: number, y: number, vx: number, vy: number) => {
+    const c = lk.colors[i % lk.colors.length]
+    const doodle = lk.shape === 'doodle'
+    const set = spicyRef.current ? FLOATS.spicy : FLOATS.tame
     parts.current.push({
       x, y, vx, vy,
-      rot: Math.random() * Math.PI * 2,
-      vr: (Math.random() - 0.5) * 0.25,
-      s: lk.shape === 'confetti' ? 7 + Math.random() * 5 : 6 + Math.random() * 6,
-      c: lk.colors[i % lk.colors.length],
+      rot: doodle ? (Math.random() - 0.5) * 0.8 : Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * (doodle ? 0.08 : 0.25),
+      s: doodle ? 16 + Math.random() * 7 : lk.shape === 'confetti' ? 7 + Math.random() * 5 : 6 + Math.random() * 6,
+      c,
       shape: lk.shape,
+      img: doodle ? doodleSprite(set[i % set.length], c) : undefined,
       state: 'fly',
       phase: Math.random() * 10,
     })
+  }
   const kick = () => {
     navigator.vibrate?.([10, 30, 10])
     const running = !!phase.current

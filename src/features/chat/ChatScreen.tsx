@@ -132,7 +132,7 @@ function ChatView({ conv }: { conv: Conversation }) {
 
   return (
     <div ref={chatRef} onPointerDown={onChatTap} className={'chat scheme-' + theme.scheme + ' theme-' + theme.id + (themeBump ? ' theme-bump' : '')} style={themeVars(theme)}>
-      <Confetti ref={confetti} themeId={theme.id} host={() => chatRef.current} />
+      <Confetti ref={confetti} themeId={theme.id} host={() => chatRef.current} spicy={spicy} />
       <ThemeBackground themeId={theme.id} host={chatRef} onPhase={setThemeBump} spicy={spicy} />
 
       <header className="chat-head">

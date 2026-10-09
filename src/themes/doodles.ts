@@ -105,3 +105,18 @@ export function doodleIcon(name: string): string {
     `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><g fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${D[name]}</g></svg>`,
   )}")`)
 }
+
+// canvas sprites for the tap-tap rain: drawn once per doodle + colour, then reused
+const sprites = new Map<string, HTMLImageElement>()
+export function doodleSprite(name: string, color: string): HTMLImageElement {
+  const k = name + color
+  let img = sprites.get(k)
+  if (!img) {
+    img = new Image()
+    img.src = `data:image/svg+xml,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32"><g fill="none" stroke="${color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${D[name].replaceAll('#000', color)}</g></svg>`,
+    )}`
+    sprites.set(k, img)
+  }
+  return img
+}
