@@ -705,3 +705,14 @@
 }
 .pick-menu button { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; white-space: nowrap; font: 650 15px/1 var(--font-display); color: inherit; }
 .pick-menu button:active { background: var(--press); }
+
+/* photos open on tap, so they get a side handle for react / reply / unsend */
+.b-more {
+  position: absolute; top: 50%; translate: 0 -50%; width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; gap: 2.5px;
+  background: color-mix(in srgb, var(--theme-recv) 80%, transparent); -webkit-tap-highlight-color: transparent;
+}
+.b-more i { width: 4px; height: 4px; border-radius: 50%; background: var(--theme-recv-ink); opacity: .7; }
+.b-more:active { transform: scale(.88); }
+.b-row.mine .b-more { right: 100%; margin-right: 8px; }
+.b-row.theirs .b-more { left: 100%; margin-left: 8px; }

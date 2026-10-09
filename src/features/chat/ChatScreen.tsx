@@ -526,6 +526,13 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
             ),
           )}
         </motion.div>
+        {img && (
+          <button type="button" className="b-more" aria-label="message options" onClick={() => setActions((v) => !v)}>
+            <i />
+            <i />
+            <i />
+          </button>
+        )}
         <AnimatePresence>
           {actions && !picker && (
             <motion.div className="b-actions" initial={{ opacity: 0, scale: 0.6, x: mine ? 10 : -10 }} animate={{ opacity: 1, scale: 1, x: 0 }} exit={{ opacity: 0, scale: 0.6 }} transition={spring}>
