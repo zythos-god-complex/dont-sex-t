@@ -342,7 +342,7 @@ function Live({ room }: { room: Room }) {
   ) : null
 
   return (
-    <div className={'chat scheme-' + theme.scheme} style={themeVars(theme)}>
+    <div className={'chat scheme-' + theme.scheme + ' theme-' + theme.id} style={themeVars(theme)}>
       <div className="chat-bg" style={{ background: theme.bg }}>
         <Ambient kind={theme.ambient} />
       </div>

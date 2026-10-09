@@ -127,7 +127,7 @@ function ChatView({ conv }: { conv: Conversation }) {
   else if (status.lastSeenAt) statusLine = activeAgo(status.lastSeenAt, now)
 
   return (
-    <div ref={chatRef} onPointerDown={onChatTap} className={'chat scheme-' + theme.scheme + (themeBump ? ' theme-bump' : '')} style={themeVars(theme)}>
+    <div ref={chatRef} onPointerDown={onChatTap} className={'chat scheme-' + theme.scheme + ' theme-' + theme.id + (themeBump ? ' theme-bump' : '')} style={themeVars(theme)}>
       <Confetti ref={confetti} themeId={theme.id} host={() => chatRef.current} />
       <ThemeBackground themeId={theme.id} host={chatRef} onPhase={setThemeBump} />
 
