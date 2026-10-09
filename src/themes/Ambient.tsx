@@ -5,7 +5,7 @@ import { BatmanScene, BffScene, LoveScene, LustScene } from './scenes'
 
 const COUNT: Partial<Record<AmbientKind, number>> = {
   petals: 14, stars: 26, bubbles: 12, leaves: 9, hearts: 10, sparkles: 16,
-  bats: 7, lovebeat: 12, party: 14, embers: 16,
+  bats: 1, lovebeat: 9, party: 10, embers: 10,
 }
 
 // deterministic pseudo random so layout is stable across renders
@@ -24,7 +24,7 @@ function AmbientImpl({ kind }: { kind: AmbientKind }) {
   const n = Math.max(1, Math.min(80, Math.round((COUNT[kind] ?? 10) * amount)))
   const spd = { '--spd': speed } as CSSProperties
   // signature themes are full scenes
-  if (kind === 'bats') return <div style={spd} className="amb-wrap"><BatmanScene n={n} /></div>
+  if (kind === 'bats') return <div style={spd} className="amb-wrap"><BatmanScene /></div>
   if (kind === 'lovebeat') return <div style={spd} className="amb-wrap"><LoveScene n={n} /></div>
   if (kind === 'party') return <div style={spd} className="amb-wrap"><BffScene n={n} /></div>
   if (kind === 'embers') return <div style={spd} className="amb-wrap"><LustScene n={n} /></div>

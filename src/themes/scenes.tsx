@@ -8,90 +8,25 @@ const rnd = (i: number, salt: number) => {
 }
 const v = (o: Record<string, string | number>) => o as CSSProperties
 
-// ------------------------------------------------------------------ batman: gotham comic
+// ------------------------------------------------------------------ batman: just the signal
 
-const BAT_WINGS = (
-  <svg viewBox="0 0 64 28" width="100%" height="100%">
-    <g className="bat-w l"><path d="M30 12 C24 4 14 2 2 6 C7 8 9 11 8 15 C12 12 16 13 18 17 C21 13 26 13 30 16 Z" /></g>
-    <g className="bat-w r"><path d="M34 12 C40 4 50 2 62 6 C57 8 55 11 56 15 C52 12 48 13 46 17 C43 13 38 13 34 16 Z" /></g>
-    <path d="M29 9 L30 5 L31.5 8 L32.5 8 L34 5 L35 9 C36 13 35 18 32 22 C29 18 28 13 29 9 Z" />
-  </svg>
-)
-// the classic emblem, for the signal
+// the classic emblem
 const BAT_LOGO = (
   <svg viewBox="0 0 100 44" width="100%" height="100%">
     <path d="M50 10 L46.5 3 L45.5 11 C38 9 27 8.5 15 12 C23 15 25.5 21 22 26 C29 23 35.5 25 37.5 31.5 C41.5 27.5 46 28 50 36 C54 28 58.5 27.5 62.5 31.5 C64.5 25 71 23 78 26 C74.5 21 77 15 85 12 C73 8.5 62 9 54.5 11 L53.5 3 Z" />
   </svg>
 )
-const CITY_FAR =
-  'M0 140 V70 H12 V56 H26 V74 H40 V40 H52 V30 H58 V40 H66 V64 H84 V48 H96 V22 L102 8 L108 22 V52 H122 V60 H140 V36 H156 V58 H170 V44 H186 V28 H190 V16 H194 V28 H204 V54 H222 V40 H238 V62 H256 V30 L264 18 L272 30 V50 H288 V36 H304 V58 H322 V42 H340 V24 H346 V12 H350 V24 H356 V48 H368 V60 H384 V46 H400 V140 Z'
-const CITY_NEAR =
-  'M0 140 V96 H18 V80 H30 V96 H38 V70 H44 V58 H48 V70 H56 V100 H70 V64 L76 50 L82 64 V104 H96 V86 H110 V76 H122 V108 H134 V60 H138 V42 H140 V60 H146 V92 H160 V72 H178 V110 H192 V84 L200 72 L208 84 V100 H220 V66 H246 V98 H264 V80 H272 V62 L280 38 L288 62 V88 H300 V106 H312 V74 H330 V92 H342 V70 H350 V52 H354 V70 H362 V96 H376 V82 H390 V100 H400 V140 Z'
 
-function City({ far }: { far?: boolean }) {
-  const id = far ? 'bmwf' : 'bmwn'
-  return (
-    <svg className={'bm-city' + (far ? ' far' : '')} viewBox="0 0 400 140" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-      <defs>
-        <pattern id={id} width={far ? 13 : 9} height={far ? 15 : 11} patternUnits="userSpaceOnUse">
-          <rect x="2" y="3" width="2.2" height="3" fill="#FFD95A" opacity={far ? 0.35 : 0.8} />
-        </pattern>
-        <pattern id={id + '2'} width={far ? 23 : 17} height={far ? 19 : 23} patternUnits="userSpaceOnUse" x="5" y="7">
-          <rect x="1" y="1" width="2.2" height="3" fill="#FFF1B8" opacity={far ? 0.3 : 0.75} />
-        </pattern>
-        <pattern id={id + 'x'} width={far ? 31 : 21} height={far ? 27 : 29} patternUnits="userSpaceOnUse" x="11" y="3">
-          <rect x="0" y="0" width="9" height="9" fill="#000" opacity="0.85" />
-        </pattern>
-      </defs>
-      <path d={far ? CITY_FAR : CITY_NEAR} fill={far ? '#151A26' : '#07080C'} />
-      {/* lit windows: two offset grids, a third grid knocks some out so it never looks like a pattern */}
-      <path d={far ? CITY_FAR : CITY_NEAR} fill={`url(#${id})`} />
-      <path d={far ? CITY_FAR : CITY_NEAR} fill={`url(#${id}2)`} />
-      <path d={far ? CITY_FAR : CITY_NEAR} fill={`url(#${id}x)`} />
-      {!far && (
-        <g fill="#07080C" stroke="#07080C" strokeWidth="1.6">
-          <rect x="224" y="44" width="18" height="12" rx="4" />
-          <path d="M226 56 L222 66 M240 56 L244 66 M233 56 V66" fill="none" />
-          <path d="M349 52 V36 M346 42 H352" fill="none" />
-        </g>
-      )}
-    </svg>
-  )
-}
-
-export function BatmanScene({ n }: { n: number }) {
-  const squad = Math.max(3, Math.min(11, n))
-  // V formation, leader in front
-  const spots = Array.from({ length: squad }, (_, i) => {
-    const row = Math.ceil(i / 2)
-    const side = i === 0 ? 0 : i % 2 ? -1 : 1
-    return { x: -row * 26, y: side * row * 15, s: 1 - row * 0.07 }
-  })
+/** A dark sky with one soft glow and the bat-signal drifting slowly through it. Two layers, transform only. */
+export function BatmanScene() {
   return (
     <div className="amb sc-bat" aria-hidden="true">
-      <span className="bm-halftone" />
-      <span className="bm-cloud" />
-      <span className="bm-cloud c2" />
-      <span className="bm-cloud c3" />
-      <span className="bm-beam">
-        <b />
+      <span className="bm-glow" />
+      <span className="bm-track">
+        <span className="bm-signal">
+          <span className="bm-logo">{BAT_LOGO}</span>
+        </span>
       </span>
-      <span className="bm-signal">
-        <span className="bm-logo">{BAT_LOGO}</span>
-      </span>
-      <span className="bm-squad">
-        {spots.map((p, i) => (
-          <i key={i} style={v({ '--bx': `${p.x}px`, '--by': `${p.y}px`, '--bs': p.s, '--i': i })}>
-            {BAT_WINGS}
-          </i>
-        ))}
-      </span>
-      <City far />
-      <span className="bm-mist" />
-      <City />
-      <span className="bm-rain" />
-      <span className="bm-rain near" />
-      <span className="bm-flash" />
     </div>
   )
 }
@@ -145,7 +80,7 @@ export function LoveScene({ n }: { n: number }) {
             '--x': `${Math.round(4 + rnd(i, 1) * 92)}%`,
             '--d': `${(11 + rnd(i, 2) * 9).toFixed(1)}s`,
             '--delay': `${(-rnd(i, 3) * 20).toFixed(1)}s`,
-            '--sz': `${Math.round(14 + rnd(i, 4) * 16)}px`,
+            '--sz': `${Math.round(9 + rnd(i, 4) * 9)}px`,
             '--drift': `${Math.round((rnd(i, 6) - 0.5) * 90)}px`,
             '--tilt': `${Math.round((rnd(i, 7) - 0.5) * 40)}deg`,
           })}
@@ -207,15 +142,12 @@ const STICKERS: ReactNode[] = [
 ]
 // spots hug the edges so the sticker sheet frames the conversation instead of sitting under it
 const SPOTS = [
-  { x: 6, y: 10, s: 46, r: -12 },
-  { x: 80, y: 7, s: 54, r: 10 },
-  { x: 84, y: 30, s: 42, r: -6 },
-  { x: 3, y: 36, s: 50, r: 8 },
-  { x: 82, y: 54, s: 46, r: 14 },
-  { x: 5, y: 62, s: 40, r: -10 },
-  { x: 76, y: 76, s: 70, r: -8 },
-  { x: 8, y: 84, s: 52, r: 12 },
-  { x: 44, y: 90, s: 44, r: -4 },
+  { x: 5, y: 12, s: 30, r: -12 },
+  { x: 86, y: 9, s: 34, r: 10 },
+  { x: 4, y: 44, s: 28, r: 8 },
+  { x: 87, y: 40, s: 30, r: -8 },
+  { x: 84, y: 70, s: 38, r: -8 },
+  { x: 6, y: 78, s: 32, r: 12 },
 ]
 
 export function BffScene({ n }: { n: number }) {
@@ -246,52 +178,25 @@ export function BffScene({ n }: { n: number }) {
   )
 }
 
-// ------------------------------------------------------------------ lust: neon motel at 2am
+// ------------------------------------------------------------------ lust: low light
 
+/** A warm low glow with embers drifting up. */
 export function LustScene({ n }: { n: number }) {
   return (
     <div className="amb sc-lust" aria-hidden="true">
-      <span className="ls-smoke" />
-      <span className="ls-smoke s2" />
-      <span className="ls-spill" />
-      <span className="ls-neon">
-        <svg viewBox="0 0 150 96" width="100%" height="100%">
-          <g className="ls-tube lips">
-            <path d="M14 50 C28 26 46 20 60 32 C66 37 70 37 76 32 C90 20 108 26 122 50 C104 78 32 78 14 50 Z" />
-            <path d="M20 50 Q68 60 116 50" />
-          </g>
-          <g className="ls-tube heart">
-            <path d="M132 30 C132 30 120 22 120 14 C120 10 123 7.5 126.5 7.5 C129 7.5 131 9 132 11 C133 9 135 7.5 137.5 7.5 C141 7.5 144 10 144 14 C144 22 132 30 132 30 Z" />
-          </g>
-        </svg>
-      </span>
-      {Array.from({ length: 7 }, (_, i) => (
-        <b
-          key={'b' + i}
-          className="ls-bokeh"
-          style={v({
-            '--x': `${Math.round(rnd(i, 11) * 100)}%`,
-            '--y': `${Math.round(30 + rnd(i, 12) * 65)}%`,
-            '--sz': `${Math.round(24 + rnd(i, 13) * 46)}px`,
-            '--d': `${(14 + rnd(i, 14) * 10).toFixed(1)}s`,
-            '--delay': `${(-rnd(i, 15) * 20).toFixed(1)}s`,
-          })}
-        />
-      ))}
+      <span className="ls-lamp" />
       {Array.from({ length: n }, (_, i) => (
         <i
           key={i}
           className="ls-ember"
           style={v({
             '--x': `${Math.round(rnd(i, 1) * 100)}%`,
-            '--d': `${(12 + rnd(i, 2) * 10).toFixed(1)}s`,
+            '--d': `${(14 + rnd(i, 2) * 10).toFixed(1)}s`,
             '--delay': `${(-rnd(i, 3) * 20).toFixed(1)}s`,
-            '--s': (0.6 + rnd(i, 4) * 0.8).toFixed(2),
-            '--drift': `${Math.round((rnd(i, 6) - 0.5) * 80)}px`,
+            '--drift': `${Math.round((rnd(i, 6) - 0.5) * 60)}px`,
           })}
         />
       ))}
-      <span className="ls-vignette" />
     </div>
   )
 }
