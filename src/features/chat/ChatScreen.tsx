@@ -15,7 +15,7 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti } from '../../lib/engine'
+import { clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
@@ -984,6 +984,44 @@ function AmbientControls({ themeId }: { themeId: string }) {
   )
 }
 
+function DeleteChat({ conv, onDone }: { conv: Conversation; onDone: () => void }) {
+  const [ask, setAsk] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const go = async (both: boolean) => {
+    setBusy(true)
+    navigator.vibrate?.([12, 30, 12])
+    try {
+      await clearChat(conv.id, both)
+      onDone()
+    } finally {
+      setBusy(false)
+      setAsk(false)
+    }
+  }
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      {!ask ? (
+        <motion.button key="del" type="button" className="block-btn del-btn" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} onClick={() => setAsk(true)}>
+          delete chat
+        </motion.button>
+      ) : (
+        <motion.div key="ask" className="del-ask" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={spring}>
+          <b>delete this chat?</b>
+          <button type="button" className="del-opt" disabled={busy} onClick={() => void go(false)}>
+            delete for me
+          </button>
+          <button type="button" className="del-opt is-both" disabled={busy} onClick={() => void go(true)}>
+            delete for both
+          </button>
+          <button type="button" className="del-cancel" disabled={busy} onClick={() => setAsk(false)}>
+            cancel
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 function PinRow({ convId }: { convId: string }) {
   const pins = usePins((s) => s.ids)
   const on = pins.includes(convId)
@@ -1079,6 +1117,7 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
       <p className="settings-hint">
         {conv.peer_images ? (conv.my_images ? 'on for both of you' : `${conv.peer.username} has it on`) : conv.my_images ? `waiting on ${conv.peer.username}` : `${conv.peer.username} has it off`}
       </p>
+      <DeleteChat conv={conv} onDone={onPicked} />
       <button type="button" className={'block-btn' + (conv.blocked === 'me' ? ' is-on' : '')} onClick={() => void setBlocked(conv.peer.id, conv.blocked !== 'me')}>
         {conv.blocked === 'me' ? 'unblock ' : 'block '}
         {conv.peer.username}

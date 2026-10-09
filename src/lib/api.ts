@@ -112,6 +112,7 @@ export const api = {
   block: (token: string, peer: string, on: boolean) => rpc<{ blocked: boolean }>('gat_block', { p_token: token, p_peer: peer, p_on: on }),
   setVoice: (token: string, conv: string, on: boolean) => rpc<Record<string, unknown>>('gat_set_voice', { p_token: token, p_conversation: conv, p_on: on }),
   setImages: (token: string, conv: string, on: boolean) => rpc<Record<string, unknown>>('gat_set_images', { p_token: token, p_conversation: conv, p_on: on }),
+  clear: (token: string, conv: string, both: boolean) => rpc<Conversation>('gat_clear', { p_token: token, p_conversation: conv, p_both: both }),
   blockList: (token: string) => rpc<{ blocked: string[]; blocked_by: string[] }>('gat_block_list', { p_token: token }),
 
   profiles: (token: string, ids: string[]) => rpc<Profile[]>('gat_profiles', { p_token: token, p_ids: ids }),

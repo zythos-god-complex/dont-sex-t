@@ -4,7 +4,7 @@ import type { AvatarConfig } from '../ui/face'
 // Actions are plain exported functions (see bottom). window.__gat exposes them for QA.
 import type { RealtimeChannel } from '@supabase/realtime-js'
 import { api, isApiError, isRetryable } from './api'
-import { archiveMsgs, claimArchive, olderMsgs } from './archive'
+import { archiveMsgs, claimArchive, olderMsgs, wipeConv } from './archive'
 import { canPush, channel, getRealtime, onSocket, reconnectNow, removeChannel } from './realtime'
 import { clearSession, readSession, setManifestToken, takeUrlToken, writeSession, writeTempSession } from './session'
 import {
@@ -436,6 +436,10 @@ function ensureInbox(me: Me) {
   })
   ch.on('broadcast', { event: 'read' }, (e) => onReadEvent(unwrap(e)))
   ch.on('broadcast', { event: 'theme' }, (e) => onThemeEvent(unwrap(e)))
+  ch.on('broadcast', { event: 'wipe' }, (e) => {
+    const p = unwrap(e) as { conversation_id?: string; at?: string }
+    if (p.conversation_id && p.at) applyWipe(p.conversation_id, p.at)
+  })
   ch.on('broadcast', { event: 'room' }, (e) => {
     const p = unwrap(e)
     roomSubs.forEach((f) => f(p))
@@ -471,6 +475,33 @@ function ensureConvChannel(c: Conversation) {
     }
   })
   convCh.set(c.id, entry)
+}
+
+/** Forget everything in a chat up to `at` (state, local cache, on-device archive). */
+function applyWipe(convId: string, at: string) {
+  const cut = ts(at)
+  set((s) => {
+    const list = s.messages[convId]
+    const keep = list ? list.filter((m) => ts(m.created_at) > cut) : list
+    const c = s.conversations[convId]
+    const out: Partial<State> = {}
+    if (list && keep && keep.length !== list.length) out.messages = { ...s.messages, [convId]: keep }
+    out.hasMore = { ...s.hasMore, [convId]: false }
+    if (c) {
+      const lm = c.last_message && ts(c.last_message.created_at) <= cut ? (keep?.[keep.length - 1] ?? null) : c.last_message
+      out.conversations = { ...s.conversations, [convId]: { ...c, last_message: lm, cleared_at: at, unread: lm === c.last_message ? c.unread : 0 } }
+    }
+    return out
+  })
+  void wipeConv(convId, at)
+}
+
+export async function clearChat(convId: string, both: boolean): Promise<void> {
+  if (!token) return
+  applyWipe(convId, new Date(Date.now() + skew).toISOString())
+  const c = await api.clear(token, convId, both)
+  if (c?.cleared_at) applyWipe(convId, c.cleared_at)
+  onConvEvent(c as unknown as Record<string, unknown>)
 }
 
 const roomSubs = new Set<(room: Record<string, unknown>) => void>()

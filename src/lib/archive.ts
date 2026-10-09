@@ -190,3 +190,22 @@ export async function mediaSrc(url: string): Promise<string> {
   }
   return url
 }
+
+/** Drop this device's copy of a chat up to `upTo` (delete chat). */
+export async function wipeConv(convId: string, upTo: string): Promise<void> {
+  const d = await db()
+  if (!d) return
+  try {
+    const tx = d.transaction('msgs', 'readwrite')
+    const req = tx.objectStore('msgs').index('by').openCursor(IDBKeyRange.bound([convId, ''], [convId, upTo]))
+    req.onsuccess = () => {
+      const c = req.result
+      if (!c) return
+      c.delete()
+      c.continue()
+    }
+    await done(tx)
+  } catch {
+    /* ignore */
+  }
+}

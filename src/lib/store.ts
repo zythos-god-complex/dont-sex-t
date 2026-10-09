@@ -229,6 +229,9 @@ export function mergeConversation(prev: Conversation | undefined, next: Conversa
     else if (nl.id === last_message.id) last_message = sameMessage(last_message, nl) ? last_message : nl
     else if (compareMessages(nl, last_message) > 0) last_message = nl
   }
+  // chat was deleted: drop a cached last message from before the wipe
+  const cleared = ts(next.cleared_at ?? null)
+  if (last_message && cleared && ts(last_message.created_at) <= cleared) last_message = nl && ts(nl.created_at) > cleared ? nl : null
   const themeNewer = ts(next.theme_at) >= ts(prev.theme_at)
   const merged: Conversation = {
     ...next,

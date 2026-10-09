@@ -42,6 +42,7 @@ export type Conversation = {
   my_voice?: boolean
   peer_voice?: boolean
   my_images?: boolean
+  cleared_at?: string | null
   peer_images?: boolean
 }
 
