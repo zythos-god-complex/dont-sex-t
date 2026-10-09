@@ -5,6 +5,7 @@ import { useMe, useNow } from '../../lib/hooks'
 import { relTime } from '../../lib/format'
 import type { Profile } from '../../lib/types'
 import { getTheme } from '../../themes/themes'
+import { useThemeMode } from '../../themes/mode'
 import { Badge, Sheet, spring, useIsDesktop } from '../../ui/kit'
 import { IconBack, IconPlus } from '../../ui/icons'
 import { displayBody } from '../stickers/stickers'
@@ -20,7 +21,7 @@ export function lastLine(m: RoomMsg | null, meId: string | null | undefined): st
 
 function PublicCard({ r, meId, i }: { r: Room; meId: string | null; i: number }) {
   const [, nav] = useLocation()
-  const t = getTheme(r.theme)
+  const t = getTheme(r.theme, useThemeMode())
   return (
     <motion.button
       className="pub-card"

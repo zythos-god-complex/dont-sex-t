@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { getTheme } from '../../themes/themes'
 import { Ambient } from '../../themes/Ambient'
+import { useThemeMode } from '../../themes/mode'
 
 // Where the next theme change should bloom from (set when you tap a swatch).
 export let pendingOrigin: { x: number; y: number } | null = null
@@ -18,6 +19,7 @@ type Reveal = { id: string; x: string; y: string; key: number }
  * header when the other person changed it): a circular wipe, shockwave rings and a name pill that drops in under the header.
  */
 export function ThemeBackground({ themeId, onPhase }: { themeId: string; host: RefObject<HTMLDivElement | null>; onPhase?: (on: boolean) => void }) {
+  useThemeMode() // re-render on light / dark flips
   const [label, setLabel] = useState<{ name: string; key: number } | null>(null)
   const [base, setBase] = useState(themeId)
   const [reveal, setReveal] = useState<Reveal | null>(null)

@@ -8,6 +8,8 @@ import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
 import { IconAlert, IconArrowDown, IconBack, IconSend, IconSticker, IconUsers } from '../../ui/icons'
 import { getTheme, themeVars } from '../../themes/themes'
+import { useThemeMode } from '../../themes/mode'
+import { ModeButton } from '../chat/ChatScreen'
 import { Ambient } from '../../themes/Ambient'
 import { goBack } from '../shell/nav'
 import { LockedSticker, Sticker } from '../stickers/Sticker'
@@ -327,7 +329,8 @@ function Live({ room }: { room: Room }) {
   const here = useRooms((s) => s.here[room.id] ?? 0)
   const typers = useRooms((s) => s.typing[room.id])
   const names = typers ? Object.values(typers).map((t) => t.name) : []
-  const theme = getTheme(room.theme)
+  const mode = useThemeMode()
+  const theme = getTheme(room.theme, mode)
   useEffect(() => enterRoom(room), [room.id, room.topic])
 
   const status = names.length ? (
@@ -365,6 +368,7 @@ function Live({ room }: { room: Room }) {
             </AnimatePresence>
           </div>
         </button>
+        <ModeButton />
         <button className="icon-btn" onClick={() => setSheet(true)} aria-label="people">
           <IconUsers size={24} />
         </button>

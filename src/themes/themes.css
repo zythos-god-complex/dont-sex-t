@@ -72,3 +72,21 @@
 
 
 @media (prefers-reduced-motion: reduce) { .amb i, .amb b, .amb span, .amb::after, .amb svg g { animation: none !important; } }
+
+/* ---------------------------------------------------------------- light / dark tuning for ambient layers */
+.mode-btn .mode-ico { display: grid; place-items: center; }
+.scheme-light .amb-stars i { background: #5A6BD0; }
+.scheme-light .amb-scan { background: repeating-linear-gradient(180deg, rgba(15,61,28,.045) 0 1px, transparent 1px 3px); }
+.scheme-light .amb-scan::after { background: linear-gradient(180deg, transparent, rgba(15,61,28,.05), transparent); }
+.scheme-light .amb-aurora { opacity: .5; }
+.scheme-dark .amb-petals i { opacity: .5; }
+.scheme-dark .amb-hearts i { opacity: .38; }
+.scheme-dark .amb-haze i { opacity: .1; }
+.scheme-dark .amb-sparkles i { filter: brightness(.85); }
+.scheme-dark .amb-bubbles i { opacity: .55; }
+
+/* light / dark flip: the new mode spreads out from the switch */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: vt-reveal .55s cubic-bezier(.2,.8,.2,1); }
+@keyframes vt-reveal { from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 0)); } to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 0)); } }
+.scheme-dark .amb-aurora { opacity: .6; }

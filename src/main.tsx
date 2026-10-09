@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import './themes/mode'
 import { boot } from './lib/engine'
 import { registerSW } from './lib/push'
 import App from './App.tsx'

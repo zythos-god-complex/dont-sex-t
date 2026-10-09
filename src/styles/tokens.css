@@ -57,8 +57,9 @@
   --safe-l: env(safe-area-inset-left, 0px);
 }
 
+/* dark chrome: follows the phone unless the in-app switch says otherwise (src/themes/mode.ts) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-mode='light']) {
     --bg: #121016;
     --bg-2: #1A171F;
     --bg-3: #0C0A0F;
@@ -76,6 +77,25 @@
     --shadow-card: 0 1px 0 rgba(0,0,0,.25);
   }
 }
+:root[data-mode='dark'] {
+  --bg: #121016;
+  --bg-2: #1A171F;
+  --bg-3: #0C0A0F;
+  --surface: #1F1B25;
+  --ink: #F6F1EA;
+  --ink-2: #B9B2C3;
+  --muted: #6F6879;
+  --line: #2B2632;
+  --accent-2: #B8371B;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --hover: rgba(246, 241, 234, 0.05);
+  --press: rgba(246, 241, 234, 0.09);
+  --shadow-pop: 0 1px 0 rgba(0,0,0,.4), 0 10px 30px -10px rgba(0,0,0,.6);
+  --shadow-lift: 0 1px 0 rgba(0,0,0,.45), 0 16px 38px -12px rgba(0,0,0,.7);
+  --shadow-card: 0 1px 0 rgba(0,0,0,.25);
+  }
+:root[data-mode='dark'] { color-scheme: dark; }
+:root[data-mode='light'] { color-scheme: light; }
 
 /* Registered so chat themes can crossfade bubble colors with a plain CSS
    transition on the theme scope (see .theme-scope in src/themes/themes.css). */

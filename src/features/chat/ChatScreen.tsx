@@ -21,8 +21,10 @@ import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, nee
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
-import { THEMES, getTheme, themeVars } from '../../themes/themes'
+import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
+import { getTheme, themeList, themeVars } from '../../themes/themes'
+import { flipModeFrom, useThemeMode } from '../../themes/mode'
+import { flushSync } from 'react-dom'
 import { goBack } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
 import { Recorder } from '../voice/Recorder'
@@ -74,7 +76,8 @@ function ChatPlaceholder({ username, status }: { username: string; status: strin
 function ChatView({ conv }: { conv: Conversation }) {
   const [, nav] = useLocation()
   const desktop = useIsDesktop()
-  const theme = getTheme(conv.theme)
+  const mode = useThemeMode()
+  const theme = getTheme(conv.theme, mode)
   const peer = conv.peer
   const status = usePeerStatus(peer.id)
   const now = useNow(30000)
@@ -150,6 +153,7 @@ function ChatView({ conv }: { conv: Conversation }) {
             </AnimatePresence>
           </div>
         </div>
+        <ModeButton />
         <button className="icon-btn" onClick={() => setSettings(true)} aria-label="chat settings">
           <IconGear size={24} />
         </button>
@@ -163,6 +167,37 @@ function ChatView({ conv }: { conv: Conversation }) {
         <SettingsBody conv={conv} onPicked={() => setSettings(false)} />
       </Sheet>
     </div>
+  )
+}
+
+/** Sun / moon switch in the top bar. Personal: only changes this device. */
+export function ModeButton() {
+  const mode = useThemeMode()
+  const dark = mode === 'dark'
+  return (
+    <button
+      type="button"
+      className="icon-btn mode-btn"
+      aria-label={dark ? 'switch to light mode' : 'switch to dark mode'}
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect()
+        navigator.vibrate?.(8)
+        flipModeFrom(r.left + r.width / 2, r.top + r.height / 2, (fn) => flushSync(fn))
+      }}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={mode}
+          className="mode-ico"
+          initial={{ rotate: -90, scale: 0.4, opacity: 0 }}
+          animate={{ rotate: 0, scale: 1, opacity: 1 }}
+          exit={{ rotate: 90, scale: 0.4, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 520, damping: 26 }}
+        >
+          {dark ? <IconMoon size={23} /> : <IconSun size={24} />}
+        </motion.span>
+      </AnimatePresence>
+    </button>
   )
 }
 
@@ -1040,6 +1075,7 @@ function PinRow({ convId }: { convId: string }) {
 }
 
 function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => void }) {
+  const mode = useThemeMode()
   const [themeOpen, setThemeOpen] = useState(false)
   const push = usePushState(conv.id)
   const busy = usePushBusy()
@@ -1053,7 +1089,7 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
       </div>
       <h3 className="settings-label">theme</h3>
       <button type="button" className={'theme-row' + (themeOpen ? ' is-open' : '')} onClick={() => setThemeOpen((v) => !v)} aria-expanded={themeOpen}>
-        <span className="theme-row-sw" style={{ ...themeVars(getTheme(conv.theme)), background: getTheme(conv.theme).bg }}>
+        <span className="theme-row-sw" style={{ ...themeVars(getTheme(conv.theme, mode)), background: getTheme(conv.theme, mode).bg }}>
           <span className="sw-b sw-recv" />
           <span className="sw-b sw-sent" />
         </span>
@@ -1064,7 +1100,7 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
         {themeOpen && (
           <motion.div className="theme-drop" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 36 }}>
       <div className="swatches">
-        {THEMES.map((t) => {
+        {themeList(mode).map((t) => {
           const on = t.id === conv.theme
           return (
             <motion.button key={t.id} className={'swatch' + (on ? ' is-on' : '')} onClick={(e) => {

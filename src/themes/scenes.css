@@ -193,8 +193,10 @@
   font-weight: 600;
 }
 .chat.theme-batman .b.mine:not(.b-sticker):not(.b-emoji) { border: 2.5px solid #050608; box-shadow: 4px 4px 0 rgba(0,0,0,.65); font-weight: 600; }
-.chat.theme-batman .composer { border: 2px solid rgba(255,214,0,.35); }
+.chat.theme-batman.scheme-dark .composer { border: 2px solid rgba(255,214,0,.35); }
+.chat.theme-batman.scheme-light .composer { border: 2px solid #12151C; box-shadow: 3px 3px 0 rgba(0,0,0,.35); }
 .chat.theme-batman .chat-head { border-bottom: 2px solid rgba(255,214,0,.22); }
+.chat.theme-batman.scheme-light .chat-head { border-bottom-color: #12151C; }
 
 /* love: soft blush glow */
 .chat.theme-love .b.mine:not(.b-sticker):not(.b-emoji) { box-shadow: 0 8px 22px -10px rgba(240,40,90,.65); }
@@ -206,9 +208,57 @@
 .chat.theme-bff .composer { border: 2px solid #2A1A4A; box-shadow: 0 3px 0 #2A1A4A; }
 
 /* lust: dark glass + neon */
-.chat.theme-lust .b.theirs:not(.b-sticker):not(.b-emoji) {
+.chat.theme-lust.scheme-dark .b.theirs:not(.b-sticker):not(.b-emoji) {
   --theme-recv: rgba(46,14,30,.72);
   border: 1px solid rgba(255,90,140,.28); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
-.chat.theme-lust .b.mine:not(.b-sticker):not(.b-emoji) { box-shadow: 0 0 0 1px rgba(255,140,170,.35), 0 0 22px -4px rgba(255,45,85,.7); }
-.chat.theme-lust .composer { border-color: rgba(255,90,140,.3); box-shadow: 0 0 24px -10px rgba(255,45,85,.6); }
+.chat.theme-lust.scheme-dark .b.mine:not(.b-sticker):not(.b-emoji) { box-shadow: 0 0 0 1px rgba(255,140,170,.35), 0 0 22px -4px rgba(255,45,85,.7); }
+.chat.theme-lust.scheme-light .b.theirs:not(.b-sticker):not(.b-emoji) { box-shadow: 0 0 0 1.5px rgba(200,16,63,.16), 0 6px 18px -12px rgba(200,16,63,.45); }
+.chat.theme-lust.scheme-light .b.mine:not(.b-sticker):not(.b-emoji) { box-shadow: 0 8px 22px -10px rgba(200,16,63,.6); }
+.chat.theme-lust.scheme-dark .composer { border-color: rgba(255,90,140,.3); box-shadow: 0 0 24px -10px rgba(255,45,85,.6); }
+
+/* ==================================================================== scenes, the other half of the clock */
+
+/* batman by day: overcast comic-book sky, slate skyline, dark rain, ink halftone */
+.scheme-light .sc-bat .bm-halftone { background-image: radial-gradient(rgba(18,21,28,.14) 1.1px, transparent 1.5px); }
+.scheme-light .sc-bat .bm-cloud { background: rgba(255,255,255,.6); }
+.scheme-light .sc-bat .bm-cloud.c2 { background: rgba(150,160,180,.4); }
+.scheme-light .sc-bat .bm-cloud.c3 { background: rgba(255,255,255,.45); }
+.scheme-light .sc-bat .bm-city path:first-of-type { fill: #262C38; }
+.scheme-light .sc-bat .bm-city.far path:first-of-type { fill: #8E98AB; }
+.scheme-light .sc-bat .bm-city.far { opacity: .9; }
+.scheme-light .sc-bat .bm-mist { background: linear-gradient(to top, rgba(255,255,255,.35), transparent); }
+.scheme-light .sc-bat .bm-rain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cg stroke='%233A4458' stroke-opacity='.28' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M12 4 l-4 14'/%3E%3Cpath d='M48 30 l-4 14'/%3E%3Cpath d='M70 58 l-4 14'/%3E%3Cpath d='M30 62 l-4 14'/%3E%3C/g%3E%3C/svg%3E");
+}
+.scheme-light .sc-bat .bm-rain.near {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg stroke='%232A3346' stroke-opacity='.32' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M30 10 l-8 28'/%3E%3Cpath d='M118 86 l-8 28'/%3E%3C/g%3E%3C/svg%3E");
+}
+.scheme-light .sc-bat .bm-beam b { background: linear-gradient(to top, rgba(255,214,0,0) 0%, rgba(255,214,0,.12) 45%, rgba(255,214,0,.26) 100%); }
+.scheme-light .sc-bat .bm-squad i { fill: #12151C; filter: none; }
+.scheme-light .sc-bat .bm-flash { background: #FFFFFF; }
+
+/* love at night: candlelit, the big heart glows instead of blushing */
+.scheme-dark .sc-love .lv-paper { opacity: .35; }
+.scheme-dark .sc-love .lv-ring path { stroke: rgba(240,90,130,.45); }
+.scheme-dark .sc-love .lv-h { opacity: .85; }
+.scheme-dark .sc-love .lv-letter { opacity: .8; }
+
+/* bff at night: sticker sheet on a dark notebook */
+.scheme-dark .sc-bff .bf-grid { background-image: linear-gradient(rgba(236,230,250,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(236,230,250,.05) 1px, transparent 1px); }
+.scheme-dark .sc-bff .bf-tape { opacity: .55; }
+.scheme-dark .sc-bff .bf-stk { filter: drop-shadow(2.5px 0 0 #E9E3F7) drop-shadow(-2.5px 0 0 #E9E3F7) drop-shadow(0 2.5px 0 #E9E3F7) drop-shadow(0 -2.5px 0 #E9E3F7) drop-shadow(0 4px 6px rgba(0,0,0,.45)); opacity: .9; }
+.scheme-dark .sc-bff .bf-cf { opacity: .55; }
+.chat.theme-bff.scheme-dark .b:not(.b-sticker):not(.b-emoji) { border-color: #07050C; box-shadow: 0 3px 0 #07050C; }
+.chat.theme-bff.scheme-dark .composer { border-color: #07050C; box-shadow: 0 3px 0 #07050C; }
+
+/* lust by day: rose champagne, the neon sign is a painted pink tube */
+.scheme-light .sc-lust .ls-smoke { background: radial-gradient(closest-side, rgba(255,120,160,.22), transparent 70%); }
+.scheme-light .sc-lust .ls-smoke.s2 { background: radial-gradient(closest-side, rgba(220,120,200,.16), transparent 70%); }
+.scheme-light .sc-lust .ls-neon { filter: drop-shadow(0 0 3px rgba(255,60,120,.45)) drop-shadow(0 0 10px rgba(255,60,120,.25)); }
+.scheme-light .sc-lust .ls-tube path { stroke: #D61A55; stroke-width: 3.4; }
+.scheme-light .sc-lust .ls-tube.heart path { stroke: #E8325A; }
+.scheme-light .sc-lust .ls-spill { background: radial-gradient(ellipse 45% 50% at 50% 30%, rgba(255,80,130,.14), transparent 70%); }
+.scheme-light .sc-lust .ls-bokeh { background: radial-gradient(circle, rgba(230,40,90,.16), rgba(230,40,90,.05) 60%, transparent 72%); }
+.scheme-light .sc-lust .ls-ember { background: #F26A8A; box-shadow: 0 0 5px 1px rgba(230,40,90,.4); }
+.scheme-light .sc-lust .ls-vignette { display: none; }
