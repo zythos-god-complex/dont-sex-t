@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMe, useNow } from '../../lib/hooks'
@@ -16,13 +16,14 @@ import { LockedSticker, Sticker } from '../stickers/Sticker'
 import { NSFW_STICKERS, STICKERS, stickerBody, stickerOf } from '../stickers/stickers'
 import { Crew } from './Crew'
 import { PeoplePicker } from './PeoplePicker'
-import { addPeople, enterRoom, fetchRoom, leaveRoom, loadOlderRoom, retryRoom, roomPeople, roomTyping, sendRoom, useRooms, type Room, type RoomMsg } from './rooms'
+import { addPeople, enterRoom, fetchRoom, leaveRoom, loadOlderRoom, removeRoomMsg, retryRoom, roomPeople, roomTyping, sendRoom, useRooms, type Room, type RoomMsg } from './rooms'
 
 const EMPTY: RoomMsg[] = []
 const group = (a: RoomMsg | undefined, b: RoomMsg | undefined) =>
   !!a && !!b && a.sender_id === b.sender_id && Math.abs(Date.parse(b.created_at) - Date.parse(a.created_at)) < 180000 && !needsSeparator(a, b)
 
-function Bubble({ m, mine, joinPrev, joinNext }: { m: RoomMsg; mine: boolean; joinPrev: boolean; joinNext: boolean }) {
+function Bubble({ m, mine, joinPrev, joinNext, mod }: { m: RoomMsg; mine: boolean; joinPrev: boolean; joinNext: boolean; mod?: boolean }) {
+  const [arm, setArm] = useState(false)
   const name = m.sender?.username ?? ''
   const stk = stickerOf(m.body)
   const emoji = stk ? 0 : emojiOnlyCount(m.body)
@@ -38,7 +39,7 @@ function Bubble({ m, mine, joinPrev, joinNext }: { m: RoomMsg; mine: boolean; jo
         transition={spring}
       >
         {!mine && <span className="b-face">{!joinNext && <GoofyFace name={name} size={28} blink={false} />}</span>}
-        <div className={cls}>
+        <div className={cls} onClick={mod && !m.state ? () => setArm((v) => !v) : undefined}>
           {stk ? (
             NSFW_STICKERS.includes(stk) ? <LockedSticker size={130} /> : <Sticker kind={stk} name={name} size={130} />
           ) : (
@@ -54,6 +55,11 @@ function Bubble({ m, mine, joinPrev, joinNext }: { m: RoomMsg; mine: boolean; jo
           )}
         </div>
       </motion.div>
+      {arm && (
+        <button className={'rm-del' + (mine ? ' mine' : '')} onClick={() => void removeRoomMsg(m)}>
+          remove
+        </button>
+      )}
       {m.state === 'failed' && (
         <button className="mine-status is-failed" onClick={() => retryRoom(m.room_id, m.id)}>
           <IconAlert size={14} /> tap to retry
@@ -66,7 +72,9 @@ function Bubble({ m, mine, joinPrev, joinNext }: { m: RoomMsg; mine: boolean; jo
 function List({ room }: { room: Room }) {
   const me = useMe()
   const now = useNow(60000)
-  const msgs = useRooms((s) => s.msgs[room.id]) ?? EMPTY
+  const all = useRooms((s) => s.msgs[room.id]) ?? EMPTY
+  const msgs = useMemo(() => all.filter((m) => m.kind !== 'removed'), [all])
+  const mod = me?.admin === true && room.kind === 'public'
   const more = useRooms((s) => !!s.more[room.id])
   const typers = useRooms((s) => s.typing[room.id])
   const typing = typers ? Object.values(typers) : []
@@ -113,7 +121,7 @@ function List({ room }: { room: Room }) {
   for (let i = 0; i < msgs.length; i++) {
     const m = msgs[i]
     if (needsSeparator(msgs[i - 1], m)) items.push(<div key={'sep' + m.id} className="sep">{daySeparator(m.created_at, now)}</div>)
-    items.push(<Bubble key={m.id} m={m} mine={m.sender_id === me?.id} joinPrev={group(msgs[i - 1], m)} joinNext={group(m, msgs[i + 1])} />)
+    items.push(<Bubble key={m.id} m={m} mine={m.sender_id === me?.id} joinPrev={group(msgs[i - 1], m)} joinNext={group(m, msgs[i + 1])} mod={mod} />)
   }
 
   return (

@@ -14,6 +14,7 @@ export type RoomMsg = {
   body: string
   created_at: string
   sender?: Profile | null
+  kind?: string // 'removed' = admin took it down; kept as a tombstone so device archives overwrite the original
   state?: 'sending' | 'failed'
 }
 export type Room = {
@@ -160,6 +161,30 @@ function onIncoming(id: string, m: RoomMsg) {
   if (get().active === id && document.visibilityState === 'visible') markRead(id)
 }
 
+function applyRemoved(m: RoomMsg) {
+  if (!m?.id || !m.room_id) return
+  set((s) => {
+    const list = s.msgs[m.room_id]
+    if (!list?.some((x) => x.id === m.id)) return s
+    const room = s.rooms[m.room_id]
+    return {
+      msgs: { ...s.msgs, [m.room_id]: mergeMsgs(list, [m]) },
+      rooms: room && room.last_message?.id === m.id ? { ...s.rooms, [m.room_id]: { ...room, last_message: m } } : s.rooms,
+    }
+  })
+}
+
+/** Admin only, public rooms: take a message down for everyone. */
+export async function removeRoomMsg(m: RoomMsg): Promise<void> {
+  const prev = m
+  applyRemoved({ ...m, body: 'removed', kind: 'removed' })
+  try {
+    applyRemoved(await rpc<RoomMsg>('gat_room_remove', { p_token: tok(), p_msg: m.id }))
+  } catch {
+    set((s) => ({ msgs: { ...s.msgs, [prev.room_id]: mergeMsgs(s.msgs[prev.room_id] ?? [], [prev]) } }))
+  }
+}
+
 const chans = new Map<string, RealtimeChannel>()
 
 /** Join a room: history, live messages, typing and a head count. Returns the leave fn. */
@@ -174,6 +199,7 @@ export function enterRoom(room: Room): () => void {
   const self = me()
   const ch = channel(`gat:r:${room.topic}`, { presence: { key: self?.id ?? '' } })
   ch.on('broadcast', { event: 'rmsg' }, (e) => onIncoming(id, ((e as { payload?: RoomMsg }).payload ?? e) as RoomMsg))
+  ch.on('broadcast', { event: 'rdel' }, (e) => applyRemoved(((e as { payload?: RoomMsg }).payload ?? e) as RoomMsg))
   ch.on('broadcast', { event: 'typing' }, (e) => {
     const p = ((e as { payload?: unknown }).payload ?? {}) as { id?: string; name?: string; on?: boolean }
     if (!p.id || p.id === self?.id) return
