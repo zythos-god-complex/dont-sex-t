@@ -8,6 +8,7 @@ import { Sheet, Toggle } from '../../ui/kit'
 import { IconBrush } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { FaceBuilder } from '../onboarding/FaceBuilder'
+import { setAmbientPrefs, useAmbientPrefs } from '../../themes/ambientPrefs'
 import { ProfileCardView } from '../profile/ProfileCard'
 import { AURAS, Aura, CARDS } from '../../ui/Aura'
 import type { CSSProperties } from 'react'
@@ -72,6 +73,7 @@ const VALID = /^[A-Za-z0-9_.]{3,20}$/
 
 function MeBody({ onClose }: { onClose: () => void }) {
   const me = useMe()
+  const landing = useAmbientPrefs((p) => p.landing)
   const [editing, setEditing] = useState(false)
   const [face, setFace] = useState<AvatarConfig | null>(null)
   const [name, setName] = useState(me?.username ?? '')
@@ -160,6 +162,16 @@ function MeBody({ onClose }: { onClose: () => void }) {
           nsfw <small className="nsfw-sub">foul language ok</small>
         </span>
         <Toggle label="nsfw" on={me.nsfw === true} onChange={(v) => void saveNsfw(v)} />
+      </div>
+      <div className="settings-row">
+        <span className="grow">confetti</span>
+        <span className="seg">
+          {(['shake', 'slide'] as const).map((k) => (
+            <button key={k} type="button" className={landing === k ? 'is-on' : ''} onClick={() => setAmbientPrefs({ landing: k })}>
+              {k}
+            </button>
+          ))}
+        </span>
       </div>
       <h3 className="settings-label">privacy</h3>
       <div className="settings-row">

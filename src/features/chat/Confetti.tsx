@@ -6,7 +6,8 @@ import { FLOATS, doodleSprite } from '../../themes/doodles'
 type Shape = 'petal' | 'leaf' | 'heart' | 'star' | 'bubble' | 'confetti' | 'bat' | 'ember' | 'doodle'
 type Part = {
   x: number; y: number; vx: number; vy: number; rot: number; vr: number; s: number; c: string; shape: Shape; img?: HTMLImageElement
-  state: 'fly' | 'rest' | 'drop'; el?: Element; ox?: number; oy?: number; phase: number
+  state: 'fly' | 'rest' | 'drop' | 'slide'; el?: Element; ox?: number; oy?: number; phase: number
+  sv?: number; cx?: number; top?: number; left?: number
 }
 
 const LOOK: Record<string, { shape: Shape; colors: string[] }> = {
@@ -21,6 +22,8 @@ const LOOK: Record<string, { shape: Shape; colors: string[] }> = {
   party: { shape: 'confetti', colors: ['#8A6BFF', '#FF5CB8', '#FFC83D', '#3DD6B5', '#5BB5FF'] },
   embers: { shape: 'doodle', colors: ['#FF6A8E', '#FF3D63', '#FFB36B', '#F062B4'] },
 }
+
+const TILT = Math.tan((9 * Math.PI) / 180) // bubble tilt for the slide landing, matches .b-tilt
 
 export type ConfettiHandle = { burst: (x: number, y: number) => void; rain: () => void }
 
@@ -149,6 +152,19 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
         p.y = r.top + p.oy!
         continue
       }
+      // riding down a tilted bubble: follow its top edge toward the low (left) end, then fall off
+      if (p.state === 'slide') {
+        p.sv = Math.min(p.sv! + 0.2, 7)
+        p.x -= p.sv
+        p.y = p.top! + (p.cx! - p.x) * TILT - p.s * 0.45
+        p.rot -= p.sv * 0.03
+        if (p.x < p.left! - 2) {
+          p.state = 'drop'
+          p.vx = -p.sv * 0.8
+          p.vy = p.sv * 0.3
+        }
+        continue
+      }
       const py = p.y
       p.vy += p.shape === 'bubble' ? 0.05 : 0.16
       p.vy = Math.min(p.vy, p.shape === 'petal' || p.shape === 'leaf' ? 2.6 : 4.2)
@@ -178,6 +194,27 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
     if (!ph.released && (flying === 0 || t > 3.4) && t > 1.4) {
       ph.released = true
       setTimeout(() => {
+        if (useAmbientPrefs.getState().landing === 'slide') {
+          const tilted = new Map<Element, DOMRect>()
+          for (const p of parts.current)
+            if (p.state === 'rest') {
+              let r = tilted.get(p.el!)
+              if (!r) tilted.set(p.el!, (r = p.el!.getBoundingClientRect()))
+              p.state = 'slide'
+              p.sv = 0.2 + Math.random() * 0.8
+              p.cx = r.left + r.width / 2
+              p.top = r.top
+              p.left = r.left
+            }
+          tilted.forEach((_, el) => {
+            el.classList.remove('b-tilt')
+            void (el as HTMLElement).offsetWidth
+            el.classList.add('b-tilt')
+            setTimeout(() => el.classList.remove('b-tilt'), 1500)
+          })
+          navigator.vibrate?.(10)
+          return
+        }
         const shaken = new Set<Element>()
         for (const p of parts.current)
           if (p.state === 'rest') {

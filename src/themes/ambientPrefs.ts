@@ -2,13 +2,14 @@ import { create } from 'zustand'
 
 // Per-device feel for falling/floating theme effects. amount and speed are multipliers.
 // Defaults sit at the slider minimums: lightest load out of the box, people can turn it up.
-type Prefs = { amount: number; speed: number }
+/** landing: what bubbles do with confetti that lands on them (shake it off, or tilt into a slide) */
+type Prefs = { amount: number; speed: number; landing: 'shake' | 'slide' }
 const KEY = 'gat.ambient.v1'
-const DEFAULTS: Prefs = { amount: 0.25, speed: 0.3 }
+const DEFAULTS: Prefs = { amount: 0.25, speed: 0.3, landing: 'shake' }
 function load(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) || '{}')
-    return { amount: Number(p.amount) || DEFAULTS.amount, speed: Number(p.speed) || DEFAULTS.speed }
+    return { amount: Number(p.amount) || DEFAULTS.amount, speed: Number(p.speed) || DEFAULTS.speed, landing: p.landing === 'slide' ? 'slide' : 'shake' }
   } catch {
     return { ...DEFAULTS }
   }
