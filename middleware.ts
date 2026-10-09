@@ -9,7 +9,7 @@ export const config = {
 const COOKIE = 'gat_gate'
 
 async function sha(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('gat-gate-v1:' + text))
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('gat-gate-v2:' + text))
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 

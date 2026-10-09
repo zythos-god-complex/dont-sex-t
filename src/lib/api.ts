@@ -1,5 +1,5 @@
 import type { AvatarConfig } from '../ui/face'
-import { REST_URL, SUPABASE_KEY } from './env'
+import { JOIN_KEY, REST_URL, SUPABASE_KEY } from './env'
 import type { Conversation, ErrorCode, Gender, Me, Message, Profile } from './types'
 
 const KNOWN_CODES: ReadonlySet<string> = new Set([
@@ -63,6 +63,7 @@ export async function rpc<T>(fn: string, args: Record<string, unknown>, opts: Rp
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
+        ...(JOIN_KEY ? { 'x-gat-key': JOIN_KEY } : {}),
       },
       body: JSON.stringify(args),
       signal: opts.signal ?? ctrl?.signal,

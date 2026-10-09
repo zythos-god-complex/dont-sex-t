@@ -8,6 +8,9 @@ export const VAPID_PUBLIC_KEY: string =
   env.VITE_VAPID_PUBLIC_KEY ||
   'BJg6GPhZEyOprJNso1yn69QiozHlQOSJaTi1nK69MPieD6PkWsht3kZTCqhvrBk5M-ChP2FmE399W8X2y4266hU'
 
+/** Sent as x-gat-key; the server refuses to create accounts without it. Only ships inside the gated site. */
+export const JOIN_KEY: string = env.VITE_JOIN_KEY || ''
+
 export const REALTIME_URL = `${SUPABASE_URL}/realtime/v1`
 export const REST_URL = `${SUPABASE_URL}/rest/v1`
 export const IS_DEV = !!import.meta.env.DEV
