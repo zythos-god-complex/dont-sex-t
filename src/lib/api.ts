@@ -1,6 +1,6 @@
 import type { AvatarConfig } from '../ui/face'
 import { JOIN_KEY, REST_URL, SUPABASE_KEY } from './env'
-import type { Conversation, ErrorCode, Gender, Me, Message, Profile } from './types'
+import type { Conversation, ErrorCode, Flair, Gender, Me, Message, Profile } from './types'
 
 const KNOWN_CODES: ReadonlySet<string> = new Set([
   'unauthorized',
@@ -103,6 +103,8 @@ export const api = {
 
   setAvatar: (token: string, avatar: AvatarConfig | null) => rpc<Me>('gat_set_avatar', { p_token: token, p_avatar: avatar }),
   setNsfw: (token: string, on: boolean) => rpc<Me>('gat_set_nsfw', { p_token: token, p_on: on }),
+  setFlair: (token: string, flair: Flair) => rpc<Me>('gat_set_flair', { p_token: token, p_flair: flair }),
+  flairs: () => rpc<{ username: string; flair: Flair }[]>('gat_flairs', {}),
   react: (token: string, message: string, emoji: string | null) => rpc<unknown>('gat_react', { p_token: token, p_message: message, p_emoji: emoji }),
   joinTemp: (gender: Gender) => rpc<{ token: string; me: Me }>('gat_join_temp', { p_gender: gender }),
   rename: (token: string, username: string) => rpc<Me>('gat_rename', { p_token: token, p_username: username }),

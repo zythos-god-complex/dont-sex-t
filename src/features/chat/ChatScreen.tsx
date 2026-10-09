@@ -39,6 +39,9 @@ import { MAX_PINS, togglePin, usePins } from '../inbox/pins'
 import { COUPLES, NSFW_STICKERS, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
 import { CoupleSticker } from '../stickers/CoupleSticker'
 import { EMOJI_GROUPS } from './emojis'
+import { Aura } from '../../ui/Aura'
+import { useFlairFor } from '../../ui/flair'
+import { ProfileCard } from '../profile/ProfileCard'
 import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
 import { AMBIENT_LABEL, PARTICLE_AMBIENTS, setAmbientPrefs, useAmbientPrefs } from '../../themes/ambientPrefs'
 
@@ -107,6 +110,9 @@ function ChatView({ conv }: { conv: Conversation }) {
   const [themeBump, setThemeBump] = useState(false)
   const me = useMe()
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
+  const [card, setCard] = useState(false)
+  const peerAura = useFlairFor(conv.peer.username)?.aura
+  const plate = !!peerAura && peerAura !== 'none'
 
   useEffect(() => {
     if (!egg) return
@@ -141,7 +147,8 @@ function ChatView({ conv }: { conv: Conversation }) {
             <IconBack size={26} />
           </button>
         )}
-        <div className="chat-peer">
+        <button type="button" className={'chat-peer' + (plate ? ' has-aura' : '')} onClick={() => setCard(true)} aria-label={peer.username + ' profile'}>
+          {plate && <Aura id={peerAura} />}
           <GoofyFace name={peer.username} size={40} presence={conv.peer.show_status !== false && me?.show_status !== false && status.online ? (status.away ? 'away' : 'online') : null} />
           <div className="chat-peer-text">
             <span className="chat-peer-name ellipsis">{peer.username}</span>
@@ -153,7 +160,8 @@ function ChatView({ conv }: { conv: Conversation }) {
               )}
             </AnimatePresence>
           </div>
-        </div>
+        </button>
+        <ProfileCard name={peer.username} open={card} onClose={() => setCard(false)} />
         <ModeButton />
         <button className="icon-btn" onClick={() => setSettings(true)} aria-label="chat settings">
           <IconGear size={24} />

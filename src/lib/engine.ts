@@ -20,7 +20,7 @@ import {
   useStore,
   type State,
 } from './store'
-import { THEME_IDS, type Conversation, type Gender, type Me, type Message, type Profile, type ResolveEntry, type Toast } from './types'
+import { THEME_IDS, type Conversation, type Flair, type Gender, type Me, type Message, type Profile, type ResolveEntry, type Toast } from './types'
 
 const set = useStore.setState
 const get = useStore.getState
@@ -1722,6 +1722,13 @@ export async function setImages(convId: string, on: boolean): Promise<void> {
     const c2 = get().conversations[convId]
     if (c2) set({ conversations: { ...get().conversations, [convId]: { ...c2, my_images: !on } } })
   }
+}
+
+export async function saveFlair(flair: Flair): Promise<void> {
+  if (!token) return
+  const me = get().me
+  if (me) set({ me: { ...me, flair: { ...me.flair, ...flair } } })
+  updateMe(await api.setFlair(token, { ...me?.flair, ...flair }))
 }
 
 export async function saveNsfw(on: boolean): Promise<void> {

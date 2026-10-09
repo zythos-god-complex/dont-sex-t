@@ -3,7 +3,12 @@ import type { AvatarConfig } from '../ui/face'
 
 export type Gender = 'm' | 'f'
 
-export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean; nsfw?: boolean }
+export type HatId = 'none' | 'crown' | 'cap' | 'beanie' | 'halo' | 'bow' | 'tophat' | 'party'
+export type CardId = 'ink' | 'gold' | 'rose' | 'grape' | 'mint' | 'sky'
+export type AuraId = 'none' | 'gold' | 'sunset' | 'galaxy' | 'sakura' | 'aurora' | 'hearts'
+/** Perk-only extras (server-validated). */
+export type Flair = { hat?: HatId; bio?: string; card?: CardId; aura?: AuraId }
+export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean; nsfw?: boolean; vip?: boolean; flair?: Flair | null }
 
 export type Me = Profile & { inbox: string }
 

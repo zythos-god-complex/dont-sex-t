@@ -1,13 +1,72 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMe } from '../../lib/hooks'
-import { renameMe, saveAvatar, saveNsfw, savePrivacy } from '../../lib/engine'
+import { renameMe, saveAvatar, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle } from '../../ui/kit'
 import { IconBrush } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { FaceBuilder } from '../onboarding/FaceBuilder'
+import { ProfileCardView } from '../profile/ProfileCard'
+import { AURAS, Aura, CARDS } from '../../ui/Aura'
+import type { CSSProperties } from 'react'
+import type { HatId } from '../../lib/types'
+
+const HATS: HatId[] = ['none', 'crown', 'cap', 'beanie', 'halo', 'bow', 'tophat', 'party']
+
+/** Perk users only: hat, card colours, live nameplate, bio. */
+function FlairEditor() {
+  const me = useMe()
+  const [bio, setBio] = useState(me?.flair?.bio ?? '')
+  if (!me?.vip) return null
+  const f = me.flair ?? {}
+  const hat = f.hat ?? 'none'
+  return (
+    <>
+      <h3 className="settings-label">flair</h3>
+      <ProfileCardView name={me.username} flair={{ ...f, bio }} />
+      <h3 className="settings-label">hat</h3>
+      <div className="fl-grid">
+        {HATS.map((h) => (
+          <button key={h} type="button" className={'fl-opt' + (hat === h ? ' is-on' : '')} aria-label={h} onClick={() => void saveFlair({ hat: h })}>
+            <GoofyFace name={me.username} hat={h} size={44} blink={false} />
+          </button>
+        ))}
+      </div>
+      <h3 className="settings-label">bio</h3>
+      <textarea
+        className="fl-bio"
+        maxLength={140}
+        value={bio}
+        aria-label="bio"
+        onChange={(e) => setBio(e.target.value)}
+        onBlur={() => bio !== (f.bio ?? '') && void saveFlair({ bio })}
+      />
+      <h3 className="settings-label">card</h3>
+      <div className="fl-chips">
+        {CARDS.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            className={'fl-swatch' + ((f.card ?? 'ink') === c.id ? ' is-on' : '')}
+            style={{ '--sw-bg': c.bg, '--sw-edge': c.edge } as CSSProperties}
+            aria-label={c.id}
+            onClick={() => void saveFlair({ card: c.id })}
+          />
+        ))}
+      </div>
+      <h3 className="settings-label">nameplate</h3>
+      <div className="fl-chips">
+        {AURAS.map((a) => (
+          <button key={a} type="button" className={'fl-chip' + ((f.aura ?? 'none') === a ? ' is-on' : '')} aria-label={a} onClick={() => void saveFlair({ aura: a })}>
+            {a === 'none' ? 'off' : <Aura id={a} />}
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
 
 const VALID = /^[A-Za-z0-9_.]{3,20}$/
 
@@ -94,6 +153,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
         </div>
       )}
       {err && <p className="ob-error">{err}</p>}
+      <FlairEditor />
       <h3 className="settings-label">vibe</h3>
       <div className="settings-row">
         <span className="grow">

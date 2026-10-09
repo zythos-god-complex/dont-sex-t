@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useConversations, useIsOnline, useMe, useNow, usePeerTyping } from '../../lib/hooks'
 import { messagePreview, relTime } from '../../lib/format'
 import type { Conversation } from '../../lib/types'
+import { Aura } from '../../ui/Aura'
+import { useFlairFor } from '../../ui/flair'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Badge, TypingDots, spring } from '../../ui/kit'
 import { IconBack, IconPin } from '../../ui/icons'
@@ -37,11 +39,13 @@ function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolea
   const typing = usePeerTyping(c.id)
   const unread = c.unread > 0
   const when = c.last_message?.created_at ?? c.last_message_at ?? c.created_at
+  const aura = useFlairFor(c.peer.username)?.aura
+  const plate = !!aura && aura !== 'none'
   return (
     <motion.button
       layout="position"
       transition={spring}
-      className={'row-item' + (active ? ' is-active' : '') + (unread ? ' is-unread' : '') + (pinned ? ' is-pinned' : '')}
+      className={'row-item' + (active ? ' is-active' : '') + (unread ? ' is-unread' : '') + (pinned ? ' is-pinned' : '') + (plate ? ' has-aura' : '')}
       animate={nope ? { x: [0, -8, 8, -5, 5, 0] } : undefined}
       key={'n' + nope}
       onPointerDown={down}
@@ -54,6 +58,7 @@ function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolea
         nav('/dm/' + encodeURIComponent(c.peer.username))
       }}
     >
+      {plate && <Aura id={aura} />}
       <GoofyFace name={c.peer.username} size={50} presence={online ? 'online' : null} />
       <span className="row-main">
         <span className="row-name ellipsis">{c.peer.username}</span>

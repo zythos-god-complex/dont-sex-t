@@ -1,6 +1,8 @@
 import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { BLOBS, FACE_INK, TONGUE, applyAvatar, faceTraits, type AvatarConfig, type FaceTraits, type MouthKind } from './face'
 import { useAvatarFor, useHornsFor } from './avatars'
+import { useFlairFor } from './flair'
+import type { HatId } from '../lib/types'
 
 export type FaceMood = 'neutral' | 'happy' | 'shocked' | 'sleepy' | 'talking' | 'wink' | 'kiss' | 'angry' | 'disgust' | 'smug' | 'flirty'
 export type Look = { x: number; y: number }
@@ -16,6 +18,8 @@ type Props = {
   blink?: boolean
   /** devil horns (nsfw); undefined = look up the user's setting */
   horns?: boolean
+  /** perk hat; undefined = look up the user's flair */
+  hat?: HatId | null
   className?: string
   style?: CSSProperties
 }
@@ -155,7 +159,84 @@ function Mouth({ kind, t, scale = 1 }: { kind: MouthKind; t: FaceTraits; scale?:
   }
 }
 
-function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; mood: FaceMood; blink: boolean; horns?: boolean }) {
+/** Perk hats, drawn in the face's ink style and anchored on the top of the blob. */
+function Hat({ kind, x, y }: { kind: HatId; x: number; y: number }) {
+  const ink = { stroke: FACE_INK, strokeWidth: 2.4, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const }
+  switch (kind) {
+    case 'crown':
+      return (
+        <g transform={`rotate(-8 ${x} ${y})`}>
+          <path d={`M${x - 17} ${y + 5} L${x - 19} ${y - 13} L${x - 9} ${y - 4} L${x} ${y - 18} L${x + 9} ${y - 4} L${x + 19} ${y - 13} L${x + 17} ${y + 5} Z`} fill="#FFC83D" {...ink} />
+          <path d={`M${x - 17.6} ${y - 0.6} H${x + 17.6}`} fill="none" {...ink} strokeWidth={1.8} />
+          <circle cx={x} cy={y + 2.3} r={2.1} fill="#FF5C7A" {...ink} strokeWidth={1.4} />
+          <circle cx={x - 10} cy={y + 2.4} r={1.5} fill="#5BC0FF" {...ink} strokeWidth={1.2} />
+          <circle cx={x + 10} cy={y + 2.4} r={1.5} fill="#5BC0FF" {...ink} strokeWidth={1.2} />
+          <circle cx={x - 19} cy={y - 13} r={2.2} fill="#FFE27A" {...ink} strokeWidth={1.6} />
+          <circle cx={x} cy={y - 18.5} r={2.4} fill="#FFE27A" {...ink} strokeWidth={1.6} />
+          <circle cx={x + 19} cy={y - 13} r={2.2} fill="#FFE27A" {...ink} strokeWidth={1.6} />
+        </g>
+      )
+    case 'cap':
+      return (
+        <g>
+          <path d={`M${x - 19} ${y + 6} C${x - 19} ${y - 10} ${x - 10} ${y - 15} ${x} ${y - 15} C${x + 10} ${y - 15} ${x + 19} ${y - 10} ${x + 19} ${y + 6} Z`} fill="#FF5C7A" {...ink} />
+          <path d={`M${x} ${y - 15} V${y + 5}`} fill="none" {...ink} strokeWidth={1.4} />
+          <path d={`M${x + 6} ${y + 5} C${x + 18} ${y + 1} ${x + 30} ${y + 2} ${x + 33} ${y + 7} C${x + 24} ${y + 10} ${x + 14} ${y + 10} ${x + 6} ${y + 8} Z`} fill="#D93A5A" {...ink} />
+          <circle cx={x} cy={y - 15} r={2.2} fill="#D93A5A" {...ink} strokeWidth={1.4} />
+        </g>
+      )
+    case 'beanie':
+      return (
+        <g>
+          <path d={`M${x - 19} ${y + 3} C${x - 19} ${y - 15} ${x + 19} ${y - 15} ${x + 19} ${y + 3} Z`} fill="#5BC0FF" {...ink} />
+          <rect x={x - 21} y={y} width={42} height={8} rx={4} fill="#3A8FD0" {...ink} />
+          {[-12, -4, 4, 12].map((d) => (
+            <path key={d} d={`M${x + d} ${y + 1.6} V${y + 6.4}`} stroke={FACE_INK} strokeWidth={1.2} strokeLinecap="round" opacity={0.5} />
+          ))}
+          <circle cx={x} cy={y - 14} r={4.6} fill="#F4F1EA" {...ink} />
+        </g>
+      )
+    case 'halo':
+      return (
+        <g>
+          <ellipse cx={x} cy={y - 9} rx={15} ry={4.6} fill="none" stroke={FACE_INK} strokeWidth={6} />
+          <ellipse cx={x} cy={y - 9} rx={15} ry={4.6} fill="none" stroke="#FFD84D" strokeWidth={3.2} />
+        </g>
+      )
+    case 'bow': {
+      const cx = x + 12
+      const cy = y + 2
+      return (
+        <g transform={`rotate(14 ${cx} ${cy})`}>
+          <path d={`M${cx} ${cy} C${cx - 4} ${cy - 10} ${cx - 15} ${cy - 8} ${cx - 13} ${cy + 1} C${cx - 12} ${cy + 8} ${cx - 4} ${cy + 5} ${cx} ${cy} Z`} fill="#FF8FC7" {...ink} />
+          <path d={`M${cx} ${cy} C${cx + 4} ${cy - 10} ${cx + 15} ${cy - 8} ${cx + 13} ${cy + 1} C${cx + 12} ${cy + 8} ${cx + 4} ${cy + 5} ${cx} ${cy} Z`} fill="#FF8FC7" {...ink} />
+          <circle cx={cx} cy={cy} r={3.2} fill="#FF5CA8" {...ink} strokeWidth={1.8} />
+        </g>
+      )
+    }
+    case 'tophat':
+      return (
+        <g transform={`rotate(-10 ${x} ${y})`}>
+          <path d={`M${x - 12} ${y + 3} V${y - 19} C${x - 12} ${y - 23} ${x + 12} ${y - 23} ${x + 12} ${y - 19} V${y + 3} Z`} fill="#2A2A35" {...ink} />
+          <rect x={x - 12} y={y - 4} width={24} height={5} fill="#FF5C7A" stroke={FACE_INK} strokeWidth={1.6} />
+          <ellipse cx={x} cy={y + 4} rx={20} ry={4.2} fill="#2A2A35" {...ink} />
+        </g>
+      )
+    case 'party':
+      return (
+        <g transform={`rotate(12 ${x} ${y})`}>
+          <path d={`M${x - 12} ${y + 4} L${x} ${y - 24} L${x + 12} ${y + 4} Z`} fill="#8A6BFF" {...ink} />
+          <path d={`M${x - 8.6} ${y - 4} L${x + 4} ${y - 12} M${x - 4.6} ${y - 13.6} L${x + 2} ${y - 18}`} fill="none" stroke="#FFC83D" strokeWidth={2.6} strokeLinecap="round" />
+          <path d={`M${x - 11} ${y + 1.4} L${x + 8.6} ${y - 4.4}`} fill="none" stroke="#3DD6B5" strokeWidth={2.6} strokeLinecap="round" />
+          <circle cx={x} cy={y - 25} r={3.8} fill="#FFC83D" {...ink} strokeWidth={1.8} />
+        </g>
+      )
+    default:
+      return null
+  }
+}
+
+function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Look; mood: FaceMood; blink: boolean; horns?: boolean; hat?: HatId | null }) {
   const geo = BLOBS[t.blob]
   const dx = t.dx
   let eyes: string = t.eyes
@@ -317,6 +398,7 @@ function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; m
   ))
 
   const top = geo.top
+  const hatOn = !!hat && hat !== 'none'
   return (
     <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true" style={{ overflow: 'visible' }}>
       <g transform={`rotate(${t.blobRot} 50 55)`}>
@@ -326,13 +408,13 @@ function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; m
             <path d={`M${top[0] + 24} ${top[1] + 12} Q${top[0] + 34} ${top[1] - 6} ${top[0] + 26} ${top[1] - 16} Q${top[0] + 22} ${top[1] - 2} ${top[0] + 10} ${top[1] + 6} Z`} />
           </g>
         )}
-        {t.antenna && (
+        {t.antenna && !hatOn && (
           <g>
             <path d={`M${top[0]} ${top[1] + 4} Q${top[0] + 4} ${top[1] - 6} ${top[0] + 1} ${top[1] - 11}`} stroke={FACE_INK} strokeWidth={2.4} fill="none" strokeLinecap="round" />
             <circle cx={top[0] + 1} cy={top[1] - 13} r={4.4} fill={t.accent} stroke={FACE_INK} strokeWidth={2.2} />
           </g>
         )}
-        {t.sprout && (
+        {t.sprout && !hatOn && (
           <g>
             <path d={`M${top[0]} ${top[1] + 4} V${top[1] - 7}`} stroke={FACE_INK} strokeWidth={2.4} strokeLinecap="round" />
             <path d={`M${top[0]} ${top[1] - 6} q-9 -2 -11 -10 q9 -1 11 10 Z`} fill="#7BD66B" stroke={FACE_INK} strokeWidth={2} strokeLinejoin="round" />
@@ -347,6 +429,7 @@ function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; m
             <circle cx={68} cy={32} r={2.2} />
           </g>
         )}
+        {hatOn && <Hat kind={hat!} x={top[0]} y={top[1]} />}
       </g>
       <g transform={`translate(${geo.cx + t.ox} ${geo.cy + t.oy}) rotate(${t.featureRot}) scale(${geo.s})`}>
         {t.blush && (
@@ -377,7 +460,8 @@ function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; m
 
 const ZERO: Look = { x: 0, y: 0 }
 
-function GoofyFaceImpl({ name, avatar, horns, size = 40, look, mood = 'neutral', presence = null, blink = true, className, style }: Props) {
+function GoofyFaceImpl({ name, avatar, horns, hat, size = 40, look, mood = 'neutral', presence = null, blink = true, className, style }: Props) {
+  const flair = useFlairFor(hat === undefined ? name : null)
   const custom = useAvatarFor(avatar === undefined ? name : null)
   const hornsReg = useHornsFor(name)
   const showHorns = horns ?? hornsReg
@@ -387,7 +471,7 @@ function GoofyFaceImpl({ name, avatar, horns, size = 40, look, mood = 'neutral',
   const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : mood === 'kiss' || mood === 'flirty' ? { ...t, blush: true } : t
   return (
     <span className={'gf ' + (className ?? '')} style={{ width: size, height: size, ...style }}>
-      <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} />
+      <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} hat={hat === undefined ? flair?.hat : hat} />
       {presence && <span className={'gf-dot ' + (presence === 'away' ? 'is-away' : 'is-online')} style={{ '--s': `${Math.max(9, Math.round(size * 0.26))}px` } as CSSProperties} />}
     </span>
   )
