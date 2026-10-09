@@ -1,0 +1,3 @@
+-- View-once photos: body [[img:<url>|<w>|<h>|1]]. The receiver opens it once, then the file is deleted from
+-- storage and the message becomes [[img-gone]] for both people (applied as migration gat_view_once).
+-- See the live function public.gat_open_once(p_token text, p_msg uuid).

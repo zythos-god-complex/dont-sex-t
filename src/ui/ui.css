@@ -687,3 +687,21 @@
 .del-opt.is-both { background: var(--danger); color: #fff; box-shadow: none; }
 .del-cancel { height: 40px; font: 650 14.5px/1 var(--font-display); color: var(--muted); }
 .del-ask button:disabled { opacity: .5; }
+
+/* view-once photos */
+.img-b.is-once { position: relative; overflow: hidden; }
+.img-b.is-once img { filter: blur(22px) saturate(1.2); transform: scale(1.2); }
+.img-b .once-badge, .once-1 {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  font: 800 14px/1 var(--font-display); font-style: normal; color: #FFF; background: rgba(0,0,0,.45); border: 2px solid #FFF;
+}
+.img-b .once-badge { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 44px; height: 44px; font-size: 20px; }
+.once-1 { width: 20px; height: 20px; font-size: 12px; color: var(--ink); background: none; border-color: var(--ink); }
+.once-gone { display: inline-flex; align-items: center; gap: 6px; font-style: italic; opacity: .75; }
+.pick-wrap { position: relative; display: inline-flex; }
+.pick-menu {
+  position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 20; display: flex; flex-direction: column; gap: 2px; padding: 6px;
+  border-radius: 18px; background: var(--theme-composer, var(--bg)); color: var(--theme-composer-ink, var(--ink)); box-shadow: var(--shadow-pop);
+}
+.pick-menu button { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; white-space: nowrap; font: 650 15px/1 var(--font-display); color: inherit; }
+.pick-menu button:active { background: var(--press); }

@@ -1,14 +1,16 @@
 import { SUPABASE_URL, SUPABASE_KEY } from '../../lib/env'
 
-// An image travels as a message body: [[img:<public url>|<w>|<h>]]
-const RE = /^\[\[img:(https:\/\/[^|\]]+)\|(\d+)\|(\d+)\]\]$/
-export type ImageMsg = { url: string; w: number; h: number }
+// An image travels as a message body: [[img:<public url>|<w>|<h>]], view-once adds |1.
+// Once opened the server swaps the body for [[img-gone]] and deletes the file.
+const RE = /^\[\[img:(https:\/\/[^|\]]+)\|(\d+)\|(\d+)(\|1)?\]\]$/
+export type ImageMsg = { url: string; w: number; h: number; once?: boolean }
+export const GONE = '[[img-gone]]'
 
 export function imageOf(body: string | null | undefined): ImageMsg | null {
   const m = body ? RE.exec(body) : null
-  return m ? { url: m[1], w: +m[2], h: +m[3] } : null
+  return m ? { url: m[1], w: +m[2], h: +m[3], once: !!m[4] } : null
 }
-export const imageBody = (url: string, w: number, h: number) => `[[img:${url}|${w}|${h}]]`
+export const imageBody = (url: string, w: number, h: number, once = false) => `[[img:${url}|${w}|${h}${once ? '|1' : ''}]]`
 
 /** Downscale to a sane size and re-encode. GIFs pass through so they keep moving. */
 /** Decode with createImageBitmap, falling back to an <img> (some Android browsers reject one or the other). */

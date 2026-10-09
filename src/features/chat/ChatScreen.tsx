@@ -15,7 +15,7 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti } from '../../lib/engine'
+import { clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti, openOnce } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
@@ -30,7 +30,7 @@ import { EasterEgg } from './EasterEgg'
 import { Recorder } from '../voice/Recorder'
 import { VoiceBubble } from '../voice/VoiceBubble'
 import { voiceOf } from '../voice/voice'
-import { imageOf, imageBody, prepImage, uploadImage } from '../image/image'
+import { GONE, imageOf, imageBody, prepImage, uploadImage } from '../image/image'
 import { ImageBubble } from '../image/ImageBubble'
 import { Confetti, type ConfettiHandle } from './Confetti'
 import { LockedSticker, Sticker } from '../stickers/Sticker'
@@ -389,7 +389,18 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
   const img = imageOf(m.body)
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, s.conversations[m.conversation_id]?.peer))
   const [viewer, setViewer] = useState(false)
-  const emoji = stk || cpl || voice || img ? 0 : emojiOnlyCount(m.body)
+  const gone = m.body === GONE
+  const once = !!img?.once
+  // view once: 5s after opening it closes itself, and closing (any way) burns it for both
+  useEffect(() => {
+    if (!viewer || !once || mine) return
+    const t = setTimeout(() => setViewer(false), 5000)
+    return () => {
+      clearTimeout(t)
+      void openOnce(m)
+    }
+  }, [viewer])
+  const emoji = stk || cpl || voice || img || gone ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
   const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', voice ? 'b-voice' : '', img ? 'b-img' : ''].join(' ')
   const [picker, setPicker] = useState(false)
@@ -436,7 +447,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
     } else {
       lastTap.current = now
       clearTimeout(tapTimer.current)
-      tapTimer.current = setTimeout(() => (img ? setViewer(true) : setActions((a) => !a)), 290)
+      tapTimer.current = setTimeout(() => (img && !(once && mine) ? setViewer(true) : setActions((a) => !a)), 290)
     }
   }
   const pick = (e: string) => {
@@ -504,7 +515,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
               <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {img ? <ImageBubble img={img} open={viewer} onClose={() => setViewer(false)} /> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : linkify(m.body).map((p, i) =>
+          {img ? <ImageBubble img={img} open={viewer} blur={once} onClose={() => setViewer(false)} /> : gone ? <span className="once-gone"><IconImage size={16} /> opened</span> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}
@@ -722,6 +733,8 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const has = text.trim().length > 0
   const voiceOk = !!conv.my_voice && !!conv.peer_voice
   const imagesOk = !!conv.my_images && !!conv.peer_images
+  const [pmenu, setPmenu] = useState(false)
+  const onceRef = useRef(false)
   const [upload, setUpload] = useState<{ preview: string; err?: boolean } | null>(null)
   // A fresh native input per tap, no accept filter: on some Android phones the gallery app never
   // returns the photo to Chrome, while the system document picker does. Some Androids only fire 'input'.
@@ -745,6 +758,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const pickImage = async (file: File | undefined) => {
     if (!file) return
     if (file.type && !file.type.startsWith('image/') && !/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(file.name)) return
+    const once = onceRef.current
     const preview = URL.createObjectURL(file)
     setUpload({ preview })
     const reply = replyTo
@@ -752,7 +766,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
     try {
       const { blob, w, h } = await prepImage(file)
       const url = await uploadImage(blob, meId ?? 'anon')
-      sendMessage(conv.id, imageBody(url, w, h), reply)
+      sendMessage(conv.id, imageBody(url, w, h, once), reply)
       setUpload(null)
       URL.revokeObjectURL(preview)
     } catch {
@@ -918,9 +932,21 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           <IconSticker size={24} />
         </button>
         {imagesOk && (
-          <button type="button" className="stk-toggle img-tg" aria-label="photo" disabled={!!upload} onPointerDown={(e) => e.preventDefault()} onClick={openPicker}>
-            <IconImage size={24} />
-          </button>
+          <span className="pick-wrap">
+            <button type="button" className="stk-toggle img-tg" aria-label="photo" disabled={!!upload} onPointerDown={(e) => e.preventDefault()} onClick={() => setPmenu((v) => !v)}>
+              <IconImage size={24} />
+            </button>
+            {pmenu && (
+              <span className="pick-menu">
+                <button type="button" onClick={() => { onceRef.current = false; setPmenu(false); openPicker() }}>
+                  <IconImage size={18} /> photo
+                </button>
+                <button type="button" onClick={() => { onceRef.current = true; setPmenu(false); openPicker() }}>
+                  <i className="once-1">1</i> view once
+                </button>
+              </span>
+            )}
+          </span>
         )}
         <textarea
           ref={ta}

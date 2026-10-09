@@ -124,7 +124,8 @@ let active = 0
 
 function grabMedia(body: string | undefined) {
   const m = body ? MEDIA_RE.exec(body) : null
-  if (!m || wanted.has(m[1])) return
+  // view-once photos never get a copy on the device
+  if (!m || wanted.has(m[1]) || body!.endsWith('|1]]')) return
   wanted.add(m[1])
   queue.push(m[1])
   pump()

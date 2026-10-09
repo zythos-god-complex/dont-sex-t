@@ -1724,6 +1724,17 @@ export async function setImages(convId: string, on: boolean): Promise<void> {
   }
 }
 
+/** View-once photo was seen: the server deletes the file and turns the message into [[img-gone]] for both. */
+export async function openOnce(msg: Message): Promise<void> {
+  if (!token) return
+  try {
+    const m = await api.openOnce(token, msg.id)
+    set((st) => ({ messages: { ...st.messages, [m.conversation_id]: upsertMessages(st.messages[m.conversation_id], [m]) } }))
+  } catch {
+    /* next refresh catches up */
+  }
+}
+
 export async function saveFlair(flair: Flair): Promise<void> {
   if (!token) return
   const me = get().me
