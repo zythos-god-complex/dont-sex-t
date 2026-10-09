@@ -1724,7 +1724,7 @@ export async function setImages(convId: string, on: boolean): Promise<void> {
   }
 }
 
-/** Admin only: pull back one of your own DM messages for both people. */
+/** Pull back one of your own DM messages for both people. */
 export async function unsend(msg: Message): Promise<void> {
   if (!token) return
   const put = (m: Message) => set((st) => ({ messages: { ...st.messages, [m.conversation_id]: upsertMessages(st.messages[m.conversation_id], [m]) } }))

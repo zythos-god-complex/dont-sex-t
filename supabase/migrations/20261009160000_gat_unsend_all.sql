@@ -1,0 +1,1 @@
+-- Unsend opened to everyone (own messages only): the is_admin check was dropped from public.gat_unsend.

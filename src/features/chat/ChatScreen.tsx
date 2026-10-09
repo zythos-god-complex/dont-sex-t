@@ -390,7 +390,6 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
   const img = imageOf(m.body)
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, s.conversations[m.conversation_id]?.peer))
   const [viewer, setViewer] = useState(false)
-  const admin = useStore((s) => s.me?.admin === true)
   const gone = m.body === GONE
   const once = !!img?.once
   // view once: 5s after opening it closes itself, and closing (any way) burns it for both
@@ -536,7 +535,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply }: { m: M
               <button type="button" aria-label="reply" onClick={() => { setActions(false); onReply(m) }}>
                 <IconReply size={19} />
               </button>
-              {mine && admin && (
+              {mine && (
                 <button type="button" aria-label="unsend" onClick={() => { setActions(false); void unsend(m) }}>
                   <IconClose size={19} />
                 </button>
