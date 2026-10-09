@@ -462,7 +462,12 @@ function ensureConvChannel(c: Conversation) {
   const entry: ConvChan = { ch, topic: c.topic, joinedOnce: false }
   const convId = c.id
   ch.on('broadcast', { event: 'typing' }, (e) => onPeerTyping(convId, unwrap(e)))
-  ch.on('broadcast', { event: 'confetti' }, () => confettiSubs.forEach((f) => f(convId)))
+  ch.on('broadcast', { event: 'confetti' }, (e) => {
+    const p = unwrap(e) as { x?: unknown; y?: unknown } | null
+    const ok = (v: unknown): v is number => typeof v === 'number' && v >= 0 && v <= 1
+    const pos = p && ok(p.x) && ok(p.y) ? { x: p.x, y: p.y } : undefined
+    confettiSubs.forEach((f) => f(convId, pos))
+  })
   ch.on('broadcast', { event: 'msg' }, (e) => onPeerBroadcastMsg(convId, unwrap(e)))
   ch.on('broadcast', { event: 'react' }, (e) => {
     const p = unwrap(e) as unknown as { message_id: string; user_id: string; emoji: string | null }
@@ -512,16 +517,17 @@ export function onRoomEvent(f: (room: Record<string, unknown>) => void): () => v
   return () => void roomSubs.delete(f)
 }
 
-const confettiSubs = new Set<(convId: string) => void>()
+const confettiSubs = new Set<(convId: string, pos?: { x: number; y: number }) => void>()
 
 /** Peer fired confetti in a conversation. */
-export function onPeerConfetti(f: (convId: string) => void): () => void {
+/** pos: where they tapped, as a share of their screen (0..1); missing = rain from the top. */
+export function onPeerConfetti(f: (convId: string, pos?: { x: number; y: number }) => void): () => void {
   confettiSubs.add(f)
   return () => void confettiSubs.delete(f)
 }
 
-export function sendConfetti(convId: string): void {
-  broadcast(convId, 'confetti', {})
+export function sendConfetti(convId: string, pos?: { x: number; y: number }): void {
+  broadcast(convId, 'confetti', pos ?? {})
 }
 
 function broadcast(convId: string, event: string, payload: unknown) {

@@ -100,11 +100,19 @@ function ChatView({ conv }: { conv: Conversation }) {
     k.y = e.clientY
     if (k.n >= 4) {
       k.n = 0
-      confetti.current?.rain()
-      sendConfetti(conv.id)
+      confetti.current?.burst(k.x, k.y)
+      sendConfetti(conv.id, { x: Math.min(1, Math.max(0, k.x / window.innerWidth)), y: Math.min(1, Math.max(0, k.y / window.innerHeight)) })
     }
   }
-  useEffect(() => onPeerConfetti((id) => id === conv.id && confetti.current?.rain()), [conv.id])
+  useEffect(
+    () =>
+      onPeerConfetti((id, pos) => {
+        if (id !== conv.id) return
+        if (pos) confetti.current?.burst(pos.x * window.innerWidth, pos.y * window.innerHeight)
+        else confetti.current?.rain()
+      }),
+    [conv.id],
+  )
   useEffect(() => setReplyTo(null), [conv.id])
   const chatRef = useRef<HTMLDivElement>(null)
   const [themeBump, setThemeBump] = useState(false)
