@@ -106,6 +106,7 @@ function ChatView({ conv }: { conv: Conversation }) {
   const chatRef = useRef<HTMLDivElement>(null)
   const [themeBump, setThemeBump] = useState(false)
   const me = useMe()
+  const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
 
   useEffect(() => {
     if (!egg) return
@@ -132,7 +133,7 @@ function ChatView({ conv }: { conv: Conversation }) {
   return (
     <div ref={chatRef} onPointerDown={onChatTap} className={'chat scheme-' + theme.scheme + ' theme-' + theme.id + (themeBump ? ' theme-bump' : '')} style={themeVars(theme)}>
       <Confetti ref={confetti} themeId={theme.id} host={() => chatRef.current} />
-      <ThemeBackground themeId={theme.id} host={chatRef} onPhase={setThemeBump} />
+      <ThemeBackground themeId={theme.id} host={chatRef} onPhase={setThemeBump} spicy={spicy} />
 
       <header className="chat-head">
         {!desktop && (

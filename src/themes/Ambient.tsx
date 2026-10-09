@@ -14,7 +14,8 @@ function rnd(i: number, salt: number) {
   return x - Math.floor(x)
 }
 
-function AmbientImpl({ kind }: { kind: AmbientKind }) {
+/** spicy: both people in this chat have nsfw on (unlocks the spicy lust doodles) */
+function AmbientImpl({ kind, spicy = false }: { kind: AmbientKind; spicy?: boolean }) {
   const amount = useAmbientPrefs((p) => p.amount)
   const speed = useAmbientPrefs((p) => p.speed)
   if (kind === 'none') return null
@@ -27,7 +28,7 @@ function AmbientImpl({ kind }: { kind: AmbientKind }) {
   if (kind === 'bats') return <div style={spd} className="amb-wrap"><BatmanScene /></div>
   if (kind === 'lovebeat') return <div style={spd} className="amb-wrap"><LoveScene n={n} /></div>
   if (kind === 'party') return <div style={spd} className="amb-wrap"><BffScene n={n} /></div>
-  if (kind === 'embers') return <div style={spd} className="amb-wrap"><LustScene n={n} /></div>
+  if (kind === 'embers') return <div style={spd} className="amb-wrap"><LustScene n={n} spicy={spicy} /></div>
   return (
     <div className={'amb amb-' + kind} aria-hidden="true" style={spd}>
       {Array.from({ length: n }, (_, i) => (

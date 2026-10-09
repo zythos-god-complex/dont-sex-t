@@ -18,7 +18,7 @@ type Reveal = { id: string; x: string; y: string; key: number }
  * Chat background with a theme change that blooms out of the tapped swatch (or drops from the
  * header when the other person changed it): a circular wipe, shockwave rings and a name pill that drops in under the header.
  */
-export function ThemeBackground({ themeId, onPhase }: { themeId: string; host: RefObject<HTMLDivElement | null>; onPhase?: (on: boolean) => void }) {
+export function ThemeBackground({ themeId, onPhase, spicy = false }: { themeId: string; host: RefObject<HTMLDivElement | null>; onPhase?: (on: boolean) => void; spicy?: boolean }) {
   useThemeMode() // re-render on light / dark flips
   const [label, setLabel] = useState<{ name: string; key: number } | null>(null)
   const [base, setBase] = useState(themeId)
@@ -60,7 +60,7 @@ export function ThemeBackground({ themeId, onPhase }: { themeId: string; host: R
   return (
     <>
       <div className="chat-bg" style={{ background: b.bg }}>
-        <Ambient kind={b.ambient} />
+        <Ambient kind={b.ambient} spicy={spicy} />
       </div>
       {reveal && n && (
         <motion.div
@@ -71,7 +71,7 @@ export function ThemeBackground({ themeId, onPhase }: { themeId: string; host: R
           animate={{ clipPath: `circle(150% at ${reveal.x} ${reveal.y})` }}
           transition={{ duration: 0.85, ease: [0.7, 0, 0.2, 1] }}
         >
-          <Ambient kind={n.ambient} />
+          <Ambient kind={n.ambient} spicy={spicy} />
         </motion.div>
       )}
       <AnimatePresence>
