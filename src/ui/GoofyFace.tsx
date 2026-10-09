@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { BLOBS, FACE_INK, TONGUE, applyAvatar, faceTraits, type AvatarConfig, type FaceTraits, type MouthKind } from './face'
 import { useAvatarFor, useHornsFor } from './avatars'
 
-export type FaceMood = 'neutral' | 'happy' | 'shocked' | 'sleepy' | 'talking' | 'wink' | 'kiss'
+export type FaceMood = 'neutral' | 'happy' | 'shocked' | 'sleepy' | 'talking' | 'wink' | 'kiss' | 'angry' | 'disgust' | 'smug' | 'flirty'
 export type Look = { x: number; y: number }
 
 type Props = {
@@ -38,6 +38,34 @@ function Eye({ x, r, t, look, kind, side }: { x: number; r: number; t: FaceTrait
       <g>
         <circle cx={x + lx * r * 0.18} cy={ly * r * 0.18} r={pr} fill={FACE_INK} />
         <circle cx={x + lx * r * 0.18 - pr * 0.35} cy={ly * r * 0.18 - pr * 0.35} r={pr * 0.32} fill={W} />
+      </g>
+    )
+  }
+  if (kind === 'lidded') {
+    // half-moon eye under a heavy flat lid
+    const y0 = -r * 0.12
+    return (
+      <g>
+        <path d={`M${x - r} ${y0} A ${r} ${r} 0 0 0 ${x + r} ${y0} Z`} fill={W} stroke={FACE_INK} strokeWidth={2.2} strokeLinejoin="round" />
+        <circle cx={x + lx * r * 0.28} cy={y0 + r * 0.4} r={r * 0.42} fill={FACE_INK} />
+        <circle cx={x + lx * r * 0.28 - r * 0.14} cy={y0 + r * 0.28} r={r * 0.12} fill={W} />
+        <path d={`M${x - r - 1.8} ${y0} H${x + r + 1.8}`} stroke={FACE_INK} strokeWidth={3.2} strokeLinecap="round" />
+      </g>
+    )
+  }
+  if (kind === 'angry') {
+    const s = side || 1
+    const inner = x - s * r * 1.1
+    const outer = x + s * r * 1.1
+    const pr = r * 0.46
+    const px = x - s * r * 0.16
+    return (
+      <g>
+        <circle cx={x} cy={0} r={r} fill={W} stroke={FACE_INK} strokeWidth={2.2} />
+        <circle cx={px} cy={r * 0.22} r={pr} fill={FACE_INK} />
+        <circle cx={px - pr * 0.35} cy={r * 0.22 - pr * 0.35} r={pr * 0.3} fill={W} />
+        <path d={`M${outer} ${-r - 2} L${inner} ${-r - 2} L${inner} ${r * 0.12} L${outer} ${-r * 0.5} Z`} fill={t.color} />
+        <path d={`M${inner} ${r * 0.12} L${outer} ${-r * 0.5}`} stroke={FACE_INK} strokeWidth={2.6} strokeLinecap="round" />
       </g>
     )
   }
@@ -114,6 +142,13 @@ function Mouth({ kind, t, scale = 1 }: { kind: MouthKind; t: FaceTraits; scale?:
           <path d="M-1 -4.5 C3 -6.5 6 -3 4.2 -0.6 C6.4 1.6 4 5.8 -0.6 4.2 C-2.2 3.2 -1.4 1.2 0.2 0 C-1.6 -1.2 -2.6 -3.4 -1 -4.5 Z" fill="#FF6F91" stroke={FACE_INK} strokeWidth={2} strokeLinejoin="round" />
         </g>
       )
+    case 'bleh' as MouthKind:
+      return (
+        <g transform={`scale(${scale * m} ${scale})`}>
+          <path d="M1.5 3.2 v5.4 a3.6 3.6 0 0 0 7.2 0 v-4.6" fill={TONGUE} stroke={FACE_INK} strokeWidth={2} strokeLinejoin="round" />
+          <path d="M-10 4 q2.5 -4.5 5 -1 t5 -1 t5 1 t5 -1" fill="none" {...common} />
+        </g>
+      )
     case 'flat':
     default:
       return <path transform={`scale(${scale})`} d="M-7.5 2 H7.5" fill="none" {...common} />
@@ -135,6 +170,22 @@ function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; m
   if (mood === 'talking') mouth = 'o'
   if (mood === 'sleepy' || mood === 'kiss') eyes = 'closed'
   if (mood === 'kiss') mouth = 'pucker' as MouthKind
+  if (mood === 'angry') {
+    eyes = 'angry'
+    mouth = 'teeth'
+  }
+  if (mood === 'disgust') {
+    eyes = 'disgust'
+    mouth = 'bleh' as MouthKind
+  }
+  if (mood === 'smug') {
+    eyes = 'lidded'
+    mouth = 'smirk'
+  }
+  if (mood === 'flirty') {
+    eyes = 'flirty'
+    mouth = 'smirk'
+  }
   const derpL: Look = t.derp ? { x: look.x - 0.6, y: look.y + 0.2 } : look
   const derpR: Look = t.derp ? { x: look.x + 0.7, y: look.y - 0.3 } : look
 
@@ -169,6 +220,28 @@ function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; m
               <Eye x={dx * 1.15} r={r} t={t} look={look} kind="pair" side={1} />
             </>
           )
+        case 'disgust':
+          // scrunched shut: > <
+          return (
+            <>
+              <path d={`M${-dx - r * 0.75} ${-r * 0.6} L${-dx + r * 0.65} 0 L${-dx - r * 0.75} ${r * 0.6}`} stroke={FACE_INK} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <path d={`M${dx + r * 0.75} ${-r * 0.6} L${dx - r * 0.65} 0 L${dx + r * 0.75} ${r * 0.6}`} stroke={FACE_INK} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </>
+          )
+        case 'flirty':
+          return (
+            <>
+              <Eye x={-dx} r={r} t={t} look={{ x: 0.5, y: 0 }} kind="lidded" side={-1} />
+              <Eye x={dx} r={r} t={t} look={look} kind="closed" side={1} />
+            </>
+          )
+        case 'angry':
+          return (
+            <>
+              <Eye x={-dx} r={r} t={t} look={look} kind="angry" side={-1} />
+              <Eye x={dx} r={r} t={t} look={look} kind="angry" side={1} />
+            </>
+          )
         case 'wink':
           return (
             <>
@@ -197,7 +270,24 @@ function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; m
     )
   })()
 
-  const brows = t.brows && eyes !== 'closed' && (
+  const moodBrows =
+    mood === 'angry' ? (
+      <g transform={`translate(0 ${-7 - r - 6})`} stroke={FACE_INK} strokeWidth={3.6} strokeLinecap="round" fill="none">
+        <path d={`M${-dx - 8} -3 L${-dx + 6} 3`} />
+        <path d={`M${dx - 6} 3 L${dx + 8} -3`} />
+      </g>
+    ) : mood === 'disgust' ? (
+      <g transform={`translate(0 ${-7 - r - 4})`} stroke={FACE_INK} strokeWidth={3} strokeLinecap="round" fill="none">
+        <path d={`M${-dx - 7} -1 Q${-dx} 3 ${-dx + 6} 1`} />
+        <path d={`M${dx - 6} 1 Q${dx} 3 ${dx + 7} -1`} />
+      </g>
+    ) : mood === 'smug' || mood === 'flirty' ? (
+      <g transform={`translate(0 ${-7 - r - 5})`} stroke={FACE_INK} strokeWidth={3} strokeLinecap="round" fill="none">
+        <path d={`M${-dx - 6} 1 L${-dx + 6} 1`} />
+        <path d={`M${dx - 7} 0 Q${dx} -8 ${dx + 7} -3`} />
+      </g>
+    ) : null
+  const brows = moodBrows ?? (t.brows && eyes !== 'closed' && (
     <g transform={`translate(0 ${-7 - r - 5})`} stroke={FACE_INK} strokeWidth={2.6} strokeLinecap="round" fill="none">
       {t.brows === 'raised' && (
         <>
@@ -224,7 +314,7 @@ function FaceSvg({ t, look, mood, blink, horns }: { t: FaceTraits; look: Look; m
         </>
       )}
     </g>
-  )
+  ))
 
   const top = geo.top
   return (
@@ -294,7 +384,7 @@ function GoofyFaceImpl({ name, avatar, horns, size = 40, look, mood = 'neutral',
   const t = applyAvatar(faceTraits(name), avatar !== undefined ? avatar : custom)
   const reduce = usePrefersReducedMotion()
   const effMood = mood === 'wink' ? 'neutral' : mood
-  const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : mood === 'kiss' ? { ...t, blush: true } : t
+  const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : mood === 'kiss' || mood === 'flirty' ? { ...t, blush: true } : t
   return (
     <span className={'gf ' + (className ?? '')} style={{ width: size, height: size, ...style }}>
       <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} />

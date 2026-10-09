@@ -1,6 +1,7 @@
 import { memo, type CSSProperties, type ReactNode } from 'react'
 import type { Ambient as AmbientKind } from './themes'
 import { useAmbientPrefs } from './ambientPrefs'
+import { Flame, Lips } from '../features/stickers/props'
 
 const COUNT: Partial<Record<AmbientKind, number>> = {
   petals: 14, stars: 26, bubbles: 12, leaves: 9, hearts: 10, sparkles: 16,
@@ -25,19 +26,47 @@ const BAT = (
   </svg>
 )
 
-const PARTY_EMOJI = ['🫶', '✌️', '💅', '🤪', '👯', '🥳']
-const LUST_EMOJI = ['💋', '🔥', '💋']
+const INK = '#17131F'
+const Star = ({ c }: { c: string }) => (
+  <svg viewBox="0 0 30 30" width="100%" height="100%">
+    <path d="M15 2 L18.6 10.6 L28 11.4 L20.8 17.6 L23 27 L15 22 L7 27 L9.2 17.6 L2 11.4 L11.4 10.6 Z" fill={c} stroke={INK} strokeWidth={2.2} strokeLinejoin="round" />
+  </svg>
+)
+const HeartD = ({ c }: { c: string }) => (
+  <svg viewBox="0 0 24 22" width="100%" height="100%">
+    <path d="M12 20.5S1.5 14.2 1.5 7.3C1.5 3.9 4.1 1.5 7.1 1.5c2 0 3.8 1 4.9 2.6 1.1-1.6 2.9-2.6 4.9-2.6 3 0 5.6 2.4 5.6 5.8 0 6.9-10.5 13.2-10.5 13.2z" fill={c} stroke={INK} strokeWidth={2} strokeLinejoin="round" />
+  </svg>
+)
+const Bolt = ({ c }: { c: string }) => (
+  <svg viewBox="0 0 24 32" width="100%" height="100%">
+    <path d="M14 1.5 L3 18 H11 L8.5 30.5 L21 12.5 H13 Z" fill={c} stroke={INK} strokeWidth={2.2} strokeLinejoin="round" />
+  </svg>
+)
+const Smiley = () => (
+  <svg viewBox="0 0 30 30" width="100%" height="100%">
+    <circle cx="15" cy="15" r="12.5" fill="#FFE14D" stroke={INK} strokeWidth={2.2} />
+    <circle cx="11" cy="12.5" r="1.8" fill={INK} />
+    <circle cx="19" cy="12.5" r="1.8" fill={INK} />
+    <path d="M9.5 17.5 Q15 23 20.5 17.5" fill="none" stroke={INK} strokeWidth={2.2} strokeLinecap="round" />
+  </svg>
+)
+const PARTY_RIDERS = [<Star key="a" c="#FFC83D" />, <HeartD key="b" c="#FF5CB8" />, <Smiley key="c" />, <Bolt key="d" c="#8A6BFF" />, <Star key="e" c="#3DD6B5" />, <HeartD key="f" c="#5BB5FF" />]
+const LUST_RIDERS = [<Lips key="a" />, <Flame key="b" />, <Lips key="c" c="#FF3D63" />]
 
 /** Set pieces behind the particles: skyline + bat signal, heartbeat glow, smoke. */
 function Decor({ kind }: { kind: AmbientKind }): ReactNode {
   if (kind === 'bats')
     return (
       <>
-        <span className="bs-beam" />
+        <span className="bs-cloud" />
+        <span className="bs-cloud c2" />
+        <span className="bs-beam">
+          <b />
+        </span>
         <span className="bs-signal">
           <span className="bs-bat">{BAT}</span>
         </span>
-        <span className="bs-moon" />
+        <span className="bs-fog" />
         <span className="bs-city" />
         <span className="bs-city bs-city2" />
       </>
@@ -62,8 +91,8 @@ function AmbientImpl({ kind }: { kind: AmbientKind }) {
   if (kind === 'scanlines') return <div className="amb amb-scan" aria-hidden="true" />
   if (kind === 'haze') return <div className="amb amb-haze" aria-hidden="true"><i /><i /></div>
   const n = Math.max(1, Math.min(80, Math.round((COUNT[kind] ?? 10) * amount)))
-  // a few emoji riders on top of the confetti / embers
-  const riders = kind === 'party' ? PARTY_EMOJI : kind === 'embers' ? LUST_EMOJI : null
+  // a few drawn riders floating up through the confetti / embers
+  const riders = kind === 'party' ? PARTY_RIDERS : kind === 'embers' ? LUST_RIDERS : null
   return (
     <div className={'amb amb-' + kind} aria-hidden="true" style={{ '--spd': speed } as CSSProperties}>
       <Decor kind={kind} />
