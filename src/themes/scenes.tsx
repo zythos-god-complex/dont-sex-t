@@ -1,7 +1,7 @@
 // Full scenes for the signature themes. Each is a composed background (focal point + depth + weather),
 // not just floating particles. Drawn in the app's ink style; cheap CSS animation only.
 import type { CSSProperties, ReactNode } from 'react'
-import { doodleTile } from './doodles'
+import { FLOATS, doodleIcon, doodleTile } from './doodles'
 
 const rnd = (i: number, salt: number) => {
   const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453
@@ -181,25 +181,34 @@ export function BffScene({ n }: { n: number }) {
 
 // ------------------------------------------------------------------ lust: doodle wallpaper
 
-/** A static line-doodle wallpaper (spicy set only when both people have nsfw on), a low glow, a few embers. */
+/** A static line-doodle wallpaper (spicy set only when both people have nsfw on), a low glow, a few doodles floating up. */
 export function LustScene({ n, spicy }: { n: number; spicy: boolean }) {
   const tile = doodleTile(spicy)
   return (
     <div className="amb sc-lust" aria-hidden="true">
       <span className="ls-lamp" />
       <span className="ls-doodles" style={{ WebkitMaskImage: tile, maskImage: tile }} />
-      {Array.from({ length: n }, (_, i) => (
-        <i
-          key={i}
-          className="ls-ember"
-          style={v({
-            '--x': `${Math.round(rnd(i, 1) * 100)}%`,
-            '--d': `${(14 + rnd(i, 2) * 10).toFixed(1)}s`,
-            '--delay': `${(-rnd(i, 3) * 20).toFixed(1)}s`,
-            '--drift': `${Math.round((rnd(i, 6) - 0.5) * 60)}px`,
-          })}
-        />
-      ))}
+      {Array.from({ length: n }, (_, i) => {
+        const set = spicy ? FLOATS.spicy : FLOATS.tame
+        const icon = doodleIcon(set[i % set.length])
+        return (
+          <i
+            key={i}
+            className="ls-float"
+            style={v({
+              WebkitMaskImage: icon,
+              maskImage: icon,
+              '--x': `${Math.round(6 + rnd(i, 1) * 88)}%`,
+              '--d': `${(14 + rnd(i, 2) * 10).toFixed(1)}s`,
+              '--delay': `${(-rnd(i, 3) * 20).toFixed(1)}s`,
+              '--drift': `${Math.round((rnd(i, 6) - 0.5) * 70)}px`,
+              '--sz': `${Math.round(13 + rnd(i, 4) * 5)}px`,
+              '--r0': `${Math.round((rnd(i, 7) - 0.5) * 40)}deg`,
+              '--r1': `${Math.round((rnd(i, 8) - 0.5) * 90)}deg`,
+            })}
+          />
+        )
+      })}
     </div>
   )
 }

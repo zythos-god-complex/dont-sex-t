@@ -65,6 +65,7 @@ const D: Record<string, string> = {
   moon: `<path d="M20 4.5 A11.5 11.5 0 1 0 27.5 22.5 A9.2 9.2 0 1 1 20 4.5 Z"/>` + dot(25, 7, 1.1) + dot(28.5, 12.5, 0.8),
   wine:
     `<path d="M9.5 4 H22.5 C22.5 12.2 20.4 16.4 16 16.4 C11.6 16.4 9.5 12.2 9.5 4 Z"/><path d="M10.2 9.4 H21.8"/><path d="M16 16.4 V27.4"/><path d="M10.8 28 H21.2"/>`,
+  heart0: `<path d="M16 26 C16 26 5 19.5 5 12.5 C5 9 7.8 6.5 10.8 6.5 C13 6.5 14.8 7.8 16 9.8 C17.2 7.8 19 6.5 21.2 6.5 C24.2 6.5 27 9 27 12.5 C27 19.5 16 26 16 26 Z"/>`,
   spark: `<path d="M16 8 L17.6 14.4 L24 16 L17.6 17.6 L16 24 L14.4 17.6 L8 16 L14.4 14.4 Z"/>`,
   dots: dot(12, 14, 1.4) + dot(19, 11, 1) + dot(17.5, 19.5, 1.6) + dot(10.5, 21.5, 0.9),
 }
@@ -95,4 +96,12 @@ const cache: Record<string, string> = {}
 export function doodleTile(spicy: boolean): string {
   const k = spicy ? 's' : 't'
   return (cache[k] ??= tile(spicy))
+}
+
+// the same drawings as tiny floating particles: one icon per data URI, thicker line so they read at 14px
+export const FLOATS = { spicy: ['heart0', 'condom', 'lips', 'drops', 'spark', 'cherries'], tame: ['heart0', 'lips', 'spark', 'cherries'] }
+export function doodleIcon(name: string): string {
+  return (cache['i:' + name] ??= `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><g fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${D[name]}</g></svg>`,
+  )}")`)
 }

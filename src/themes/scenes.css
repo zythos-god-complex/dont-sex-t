@@ -102,16 +102,16 @@
   position: absolute; inset: 0; background: rgba(255,120,160,.2);
   -webkit-mask-size: 240px 240px; mask-size: 240px 240px; -webkit-mask-repeat: repeat; mask-repeat: repeat;
 }
-.sc-lust .ls-ember {
-  position: absolute; left: var(--x); bottom: -6px; width: 3px; height: 3px; border-radius: 50%;
-  background: #FFC9A0; box-shadow: 0 0 4px 1px rgba(255,80,90,.6);
+.sc-lust .ls-float {
+  position: absolute; left: var(--x); top: auto; bottom: -24px; width: var(--sz); height: var(--sz); background: #FF8FB1; opacity: 0;
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
   animation: ls-rise calc(var(--d) / var(--spd, 1)) linear infinite; animation-delay: var(--delay);
 }
-@keyframes ls-rise { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: .8; } 85% { opacity: .5; } 100% { transform: translate(var(--drift), -100vh); opacity: 0; } }
+@keyframes ls-rise { 0% { transform: translate(0, 0) rotate(var(--r0)); opacity: 0; } 12% { opacity: .75; } 80% { opacity: .5; } 100% { transform: translate(var(--drift), -100vh) rotate(var(--r1)); opacity: 0; } }
 /* lust by day: blush paper, wine ink */
 .scheme-light .sc-lust .ls-lamp { background: radial-gradient(80% 40% at 50% 100%, rgba(255,120,150,.18), transparent 70%); }
 .scheme-light .sc-lust .ls-doodles { background: rgba(176,20,70,.16); }
-.scheme-light .sc-lust .ls-ember { background: #F26A8A; box-shadow: 0 0 3px 1px rgba(230,40,90,.35); }
+.scheme-light .sc-lust .ls-float { background: #C2185B; }
 
 /* ==================================================================== signature theme chat looks */
 
