@@ -1,14 +1,16 @@
 import { create } from 'zustand'
 
 // Per-device feel for falling/floating theme effects. amount and speed are multipliers.
+// Defaults sit at the slider minimums: lightest load out of the box, people can turn it up.
 type Prefs = { amount: number; speed: number }
 const KEY = 'gat.ambient.v1'
+const DEFAULTS: Prefs = { amount: 0.25, speed: 0.3 }
 function load(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) || '{}')
-    return { amount: Number(p.amount) || 1, speed: Number(p.speed) || 1 }
+    return { amount: Number(p.amount) || DEFAULTS.amount, speed: Number(p.speed) || DEFAULTS.speed }
   } catch {
-    return { amount: 1, speed: 1 }
+    return { ...DEFAULTS }
   }
 }
 export const useAmbientPrefs = create<Prefs>(() => load())

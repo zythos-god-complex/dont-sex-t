@@ -37,9 +37,10 @@
 }
 .sc-love .lv-big { position: absolute; left: 50%; top: 52%; width: min(58vw, 250px); aspect-ratio: 100 / 96; translate: -50% -50%; }
 .sc-love .lv-big > svg { position: absolute; inset: 0; }
-.sc-love .lv-core { animation: lv-beat calc(1.6s / var(--spd, 1)) ease-in-out infinite; transform-origin: 50% 50%; transform-box: fill-box; }
+/* the heartbeat keeps its tempo whatever the speed slider says */
+.sc-love .lv-core { animation: lv-beat 1.6s ease-in-out infinite; transform-origin: 50% 50%; transform-box: fill-box; }
 .sc-love .lv-ring path { fill: none; stroke: rgba(240,40,90,.55); stroke-width: 2; vector-effect: non-scaling-stroke; }
-.sc-love .lv-ring { opacity: 0; transform-origin: 50% 50%; animation: lv-ring calc(1.6s / var(--spd, 1)) ease-out infinite; animation-delay: calc(var(--i) * .26s / var(--spd, 1)); }
+.sc-love .lv-ring { opacity: 0; transform-origin: 50% 50%; animation: lv-ring 1.6s ease-out infinite; animation-delay: calc(var(--i) * .26s); }
 @keyframes lv-beat { 0%, 46%, 100% { transform: scale(.94); } 12% { transform: scale(1.03); } 22% { transform: scale(.97); } 32% { transform: scale(1.06); } }
 @keyframes lv-ring { 0% { transform: scale(.96); opacity: .9; } 70% { opacity: 0; } 100% { transform: scale(1.5); opacity: 0; } }
 .sc-love .lv-h {
