@@ -25,7 +25,7 @@ import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose,
 import { getTheme, themeList, themeVars } from '../../themes/themes'
 import { flipModeFrom, useThemeMode } from '../../themes/mode'
 import { flushSync } from 'react-dom'
-import { goBack } from '../shell/nav'
+import { goHome } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
 import { Recorder } from '../voice/Recorder'
 import { VoiceBubble } from '../voice/VoiceBubble'
@@ -62,7 +62,7 @@ function ChatPlaceholder({ username, status }: { username: string; status: strin
       <div className="chat-bg" style={{ background: t.bg }} />
       <header className="chat-head">
         {!desktop && (
-          <button className="icon-btn" onClick={() => goBack(nav)} aria-label="back">
+          <button className="icon-btn" onClick={() => goHome(nav)} aria-label="back">
             <IconBack size={26} />
           </button>
         )}
@@ -143,7 +143,7 @@ function ChatView({ conv }: { conv: Conversation }) {
 
       <header className="chat-head">
         {!desktop && (
-          <button className="icon-btn" onClick={() => goBack(nav)} aria-label="back">
+          <button className="icon-btn" onClick={() => goHome(nav)} aria-label="back">
             <IconBack size={26} />
           </button>
         )}
@@ -161,7 +161,6 @@ function ChatView({ conv }: { conv: Conversation }) {
             </AnimatePresence>
           </div>
         </button>
-        <ProfileCard name={peer.username} open={card} onClose={() => setCard(false)} />
         <ModeButton />
         <button className="icon-btn" onClick={() => setSettings(true)} aria-label="chat settings">
           <IconGear size={24} />
@@ -172,6 +171,7 @@ function ChatView({ conv }: { conv: Conversation }) {
       <ChatFooter conv={conv} meId={me?.id ?? null} now={now} onEgg={() => setEgg((n) => n + 1)} replyTo={replyTo} onClearReply={() => setReplyTo(null)} />
       <AnimatePresence>{egg > 0 && <EasterEgg key="egg" me={me?.username ?? ''} />}</AnimatePresence>
 
+      <ProfileCard name={peer.username} open={card} onClose={() => setCard(false)} />
       <Sheet open={settings} onClose={() => setSettings(false)} label="chat settings">
         <SettingsBody conv={conv} onPicked={() => setSettings(false)} />
       </Sheet>

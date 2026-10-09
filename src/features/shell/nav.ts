@@ -12,6 +12,13 @@ export function goBack(nav: (to: string) => void): void {
   else nav('/')
 }
 
+/** Straight to the lobby: step back if the lobby is the previous page, otherwise swap this entry for it. */
+export function goHome(nav: (to: string, opts?: { replace?: boolean }) => void): void {
+  if (stack.length > 1 && stack[stack.length - 2] === '/') return history.back()
+  stack[stack.length - 1] = '/'
+  nav('/', { replace: true })
+}
+
 /** Pin the app to the visual viewport so the composer rides on top of the mobile keyboard. */
 export function bindVisualViewport(): () => void {
   const vv = window.visualViewport
