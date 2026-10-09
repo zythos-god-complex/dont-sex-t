@@ -20,9 +20,30 @@ import { refreshBlocks } from './lib/engine'
 const loadOnboarding = () => import('./features/onboarding/Onboarding')
 const loadRooms = () => import('./features/rooms/RoomsScreen')
 const loadRoomChat = () => import('./features/rooms/RoomChat')
-const Onboarding = lazy(loadOnboarding)
-const RoomsScreen = lazy(loadRooms)
-const RoomChat = lazy(loadRoomChat)
+// a lazy file can vanish (deploy while a tab is open) or drop on bad signal: retry once, then one hard reload
+function lazyRetry<T>(load: () => Promise<{ default: T }>) {
+  const ok = (m: { default: T }) => {
+    try { sessionStorage.removeItem('gat.chunk-reload') } catch { /* blocked */ }
+    return m
+  }
+  return () =>
+    load().then(ok, () =>
+      new Promise<{ default: T }>((res, rej) =>
+        setTimeout(() => load().then((m) => res(ok(m)), (e) => {
+          try {
+            if (!sessionStorage.getItem('gat.chunk-reload')) {
+              sessionStorage.setItem('gat.chunk-reload', '1')
+              location.reload()
+            }
+          } catch { /* blocked */ }
+          rej(e)
+        }), 700),
+      ),
+    )
+}
+const Onboarding = lazy(lazyRetry(loadOnboarding))
+const RoomsScreen = lazy(lazyRetry(loadRooms))
+const RoomChat = lazy(lazyRetry(loadRoomChat))
 if (typeof window !== 'undefined') {
   const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 4000 }) : setTimeout(cb, 2500))
   window.addEventListener('load', () => idle(() => void loadRooms().then(loadRoomChat).catch(() => {})), { once: true })

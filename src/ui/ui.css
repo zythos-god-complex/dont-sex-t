@@ -314,9 +314,11 @@
 .toast-name { font: 750 15px/1.1 var(--font-display); letter-spacing: -0.01em; }
 .toast-body { font: 400 14.5px/1.25 var(--font-text); color: var(--ink-2); }
 
+/* sits under the top bar (never over titles or buttons) and lets taps fall through */
 .conn-banner {
-  position: fixed; top: calc(8px + var(--safe-t)); left: 50%; translate: -50% 0; z-index: 90; padding: 8px 16px; border-radius: 999px;
-  background: var(--ink); color: var(--bg); font: 650 13px/1 var(--font-display); box-shadow: var(--shadow-pop);
+  position: fixed; top: calc(68px + var(--safe-t)); left: 50%; translate: -50% 0; z-index: 90; padding: 6px 12px; border-radius: 999px;
+  background: var(--ink); color: var(--bg); font: 650 12px/1 var(--font-display); box-shadow: var(--shadow-pop);
+  pointer-events: none; opacity: .92;
 }
 
 /* ============================================================ chat */

@@ -14,7 +14,7 @@ import { PeoplePicker } from './PeoplePicker'
 import { createRoom, loadRooms, useRoomList, useRooms, type Room, type RoomMsg } from './rooms'
 
 export function lastLine(m: RoomMsg | null, meId: string | null | undefined): string {
-  if (!m) return ''
+  if (!m || m.kind === 'removed') return ''
   const who = m.sender_id === meId ? 'you' : m.sender?.username ?? ''
   return `${who}: ${displayBody(m.body).replace(/\s+/g, ' ')}`
 }
