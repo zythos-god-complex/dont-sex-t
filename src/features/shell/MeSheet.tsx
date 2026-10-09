@@ -24,7 +24,9 @@ function Passport({ onDone }: { onDone: () => void }) {
   const [stamp, setStamp] = useState<'adult' | 'minor' | null>(null)
   const [busy, setBusy] = useState(false)
   if (!me) return null
-  const years = Array.from({ length: now.getFullYear() - 1920 + 1 }, (_, i) => now.getFullYear() - i)
+  // nobody here is under 13, and starting the list there stops a one-tap "born this year" mistake
+  const years = Array.from({ length: now.getFullYear() - 13 - 1920 + 1 }, (_, i) => now.getFullYear() - 13 - i)
+  const age = month && year ? now.getFullYear() - year - (now.getMonth() + 1 < month ? 1 : 0) : null
   const go = async () => {
     if (!month || !year || busy) return
     setBusy(true)
@@ -66,7 +68,7 @@ function Passport({ onDone }: { onDone: () => void }) {
       </div>
       <p className="pp-note">set once, can't be changed</p>
       <button type="button" className="fb-done" disabled={!month || !year || busy} onClick={go}>
-        stamp it
+        {age === null ? 'stamp it' : `stamp it, i'm ${age}`}
       </button>
       <button type="button" className="pp-back" onClick={onDone}>
         not now
