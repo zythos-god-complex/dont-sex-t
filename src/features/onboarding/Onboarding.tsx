@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { AnimatePresence, motion, useAnimationControls } from 'motion/react'
-import { join, joinTemp } from '../../lib/engine'
+import { join, joinTemp, recoverAccount } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { useOnline } from '../../lib/hooks'
 import { GoofyFace, useLookAt, type FaceMood } from '../../ui/GoofyFace'
@@ -207,6 +207,7 @@ export default function Onboarding() {
           </span>
           temp mode
         </button>
+        <RecoverBox />
       </motion.form>
 
       <Sheet open={building} onClose={() => setBuilding(false)} label="build your face">
@@ -217,6 +218,42 @@ export default function Onboarding() {
           onDone={() => setBuilding(false)}
         />
       </Sheet>
+    </div>
+  )
+}
+
+/** "got a key?": name + 6 words brings an account to this phone. */
+function RecoverBox() {
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [words, setWords] = useState('')
+  const [err, setErr] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  if (!open)
+    return (
+      <button type="button" className="rec-link" onClick={() => setOpen(true)}>
+        got a key?
+      </button>
+    )
+  const go = async () => {
+    if (busy || !name.trim() || words.trim().split(/\s+/).length < 6) return
+    setBusy(true)
+    setErr(null)
+    try {
+      await recoverAccount(name, words)
+    } catch (e) {
+      setBusy(false)
+      setErr(isApiError(e, 'rate_limited') ? 'too many tries, wait an hour' : 'nope, check the name and words')
+    }
+  }
+  return (
+    <div className="rec-box">
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="username" aria-label="username" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+      <textarea value={words} onChange={(e) => setWords(e.target.value)} placeholder="your 6 words" aria-label="recovery words" rows={2} autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+      {err && <p className="ob-error">{err}</p>}
+      <button type="button" className="fb-done" disabled={busy} onClick={() => void go()}>
+        get it back
+      </button>
     </div>
   )
 }

@@ -1,4 +1,6 @@
 import { SUPABASE_URL, SUPABASE_KEY } from '../../lib/env'
+import { api } from '../../lib/api'
+import { getToken } from '../../lib/engine'
 
 // A voice note travels as a message body: [[voice:<public url>|<seconds>|<peaks>]]
 // peaks = 40 bar heights, one base36 char each (0..z).
@@ -21,10 +23,13 @@ export function pickMime(): string {
   return opts.find((t) => MediaRecorder.isTypeSupported?.(t)) ?? ''
 }
 
-export async function uploadVoice(blob: Blob, userId: string): Promise<string> {
+export async function uploadVoice(blob: Blob, _userId: string): Promise<string> {
   const type = (blob.type || 'audio/webm').split(';')[0]
   const ext = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm'
-  const path = `${userId}/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}.${ext}`
+  // the server hands out the file name (and enforces the daily quota); storage refuses any other name
+  const tok = getToken()
+  if (!tok) throw new Error('no session')
+  const path = await api.uploadTicket(tok, 'gat-voice', ext)
   const r = await fetch(`${SUPABASE_URL}/storage/v1/object/gat-voice/${path}`, {
     method: 'POST',
     headers: { apikey: SUPABASE_KEY, 'content-type': type },

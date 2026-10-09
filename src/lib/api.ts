@@ -16,6 +16,8 @@ const KNOWN_CODES: ReadonlySet<string> = new Set([
   'request_pending',
   'request_cooldown',
   'blocked',
+  'not_allowed',
+  'age_required',
 ])
 
 export class ApiError extends Error {
@@ -115,6 +117,11 @@ export const api = {
   block: (token: string, peer: string, on: boolean) => rpc<{ blocked: boolean }>('gat_block', { p_token: token, p_peer: peer, p_on: on }),
   setVoice: (token: string, conv: string, on: boolean) => rpc<Record<string, unknown>>('gat_set_voice', { p_token: token, p_conversation: conv, p_on: on }),
   setImages: (token: string, conv: string, on: boolean) => rpc<Record<string, unknown>>('gat_set_images', { p_token: token, p_conversation: conv, p_on: on }),
+  setBirth: (token: string, year: number, month: number) => rpc<Me>('gat_set_birth', { p_token: token, p_year: year, p_month: month }),
+  makeKey: (token: string) => rpc<{ words: string; me: Me }>('gat_make_key', { p_token: token }),
+  recover: (username: string, words: string) => rpc<{ token?: string; me?: Me; error?: string }>('gat_recover', { p_username: username, p_words: words }),
+  forgetMe: (token: string) => rpc<boolean>('gat_forget_me', { p_token: token }),
+  uploadTicket: (token: string, bucket: 'gat-img' | 'gat-voice', ext: string) => rpc<string>('gat_upload_ticket', { p_token: token, p_bucket: bucket, p_ext: ext }),
   unsend: (token: string, msg: string) => rpc<Message>('gat_unsend', { p_token: token, p_msg: msg }),
   openOnce: (token: string, msg: string) => rpc<Message>('gat_open_once', { p_token: token, p_msg: msg }),
   clear: (token: string, conv: string, both: boolean) => rpc<Conversation>('gat_clear', { p_token: token, p_conversation: conv, p_both: both }),

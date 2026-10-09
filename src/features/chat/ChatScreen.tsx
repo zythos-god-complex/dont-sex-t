@@ -31,6 +31,7 @@ import { Recorder } from '../voice/Recorder'
 import { VoiceBubble } from '../voice/VoiceBubble'
 import { voiceOf } from '../voice/voice'
 import { GONE, imageOf, imageBody, prepImage, uploadImage } from '../image/image'
+import { useChill } from '../../lib/chill'
 import { ImageBubble } from '../image/ImageBubble'
 import { Confetti, type ConfettiHandle } from './Confetti'
 import { LockedSticker, Sticker } from '../stickers/Sticker'
@@ -756,6 +757,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const voiceOk = !!conv.my_voice && !!conv.peer_voice
   const imagesOk = !!conv.my_images && !!conv.peer_images
   const [pmenu, setPmenu] = useState(false)
+  const chill = useChill((c) => c.until > 0)
   const onceRef = useRef(false)
   const [upload, setUpload] = useState<{ preview: string; err?: boolean } | null>(null)
   // A fresh native input per tap, no accept filter: on some Android phones the gallery app never
@@ -1021,7 +1023,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
               onPointerDown={(e) => e.preventDefault()}
               onClick={send}
             >
-              <IconSend size={20} />
+              {chill ? <GoofyFace name={myName} mood="shocked" size={26} blink={false} /> : <IconSend size={20} />}
             </motion.button>
           )}
         </AnimatePresence>

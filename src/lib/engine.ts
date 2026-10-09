@@ -3,7 +3,7 @@ import type { AvatarConfig } from '../ui/face'
 // Everything live: wires realtime + api into the store.
 // Actions are plain exported functions (see bottom). window.__gat exposes them for QA.
 import type { RealtimeChannel } from '@supabase/realtime-js'
-import { api, isApiError, isRetryable } from './api'
+import { api, isApiError, isRetryable, ApiError } from './api'
 import { archiveMsgs, claimArchive, olderMsgs, wipeConv } from './archive'
 import { canPush, channel, getRealtime, onSocket, reconnectNow, removeChannel } from './realtime'
 import { clearSession, readSession, setManifestToken, takeUrlToken, writeSession, writeTempSession } from './session'
@@ -20,6 +20,7 @@ import {
   useStore,
   type State,
 } from './store'
+import { setChill } from './chill'
 import { THEME_IDS, type Conversation, type Flair, type Gender, type Me, type Message, type Profile, type ResolveEntry, type Toast } from './types'
 
 const set = useStore.setState
@@ -1343,6 +1344,7 @@ async function deliver(msg: Message, attempt: number): Promise<void> {
   } catch (e) {
     if (g !== gen) return
     if (isApiError(e, 'unauthorized')) return void hardReset()
+    if (isApiError(e, 'rate_limited')) setChill()
     if (isRetryable(e) && attempt < RETRY_DELAYS.length) {
       setTimeout(() => {
         if (g === gen && get().pending[msg.id]) void deliver(msg, attempt + 1)
@@ -1767,7 +1769,52 @@ export async function saveNsfw(on: boolean): Promise<void> {
   const me = get().me
   if (me) set({ me: { ...me, nsfw: on } })
   trackMe()
-  updateMe(await api.setNsfw(token, on))
+  try {
+    updateMe(await api.setNsfw(token, on))
+  } catch (e) {
+    const cur = get().me
+    if (cur) set({ me: { ...cur, nsfw: false } })
+    throw e
+  }
+}
+
+/** Age passport: birth month, set once. Server decides adult and keeps nsfw off for under 18. */
+export async function saveBirth(year: number, month: number): Promise<Me | null> {
+  if (!token) return null
+  const me = await api.setBirth(token, year, month)
+  updateMe(me)
+  return me
+}
+
+/** New 6-word recovery key (replaces any old one). Shown once. */
+export async function makeKey(): Promise<string> {
+  if (!token) throw new Error('no session')
+  const r = await api.makeKey(token)
+  updateMe(r.me)
+  return r.words
+}
+
+/** Get an account back on this phone with its name + key. The old phone gets signed out. */
+export async function recoverAccount(username: string, words: string): Promise<Me> {
+  const r = await api.recover(username.trim(), words)
+  if (!r.token || !r.me) throw new ApiError(r.error === 'rate_limited' ? 'rate_limited' : 'unauthorized')
+  gen++
+  teardownSession()
+  token = r.token
+  writeSession(r.token, r.me.username)
+  setManifestToken(r.token)
+  const s = get()
+  set({ ...initialState(), status: 'ready', me: r.me, token: r.token, connection: s.connection, online: s.online })
+  startSession()
+  void refreshConversations(true)
+  return r.me
+}
+
+/** Scrub this account for good, then sign out. */
+export async function forgetMe(): Promise<void> {
+  if (!token) return
+  await api.forgetMe(token)
+  logout()
 }
 
 function applyReaction(convId: string, msgId: string, userId: string, emoji: string | null): void {

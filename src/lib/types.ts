@@ -10,7 +10,7 @@ export type AuraId = 'none' | 'gold' | 'sunset' | 'galaxy' | 'sakura' | 'aurora'
 export type Flair = { hat?: HatId; bio?: string; card?: CardId; aura?: AuraId }
 export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean; nsfw?: boolean; vip?: boolean; flair?: Flair | null; admin?: boolean }
 
-export type Me = Profile & { inbox: string }
+export type Me = Profile & { inbox: string; age_set?: boolean; adult?: boolean; has_key?: boolean }
 
 export type MessageKind = 'text' | 'theme'
 
@@ -85,6 +85,8 @@ export type ErrorCode =
   | 'request_pending'
   | 'request_cooldown'
   | 'blocked'
+  | 'not_allowed'
+  | 'age_required'
   | 'network' // fetch failed / offline / timeout
   | 'server' // anything else (5xx, PostgREST errors, missing RPC)
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMe } from '../../lib/hooks'
-import { renameMe, saveAvatar, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
+import { forgetMe, logout, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle } from '../../ui/kit'
@@ -12,6 +12,108 @@ import { ProfileCardView } from '../profile/ProfileCard'
 import { AURAS, Aura, CARDS } from '../../ui/Aura'
 import type { CSSProperties } from 'react'
 import type { HatId } from '../../lib/types'
+
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+/** Age passport: birth month + year, stamped once. 18+ unlocks nsfw. */
+function Passport({ onDone }: { onDone: () => void }) {
+  const me = useMe()
+  const now = new Date()
+  const [month, setMonth] = useState(0)
+  const [year, setYear] = useState(0)
+  const [stamp, setStamp] = useState<'adult' | 'minor' | null>(null)
+  const [busy, setBusy] = useState(false)
+  if (!me) return null
+  const years = Array.from({ length: now.getFullYear() - 1920 + 1 }, (_, i) => now.getFullYear() - i)
+  const go = async () => {
+    if (!month || !year || busy) return
+    setBusy(true)
+    try {
+      const m = await saveBirth(year, month)
+      const adult = !!m?.adult
+      setStamp(adult ? 'adult' : 'minor')
+      if (adult) await saveNsfw(true).catch(() => {})
+      setTimeout(onDone, 1600)
+    } catch {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="pp">
+      <div className="pp-card">
+        <span className="pp-title">goof passport</span>
+        <div className="pp-row">
+          <span className="pp-photo">
+            <GoofyFace name={me.username} size={64} blink={false} />
+          </span>
+          <span className="pp-name">{me.username}</span>
+        </div>
+        <div className="pp-born">
+          <select value={month} onChange={(e) => setMonth(+e.target.value)} aria-label="birth month" disabled={!!stamp}>
+            <option value={0}>month</option>
+            {MONTHS.map((m, i) => (
+              <option key={m} value={i + 1}>{m}</option>
+            ))}
+          </select>
+          <select value={year} onChange={(e) => setYear(+e.target.value)} aria-label="birth year" disabled={!!stamp}>
+            <option value={0}>year</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+        {stamp && <span className={'pp-stamp ' + stamp}>{stamp === 'adult' ? '18+' : 'under 18'}</span>}
+      </div>
+      <p className="pp-note">set once, can't be changed</p>
+      <button type="button" className="fb-done" disabled={!month || !year || busy} onClick={go}>
+        stamp it
+      </button>
+      <button type="button" className="pp-back" onClick={onDone}>
+        not now
+      </button>
+    </div>
+  )
+}
+
+/** Recovery key, sign out, forget me. */
+function Account() {
+  const me = useMe()
+  const [words, setWords] = useState<string | null>(null)
+  const [arm, setArm] = useState<'out' | 'forget' | null>(null)
+  if (!me) return null
+  const temp = !!me.temp
+  return (
+    <>
+      <h3 className="settings-label">account</h3>
+      {!temp && (
+        <div className="settings-row">
+          <span className="grow">recovery key</span>
+          <button type="button" className="acc-btn" onClick={() => void makeKey().then(setWords).catch(() => {})}>
+            {me.has_key ? 'new key' : 'make key'}
+          </button>
+        </div>
+      )}
+      {words && (
+        <div className="acc-key">
+          <span className="acc-words">{words}</span>
+          <button type="button" className="acc-btn" onClick={() => void navigator.clipboard?.writeText(me.username + ': ' + words).catch(() => {})}>
+            copy
+          </button>
+        </div>
+      )}
+      <div className="acc-danger">
+        {!temp && me.has_key && (
+          <button type="button" className={'acc-out' + (arm === 'out' ? ' is-armed' : '')} onClick={() => (arm === 'out' ? logout() : setArm('out'))}>
+            {arm === 'out' ? 'tap again to sign out' : 'sign out'}
+          </button>
+        )}
+        <button type="button" className={'acc-forget' + (arm === 'forget' ? ' is-armed' : '')} onClick={() => (arm === 'forget' ? void forgetMe() : setArm('forget'))}>
+          {arm === 'forget' ? 'tap again, gone forever' : 'forget me'}
+        </button>
+      </div>
+    </>
+  )
+}
 
 const HATS: HatId[] = ['none', 'crown', 'cap', 'beanie', 'halo', 'bow', 'tophat', 'party']
 
@@ -73,6 +175,7 @@ const VALID = /^[A-Za-z0-9_.]{3,20}$/
 function MeBody({ onClose }: { onClose: () => void }) {
   const me = useMe()
   const [editing, setEditing] = useState(false)
+  const [passport, setPassport] = useState(false)
   const [face, setFace] = useState<AvatarConfig | null>(null)
   const [name, setName] = useState(me?.username ?? '')
   const [err, setErr] = useState<string | null>(null)
@@ -82,6 +185,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
   const temp = !!me.temp
   const current = me.avatar ?? avatarFromTraits(faceTraits(me.username))
 
+  if (passport) return <Passport onDone={() => setPassport(false)} />
   if (editing && face)
     return (
       <FaceBuilder
@@ -157,9 +261,16 @@ function MeBody({ onClose }: { onClose: () => void }) {
       <h3 className="settings-label">vibe</h3>
       <div className="settings-row">
         <span className="grow">
-          nsfw <small className="nsfw-sub">foul language ok</small>
+          nsfw <small className="nsfw-sub">{me.age_set && !me.adult ? '18+ only' : 'foul language ok'}</small>
         </span>
-        <Toggle label="nsfw" on={me.nsfw === true} onChange={(v) => void saveNsfw(v)} />
+        <Toggle
+          label="nsfw"
+          on={me.nsfw === true}
+          onChange={(v) => {
+            if (v && !me.adult) return void (!me.age_set && setPassport(true))
+            void saveNsfw(v).catch(() => {})
+          }}
+        />
       </div>
       <h3 className="settings-label">privacy</h3>
       <div className="settings-row">
@@ -170,6 +281,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
         <span className="grow">show seen</span>
         <Toggle label="show seen" on={me.show_seen !== false} onChange={(v) => void savePrivacy(null, v)} />
       </div>
+      <Account />
       <button type="button" className="fb-done" style={{ marginTop: 18 }} onClick={onClose}>
         done
       </button>

@@ -1,4 +1,6 @@
 import { SUPABASE_URL, SUPABASE_KEY } from '../../lib/env'
+import { api } from '../../lib/api'
+import { getToken } from '../../lib/engine'
 
 // An image travels as a message body: [[img:<public url>|<w>|<h>]], view-once adds |1.
 // Once opened the server swaps the body for [[img-gone]] and deletes the file.
@@ -50,10 +52,13 @@ export async function prepImage(file: File): Promise<{ blob: Blob; w: number; h:
   return { blob, w, h }
 }
 
-export async function uploadImage(blob: Blob, userId: string): Promise<string> {
+export async function uploadImage(blob: Blob, _userId: string): Promise<string> {
   const type = blob.type || 'image/jpeg'
   const ext = type === 'image/gif' ? 'gif' : type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg'
-  const path = `${userId}/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}.${ext}`
+  // the server hands out the file name (and enforces the daily quota); storage refuses any other name
+  const tok = getToken()
+  if (!tok) throw new Error('no session')
+  const path = await api.uploadTicket(tok, 'gat-img', ext)
   const r = await fetch(`${SUPABASE_URL}/storage/v1/object/gat-img/${path}`, {
     method: 'POST',
     headers: { apikey: SUPABASE_KEY, 'content-type': type },
