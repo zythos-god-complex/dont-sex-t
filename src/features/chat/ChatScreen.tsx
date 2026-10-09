@@ -100,16 +100,17 @@ function ChatView({ conv }: { conv: Conversation }) {
     k.y = e.clientY
     if (k.n >= 4) {
       k.n = 0
-      confetti.current?.burst(k.x, k.y)
-      sendConfetti(conv.id, { x: Math.min(1, Math.max(0, k.x / window.innerWidth)), y: Math.min(1, Math.max(0, k.y / window.innerHeight)) })
+      const landing = useAmbientPrefs.getState().landing
+      confetti.current?.burst(k.x, k.y, landing)
+      sendConfetti(conv.id, { x: Math.min(1, Math.max(0, k.x / window.innerWidth)), y: Math.min(1, Math.max(0, k.y / window.innerHeight)) }, landing)
     }
   }
   useEffect(
     () =>
-      onPeerConfetti((id, pos) => {
+      onPeerConfetti((id, pos, landing) => {
         if (id !== conv.id) return
-        if (pos) confetti.current?.burst(pos.x * window.innerWidth, pos.y * window.innerHeight)
-        else confetti.current?.rain()
+        if (pos) confetti.current?.burst(pos.x * window.innerWidth, pos.y * window.innerHeight, landing)
+        else confetti.current?.rain(landing)
       }),
     [conv.id],
   )

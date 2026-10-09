@@ -25,14 +25,16 @@ const LOOK: Record<string, { shape: Shape; colors: string[] }> = {
 
 const TILT = Math.tan((9 * Math.PI) / 180) // bubble tilt for the slide landing, matches .b-tilt
 
-export type ConfettiHandle = { burst: (x: number, y: number) => void; rain: () => void }
+export type Landing = 'shake' | 'slide'
+/** landing: whose style plays (the tapper's, so both screens match); missing = this device's setting */
+export type ConfettiHandle = { burst: (x: number, y: number, landing?: Landing) => void; rain: (landing?: Landing) => void }
 
 /** Theme particle burst that lands on message bubbles and gets shaken off. */
 export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () => HTMLElement | null; spicy?: boolean }>(function Confetti({ themeId, host, spicy = false }, ref) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const parts = useRef<Part[]>([])
   const raf = useRef(0)
-  const phase = useRef<{ start: number; released: boolean } | null>(null)
+  const phase = useRef<{ start: number; released: boolean; landing?: Landing } | null>(null)
   const themeRef = useRef(themeId)
   themeRef.current = themeId
   const spicyRef = useRef(spicy)
@@ -194,7 +196,7 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
     if (!ph.released && (flying === 0 || t > 3.4) && t > 1.4) {
       ph.released = true
       setTimeout(() => {
-        if (useAmbientPrefs.getState().landing === 'slide') {
+        if ((ph.landing ?? useAmbientPrefs.getState().landing) === 'slide') {
           const tilted = new Map<Element, DOMRect>()
           for (const p of parts.current)
             if (p.state === 'rest') {
@@ -261,15 +263,15 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
       phase: Math.random() * 10,
     })
   }
-  const kick = () => {
+  const kick = (landing?: Landing) => {
     navigator.vibrate?.([10, 30, 10])
     const running = !!phase.current
-    phase.current = { start: performance.now(), released: false }
+    phase.current = { start: performance.now(), released: false, landing }
     if (!running) raf.current = requestAnimationFrame(loop)
   }
 
   useImperativeHandle(ref, () => ({
-    burst(x, y) {
+    burst(x, y, landing) {
       const lk = look()
       const n = count()
       for (let i = 0; i < n; i++) {
@@ -277,15 +279,15 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
         const sp = 3 + Math.random() * 9
         add(lk, i, x, y, Math.cos(a) * sp, Math.sin(a) * sp - 6 - Math.random() * 4)
       }
-      kick()
+      kick(landing)
     },
     // shower from the top edge, same on every screen size
-    rain() {
+    rain(landing) {
       const lk = look()
       const n = count()
       const W = window.innerWidth
       for (let i = 0; i < n; i++) add(lk, i, Math.random() * W, -20 - Math.random() * 260, (Math.random() - 0.5) * 3, 1 + Math.random() * 2.5)
-      kick()
+      kick(landing)
     },
   }))
 
