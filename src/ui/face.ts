@@ -369,7 +369,7 @@ export type AvatarConfig = {
   v: 1
   hat?: import('../lib/season').SeasonHat | null
   ghost?: boolean // ghost browse: wears a bedsheet
-  photo?: string // optional profile photo (gat-pfp public url)
+  photo?: string | null // approved profile photo (gat-pfp public url); null asks the server to drop it
   color: string
   blob: BlobKind
   eyes: EyeKind

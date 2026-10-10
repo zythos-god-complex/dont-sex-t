@@ -6,7 +6,7 @@ import { useMe } from '../../lib/hooks'
 import { useLocation } from 'wouter'
 import { useStore } from '../../lib/store'
 import { useShallow } from 'zustand/react/shallow'
-import { saveAbout, saveGhost, saveMood, useGhost, useMood } from '../../lib/engine'
+import { pendingPhoto, saveAbout, saveGhost, saveMood, submitPhoto, useGhost, useMood } from '../../lib/engine'
 import type { FaceMood } from '../../ui/GoofyFace'
 import { forgetMe, logout, setBlocked, useBlocks, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
@@ -221,7 +221,15 @@ function GhostRow() {
 
 function PhotoButton({ current }: { current: AvatarConfig }) {
   const [busy, setBusy] = useState(false)
+  const [wait, setWait] = useState<string | null>(null)
   const has = isPhoto(current.photo)
+  useEffect(() => {
+    let on = true
+    pendingPhoto().then((u) => on && setWait(isPhoto(u) ? u : null), () => {})
+    return () => {
+      on = false
+    }
+  }, [])
   const pick = () => {
     const el = document.createElement('input')
     el.type = 'file'
@@ -231,19 +239,43 @@ function PhotoButton({ current }: { current: AvatarConfig }) {
       if (!f || !f.type.startsWith('image/')) return
       setBusy(true)
       uploadPhoto(f)
-        .then((url) => saveAvatar({ ...current, photo: url }))
+        .then((url) => submitPhoto(url))
+        .then((u) => setWait(isPhoto(u) ? u : null))
         .catch(() => {})
         .finally(() => setBusy(false))
     }
     el.click()
   }
+  if (wait)
+    return (
+      <div className="me-photo">
+        <span className="me-photo-wait">
+          <img src={wait} alt="" />
+          in review
+        </span>
+        <button
+          type="button"
+          className="acc-btn"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true)
+            submitPhoto(null)
+              .then(() => setWait(null))
+              .catch(() => {})
+              .finally(() => setBusy(false))
+          }}
+        >
+          cancel
+        </button>
+      </div>
+    )
   return (
     <div className="me-photo">
       <button type="button" className="acc-btn" disabled={busy} onClick={pick}>
         {busy ? 'uploading...' : has ? 'change photo' : 'use a photo'}
       </button>
       {has && (
-        <button type="button" className="acc-btn" disabled={busy} onClick={() => void saveAvatar({ ...current, photo: undefined })}>
+        <button type="button" className="acc-btn" disabled={busy} onClick={() => void saveAvatar({ ...current, photo: null })}>
           back to face
         </button>
       )}
@@ -329,7 +361,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
         value={face}
         onChange={setFace}
         onDone={() => {
-          void saveAvatar(face)
+          void saveAvatar({ ...face, photo: null })
           setEditing(false)
         }}
       />
@@ -352,7 +384,6 @@ function MeBody({ onClose }: { onClose: () => void }) {
     <div className="me">
       <div className="me-face">
         <GoofyFace name={me.username} avatar={current} size={112} />
-        {!temp && <PhotoButton current={current} />}
         {!temp && (
           <button
             type="button"
@@ -367,6 +398,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
           </button>
         )}
       </div>
+      {!temp && <PhotoButton current={current} />}
       {temp ? (
         <p className="me-temp">
           {me.username} <span>temp</span>

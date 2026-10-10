@@ -87,3 +87,10 @@ button.adm-tile:active { transform: scale(.98); }
 .adm-rep-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .adm-rep-who { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; border: 0; background: none; color: inherit; padding: 0; font: 760 16px/1.1 var(--font-display); text-align: left; cursor: pointer; }
 .adm-rep .adm-muted { margin: -4px 0 0; }
+
+.adm-pics { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.adm-pic { padding: 10px; border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.adm-pic img { width: 100%; aspect-ratio: 1; border-radius: calc(var(--r-md) - 4px); object-fit: cover; background: var(--bg-2); }
+.adm-pic-who { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; border: 0; background: none; color: inherit; padding: 0; font: 760 15px/1.1 var(--font-display); text-align: left; cursor: pointer; }
+.adm-pic .adm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.adm-pic .adm-btn { padding: 0 8px; }

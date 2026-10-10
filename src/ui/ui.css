@@ -926,7 +926,9 @@ button.b-who { border: 0; background: none; padding: 0; cursor: pointer; text-al
 
 /* profile photo + about */
 .gf-photo { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: var(--bg-2); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
-.me-photo { display: flex; gap: 8px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.me-photo { display: flex; gap: 8px; justify-content: center; align-items: center; margin: 6px 0 4px; flex-wrap: wrap; }
+.me-photo-wait { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 3px; border-radius: 999px; background: var(--bg-2); color: var(--muted); font: 700 13.5px/1 var(--font-display); }
+.me-photo-wait img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
 .about-row { display: flex; gap: 8px; align-items: center; }
 .about-input { flex: 1; min-width: 0; height: 44px; border-radius: 14px; border: 2px solid transparent; background: var(--bg-2); color: var(--ink); padding: 0 14px; font: 500 16px/1 var(--font-text); }
 .about-input:focus { outline: none; border-color: var(--ink); }

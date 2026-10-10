@@ -1,4 +1,5 @@
 // Control room: pulse (numbers + megaphone), people (search, timeouts, perks), reports queue. Server gates every call on is_admin.
+import { isPhoto } from '../../ui/photoUrl'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useLocation } from 'wouter'
 import { adminCall } from '../../lib/engine'
@@ -26,7 +27,8 @@ type Row = {
 type Line = { w: string; body: string; at: string }
 type Detail = Row & { names: string[]; chats: number; blocked_by: number; push: number; room: Line[]; against: { id: number; reason: string; status: string; at: string; by: string | null }[] }
 type Rep = { id: number; reason: string; status: string; at: string; by: string | null; target: string | null; target_id: string | null; snap: Line[] }
-type Tab = 'pulse' | 'people' | 'reports'
+type Tab = 'pulse' | 'people' | 'reports' | 'photos'
+type Pic = { id: string; username: string; url: string; at: string }
 
 const MB = 1024 * 1024
 const FILE_CAP = 1024 * MB // supabase free tier
@@ -38,7 +40,11 @@ export default function Admin() {
   const [who, setWho] = useState<string | null>(null)
   const [bump, setBump] = useState(0)
   const [open, setOpen] = useState<number | null>(null)
+  const [pics, setPics] = useState(0)
   const refresh = useCallback(() => setBump((b) => b + 1), [])
+  useEffect(() => {
+    adminCall<Pic[]>('photos').then((l) => setPics(l.length), () => {})
+  }, [bump])
   return (
     <div className="adm">
       <header className="m-head">
@@ -57,6 +63,7 @@ export default function Admin() {
             { id: 'pulse', label: 'pulse' },
             { id: 'people', label: 'people' },
             { id: 'reports', label: 'reports', ...(open ? { count: open } : {}) },
+            { id: 'photos', label: 'photos', ...(pics ? { count: pics } : {}) },
           ]}
         />
       </div>
@@ -64,6 +71,7 @@ export default function Admin() {
         {tab === 'pulse' && <Pulse bump={bump} onReports={() => setTab('reports')} onCount={setOpen} />}
         {tab === 'people' && <People bump={bump} open={setWho} />}
         {tab === 'reports' && <Reports bump={bump} open={setWho} onChange={refresh} />}
+        {tab === 'photos' && <Photos bump={bump} open={setWho} onCount={setPics} />}
       </div>
       <UserSheet id={who} onClose={() => setWho(null)} onChange={refresh} />
     </div>
@@ -520,6 +528,55 @@ function Reports({ bump, open, onChange }: { bump: number; open: (id: string) =>
             </div>
           </article>
         ))
+      )}
+    </div>
+  )
+}
+
+function Photos({ bump, open, onCount }: { bump: number; open: (id: string) => void; onCount: (n: number) => void }) {
+  const [list, setList] = useState<Pic[] | null>(null)
+  useEffect(() => {
+    adminCall<Pic[]>('photos').then(
+      (l) => {
+        const ok = l.filter((p) => isPhoto(p.url))
+        setList(ok)
+        onCount(ok.length)
+      },
+      () => setList([]),
+    )
+  }, [bump, onCount])
+  const judge = (p: Pic, yes: boolean) => {
+    const n = (list ?? []).filter((x) => x.id !== p.id)
+    setList(n)
+    onCount(n.length)
+    void adminCall(yes ? 'photo_ok' : 'photo_no', { id: p.id }).catch(() => {})
+  }
+  return (
+    <div className="adm-body">
+      {list === null ? (
+        <Loading />
+      ) : list.length === 0 ? (
+        <p className="adm-empty">no photos waiting</p>
+      ) : (
+        <div className="adm-pics">
+          {list.map((p) => (
+            <article key={p.id} className="adm-pic">
+              <img src={p.url} alt="" loading="lazy" />
+              <button type="button" className="adm-pic-who ellipsis" onClick={() => open(p.id)}>
+                {p.username}
+                <time className="adm-line-t">{ago(p.at)}</time>
+              </button>
+              <div className="adm-row">
+                <button type="button" className="adm-btn is-red" onClick={() => judge(p, false)}>
+                  nope
+                </button>
+                <button type="button" className="adm-btn is-ink" onClick={() => judge(p, true)}>
+                  approve
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
       )}
     </div>
   )

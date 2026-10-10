@@ -1684,6 +1684,15 @@ export async function saveAvatar(avatar: AvatarConfig | null): Promise<void> {
   updateMe(await api.setAvatar(token, avatar))
 }
 
+/** hand a freshly uploaded photo to the admin (or null to withdraw); returns what is waiting */
+export function submitPhoto(url: string | null): Promise<string | null> {
+  return token ? api.photoSubmit(token, url) : Promise.resolve(null)
+}
+
+export function pendingPhoto(): Promise<string | null> {
+  return token ? api.photoStatus(token) : Promise.resolve(null)
+}
+
 export async function renameMe(username: string): Promise<void> {
   if (!token) return
   updateMe(await api.rename(token, username))
