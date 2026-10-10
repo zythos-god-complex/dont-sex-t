@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { FX_BY_THEME, fireFx } from '../../themes/fx'
 import { GameBubble, ToyBubble, ToyGrid, gameOf, toyOf } from '../toys/Toys'
 import { shareSticker } from '../stickers/share'
 import { Flame } from '../../ui/Flame'
@@ -97,6 +98,8 @@ function ChatView({ conv }: { conv: Conversation }) {
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const confetti = useRef<ConfettiHandle>(null)
   const taps = useRef<{ n: number; t: number; x: number; y: number }>({ n: 0, t: 0, x: 0, y: 0 })
+  const themeId = useRef(conv.theme)
+  themeId.current = conv.theme
   const onChatTap = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('button, a, input, textarea, .sheet, .panel, .r-picker')) return
     const k = taps.current
@@ -109,7 +112,11 @@ function ChatView({ conv }: { conv: Conversation }) {
     if (k.n >= 4) {
       k.n = 0
       const landing = landingFor(conv.id)
-      confetti.current?.burst(k.x, k.y, landing)
+      const fx = FX_BY_THEME[conv.theme ?? '']
+      if (fx) {
+        fireFx(fx)
+        if (fx === 'thunder') navigator.vibrate?.([30, 50, 80])
+      } else confetti.current?.burst(k.x, k.y, landing)
       sendConfetti(conv.id, { x: Math.min(1, Math.max(0, k.x / window.innerWidth)), y: Math.min(1, Math.max(0, k.y / window.innerHeight)) }, landing)
     }
   }
@@ -117,6 +124,8 @@ function ChatView({ conv }: { conv: Conversation }) {
     () =>
       onPeerConfetti((id, pos, landing) => {
         if (id !== conv.id) return
+        const fx = FX_BY_THEME[themeId.current ?? '']
+        if (fx) return fireFx(fx)
         if (pos) confetti.current?.burst(pos.x * window.innerWidth, pos.y * window.innerHeight, landing)
         else confetti.current?.rain(landing)
       }),

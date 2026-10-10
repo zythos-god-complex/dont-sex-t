@@ -1,7 +1,7 @@
 import { seasonOn } from '../lib/season'
 import type { CSSProperties } from 'react'
 
-export type Ambient = 'none' | 'petals' | 'stars' | 'bubbles' | 'leaves' | 'hearts' | 'sparkles' | 'aurora' | 'scanlines' | 'haze' | 'bats' | 'lovebeat' | 'party' | 'embers' | 'fog' | 'matrix'
+export type Ambient = 'none' | 'petals' | 'stars' | 'bubbles' | 'leaves' | 'hearts' | 'sparkles' | 'aurora' | 'scanlines' | 'haze' | 'bats' | 'lovebeat' | 'party' | 'embers' | 'fog' | 'matrix' | 'meteor' | 'rain' | 'sakuranight' | 'butterflies'
 
 export type ThemeDef = {
   id: string
@@ -285,6 +285,74 @@ const SPECS: ThemeSpec[] = [
       sent: ['#00FF41', '#00E63B', '#00C934'], sentInk: '#001A06',
       recv: 'rgba(3,22,9,.92)', recvInk: '#00FF41', accent: '#00FF41', accentInk: '#000000',
       composer: '#020B04', composerInk: '#00FF41',
+    },
+  },
+  {
+    id: 'meteor', name: 'meteor shower', ambient: 'meteor',
+    light: {
+      bg: 'linear-gradient(180deg, #03061A 0%, #07102E 55%, #0C1238 100%)',
+      ink: '#E6ECFF', meta: 'rgba(230,236,255,.55)', header: 'rgba(4,7,24,.86)',
+      sent: ['#1C2A5A', '#18244F', '#141F45'], sentInk: '#EAF0FF',
+      recv: '#0E1430', recvInk: '#E6ECFF', accent: '#8FB4FF', accentInk: '#05081A',
+      composer: '#0A0F26', composerInk: '#E6ECFF',
+    },
+    dark: {
+      bg: 'linear-gradient(180deg, #03061A 0%, #07102E 55%, #0C1238 100%)',
+      ink: '#E6ECFF', meta: 'rgba(230,236,255,.55)', header: 'rgba(4,7,24,.86)',
+      sent: ['#1C2A5A', '#18244F', '#141F45'], sentInk: '#EAF0FF',
+      recv: '#0E1430', recvInk: '#E6ECFF', accent: '#8FB4FF', accentInk: '#05081A',
+      composer: '#0A0F26', composerInk: '#E6ECFF',
+    },
+  },
+  {
+    id: 'temple', name: 'rain temple', ambient: 'rain',
+    light: {
+      bg: 'linear-gradient(180deg, #0F2C2E 0%, #0B2124 55%, #061211 100%)',
+      ink: '#DDEFEA', meta: 'rgba(221,239,234,.55)', header: 'rgba(8,22,22,.86)',
+      sent: ['#1F4A44', '#1B423D', '#163935'], sentInk: '#E9FFF8',
+      recv: '#0F2624', recvInk: '#DDEFEA', accent: '#E2A65A', accentInk: '#1A1006',
+      composer: '#0B1C1B', composerInk: '#DDEFEA',
+    },
+    dark: {
+      bg: 'linear-gradient(180deg, #0F2C2E 0%, #0B2124 55%, #061211 100%)',
+      ink: '#DDEFEA', meta: 'rgba(221,239,234,.55)', header: 'rgba(8,22,22,.86)',
+      sent: ['#1F4A44', '#1B423D', '#163935'], sentInk: '#E9FFF8',
+      recv: '#0F2624', recvInk: '#DDEFEA', accent: '#E2A65A', accentInk: '#1A1006',
+      composer: '#0B1C1B', composerInk: '#DDEFEA',
+    },
+  },
+  {
+    id: 'sakuranight', name: 'sakura night', ambient: 'sakuranight',
+    light: {
+      bg: 'linear-gradient(180deg, #0B1438 0%, #1A2559 55%, #2A1F4E 100%)',
+      ink: '#F1E9FF', meta: 'rgba(241,233,255,.58)', header: 'rgba(11,20,56,.86)',
+      sent: ['#3A2A63', '#33255A', '#2C2050'], sentInk: '#FFE3F1',
+      recv: '#151C42', recvInk: '#F1E9FF', accent: '#F2A7C9', accentInk: '#2A1030',
+      composer: '#10173A', composerInk: '#F1E9FF',
+    },
+    dark: {
+      bg: 'linear-gradient(180deg, #0B1438 0%, #1A2559 55%, #2A1F4E 100%)',
+      ink: '#F1E9FF', meta: 'rgba(241,233,255,.58)', header: 'rgba(11,20,56,.86)',
+      sent: ['#3A2A63', '#33255A', '#2C2050'], sentInk: '#FFE3F1',
+      recv: '#151C42', recvInk: '#F1E9FF', accent: '#F2A7C9', accentInk: '#2A1030',
+      composer: '#10173A', composerInk: '#F1E9FF',
+    },
+  },
+  {
+    id: 'butterfly', name: 'blue butterfly', ambient: 'butterflies',
+    light: {
+      bg: 'linear-gradient(180deg, #061A2A 0%, #08243A 50%, #04121E 100%)',
+      ink: '#E3F3FF', meta: 'rgba(227,243,255,.56)', header: 'rgba(4,18,30,.86)',
+      sent: ['#123A5E', '#103453', '#0D2D49'], sentInk: '#E3F3FF',
+      recv: '#0A2236', recvInk: '#E3F3FF', accent: '#5FB8FF', accentInk: '#03121F',
+      composer: '#071A2A', composerInk: '#E3F3FF',
+    },
+    dark: {
+      bg: 'linear-gradient(180deg, #061A2A 0%, #08243A 50%, #04121E 100%)',
+      ink: '#E3F3FF', meta: 'rgba(227,243,255,.56)', header: 'rgba(4,18,30,.86)',
+      sent: ['#123A5E', '#103453', '#0D2D49'], sentInk: '#E3F3FF',
+      recv: '#0A2236', recvInk: '#E3F3FF', accent: '#5FB8FF', accentInk: '#03121F',
+      composer: '#071A2A', composerInk: '#E3F3FF',
     },
   },
   {

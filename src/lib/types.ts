@@ -70,6 +70,10 @@ export const THEME_IDS = [
   'lust',
   'spooky',
   'matrix',
+  'meteor',
+  'temple',
+  'sakuranight',
+  'butterfly',
 ] as const
 export type ThemeId = (typeof THEME_IDS)[number]
 
