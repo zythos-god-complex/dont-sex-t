@@ -6,6 +6,7 @@ import type { AvatarConfig } from '../ui/face'
 import type { RealtimeChannel } from '@supabase/realtime-js'
 import { api, isApiError, isRetryable, ApiError } from './api'
 import { initSpotify } from './spotify'
+import { useReward } from '../features/rewards/Reward'
 import { archiveMsgs, claimArchive, olderMsgs, wipeConv } from './archive'
 import { canPush, channel, getRealtime, onSocket, reconnectNow, removeChannel } from './realtime'
 import { clearSession, readSession, setManifestToken, takeUrlToken, writeSession, writeTempSession } from './session'
@@ -1116,6 +1117,9 @@ async function validate(t: string, fallback: string | null, attempt = 0): Promis
     set({ status: 'ready', me, token: t })
   }
   startSession()
+  void api.checkin(t).then((r) => {
+    useReward.setState({ freezes: r.freezes, show: r.got })
+  }).catch(() => {})
   const r = await convP
   if (g !== gen) return
   if (r.ok) applyConversationList(r.v || [], true)

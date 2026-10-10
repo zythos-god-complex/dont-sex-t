@@ -298,3 +298,26 @@ export const IconPlay = (p: P) => (
     <path d="M8 5.6v12.8c0 .8.9 1.3 1.6.8l9.4-6.4c.6-.4.6-1.2 0-1.6L9.6 4.8C8.9 4.3 8 4.8 8 5.6z" fill="currentColor" stroke="none" />
   </Svg>
 )
+export const IconScales = (p: P) => (
+  <Svg {...p}>
+    <path d="M12 4v15M7 20h10M5 8h14l-14 0M5 8l-2.5 5.5a3 3 0 0 0 5 0L5 8zm14 0l-2.5 5.5a3 3 0 0 0 5 0L19 8zM8 6l8-1.6" />
+  </Svg>
+)
+export const IconPen = (p: P) => (
+  <Svg {...p}>
+    <path d="M14.5 5.5l4 4M4 20l1-4L16 5a2.1 2.1 0 0 1 3 3L8 19l-4 1z" />
+  </Svg>
+)
+export const IconMedal = (p: P) => (
+  <Svg {...p}>
+    <path d="M9 3h6l-1.6 6.2M9 3l2 6.5M9 3H6l3 7M15 3h3l-3 7" />
+    <circle cx="12" cy="15.5" r="5" />
+    <path d="M12 13.2l.9 1.7 1.9.3-1.4 1.3.3 1.9-1.7-.9-1.7.9.3-1.9-1.4-1.3 1.9-.3z" fill="currentColor" stroke="none" />
+  </Svg>
+)
+export const IconLock = (p: P) => (
+  <Svg {...p}>
+    <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
+    <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
+  </Svg>
+)

@@ -20,6 +20,7 @@ import { useBan } from './lib/ban'
 import { api } from './lib/api'
 import { GoofyFace } from './ui/GoofyFace'
 import { PeekHost } from './features/profile/ProfileCard'
+import { DailyReward } from './features/rewards/Reward'
 
 // screens most visits never open load on demand, then get warmed up when the phone is idle
 const loadOnboarding = () => import('./features/onboarding/Onboarding')
@@ -309,6 +310,7 @@ export default function App() {
       <Analytics />
       <ConnectionBanner />
       <Notice />
+      <DailyReward />
       {desktop ? <DesktopApp /> : <MobileApp />}
       <PeekHost />
       <UpdateBanner />

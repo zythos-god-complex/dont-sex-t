@@ -412,6 +412,20 @@ export function getTheme(id: string | null | undefined, mode: ThemeMode = curren
 /** the night themes made for Ember, shown on their own tab in the picker */
 export const EMBER_THEMES = ['meteor', 'temple', 'sakuranight', 'butterfly']
 
+// themes you earn: by chats started, best streak, or messages sent. matrix stays admin only.
+export type Unlock = { k: 'chats' | 'streak' | 'msgs'; n: number; label: string }
+export const UNLOCKS: Record<string, Unlock> = {
+  meteor: { k: 'chats', n: 3, label: '3 chats' },
+  sakuranight: { k: 'msgs', n: 100, label: '100 messages' },
+  temple: { k: 'streak', n: 3, label: 'a 3 day streak' },
+  butterfly: { k: 'chats', n: 10, label: '10 chats' },
+}
+export function themeLocked(id: string, stats?: { msgs: number; chats: number; streak: number } | null): Unlock | null {
+  const u = UNLOCKS[id]
+  if (!u) return null
+  return (stats?.[u.k] ?? 0) >= u.n ? null : u
+}
+
 export function themeList(mode: ThemeMode = currentMode): ThemeDef[] {
   return SPECS.map((s) => build(s, mode))
 }

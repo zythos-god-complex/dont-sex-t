@@ -1,5 +1,7 @@
 import { createPortal } from 'react-dom'
 import { WishCard, WishSheet, isWishReply, wishOf } from '../toys/Wish'
+import { TotCard, isTotReply, totOf } from '../toys/Tot'
+import { DoodleSheet } from '../toys/Doodle'
 import { FX_BY_THEME, fireFx, fxSource } from '../../themes/fx'
 import { GameBubble, ToyBubble, ToyGrid, gameOf, toyOf } from '../toys/Toys'
 import { shareSticker } from '../stickers/share'
@@ -29,8 +31,8 @@ import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, nee
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight, IconGhost, IconHi, IconAddFriend, IconFriend } from '../../ui/icons'
-import { EMBER_THEMES, getTheme, themeList, themeVars } from '../../themes/themes'
+import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight, IconGhost, IconHi, IconAddFriend, IconFriend, IconLock } from '../../ui/icons'
+import { EMBER_THEMES, getTheme, themeList, themeLocked, themeVars } from '../../themes/themes'
 import { flipModeFrom, useThemeMode } from '../../themes/mode'
 import { flushSync } from 'react-dom'
 import { goHome } from '../shell/nav'
@@ -266,7 +268,7 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
   const allMsgs = useMessages(conv.id)
   // only messages that arrive while the chat is open animate in; opening a chat paints instantly
   const openedAt = useRef(Date.now())
-  const msgs = useMemo(() => allMsgs.filter((x) => x.body !== '[[unsent]]' && !isWishReply(x.body)), [allMsgs])
+  const msgs = useMemo(() => allMsgs.filter((x) => x.body !== '[[unsent]]' && !isWishReply(x.body) && !isTotReply(x.body)), [allMsgs])
   const typing = usePeerTyping(conv.id)
   const mine = useMyLastStatus(conv.id)
   const hasMore = useHasMore(conv.id)
@@ -440,6 +442,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
   const voice = voiceOf(m.body)
   const toy = toyOf(m.body)
   const wish = wishOf(m.body)
+  const tot = totOf(m.body)
   const game = gameOf(m.body)
   const img = imageOf(m.body)
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, s.conversations[m.conversation_id]?.peer))
@@ -571,7 +574,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
               <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {img ? <ImageBubble img={img} open={viewer} blur={once} onClose={() => setViewer(false)} /> : gone ? <span className="once-gone"><IconImage size={16} /> opened</span> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : wish !== null ? <WishCard m={m} mine={mine} peerName={peerName} /> : toy ? <ToyBubble toy={toy} fresh={fresh} /> : game ? <GameBubble id={game} meId={meId} peerName={peerName} /> : linkify(m.body).map((p, i) =>
+          {img ? <ImageBubble img={img} open={viewer} blur={once} onClose={() => setViewer(false)} /> : gone ? <span className="once-gone"><IconImage size={16} /> opened</span> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : tot !== null ? <TotCard m={m} meId={meId} peerName={peerName} /> : wish !== null ? <WishCard m={m} mine={mine} peerName={peerName} /> : toy ? <ToyBubble toy={toy} fresh={fresh} /> : game ? <GameBubble id={game} meId={meId} peerName={peerName} /> : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}
@@ -818,6 +821,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const chill = useChill((c) => c.until > 0)
   const onceRef = useRef(false)
   const [upload, setUpload] = useState<{ preview: string; err?: boolean } | null>(null)
+  const [doodle, setDoodle] = useState(false)
   // A fresh native input per tap, no accept filter: on some Android phones the gallery app never
   // returns the photo to Chrome, while the system document picker does. Some Androids only fire 'input'.
   const [aud, setAud] = useState<'sending' | 'big' | 'error' | null>(null)
@@ -969,6 +973,10 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
                     if (clear) setText('')
                     setTray(false)
                   }}
+                  onDoodle={() => {
+                    setTray(false)
+                    setDoodle(true)
+                  }}
                 />
               ) : (
               <div className={'stk-grid' + (trayTab === 'us' ? ' is-couple' : '')} key={trayTab}>
@@ -1044,6 +1052,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
         )}
       </AnimatePresence>
       <AnimatePresence>
+        <DoodleSheet open={doodle} onClose={() => setDoodle(false)} onSend={(f) => (setDoodle(false), void pickImage(f))} />
         {upload && (
           <motion.div key="up" className={'img-up' + (upload.err ? ' is-err' : '')} initial={{ opacity: 0, y: 12, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.9 }}>
             <img src={upload.preview} alt="" />
@@ -1311,9 +1320,11 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
       <div className="swatches" key={themeTab}>
         {themeList(mode).filter((t) => (t.id !== 'matrix' || useStore.getState().me?.admin) && EMBER_THEMES.includes(t.id) === (themeTab === 'ember')).map((t) => {
           const on = t.id === conv.theme
+          const meNow = useStore.getState().me
+          const lock = meNow?.admin || on ? null : themeLocked(t.id, meNow?.stats)
           return (
-            <motion.button key={t.id} className={'swatch' + (on ? ' is-on' : '')} onClick={(e) => {
-                if (t.id === conv.theme) return
+            <motion.button key={t.id} className={'swatch' + (on ? ' is-on' : '') + (lock ? ' is-locked' : '')} onClick={(e) => {
+                if (lock || t.id === conv.theme) return
                 setThemeOrigin(e.clientX, e.clientY)
                 onPicked()
                 setTimeout(() => void setTheme(conv.id, t.id), 260)
@@ -1328,6 +1339,11 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
                 )}
               </span>
               <span className="swatch-name">{t.name}</span>
+              {lock && (
+                <span className="swatch-lock">
+                  <IconLock size={11} /> {lock.label}
+                </span>
+              )}
             </motion.button>
           )
         })}

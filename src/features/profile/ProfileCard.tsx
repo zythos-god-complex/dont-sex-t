@@ -1,6 +1,6 @@
 // Steam / Discord style profile card. Everyone gets the basic card; perk users get their card colours,
 // live banner and bio.
-import { IconHi } from '../../ui/icons'
+import { IconDm, IconFlame, IconFriend, IconHi, IconMoon, IconUsers } from '../../ui/icons'
 import { NowPlaying, SongCard } from '../music/NowPlaying'
 import { useStore } from '../../lib/store'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
@@ -17,6 +17,17 @@ import { applyAvatar, faceTraits } from '../../ui/face'
 import { useFlairFor } from '../../ui/flair'
 import { Sheet } from '../../ui/kit'
 import type { Flair } from '../../lib/types'
+
+// earned on the server (hourly), shown under the bio
+const BADGES: Record<string, [string, typeof IconHi]> = {
+  first: ['first hi', IconHi],
+  chatty: ['yapper', IconDm],
+  social: ['social', IconUsers],
+  owl: ['night owl', IconMoon],
+  streak7: ['7 day streak', IconFlame],
+  bestie: ['bestie', IconFriend],
+  squad: ['squad', IconUsers],
+}
 
 export function ProfileCardView({ name, flair: given, sub }: { name: string; flair?: Flair | null; sub?: string | null }) {
   const looked = useFlairFor(given === undefined ? name : null)
@@ -55,6 +66,21 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
           </span>
         )}
         {bio && <p className="pc-bio">{bio}</p>}
+        {!!prof?.badges?.length && (
+          <span className="pc-badges">
+            {prof.badges
+              .filter((b) => BADGES[b])
+              .map((b) => {
+                const [label, Ico] = BADGES[b]
+                return (
+                  <i key={b} className="pc-badge">
+                    <Ico size={14} />
+                    {label}
+                  </i>
+                )
+              })}
+          </span>
+        )}
         {np ? <NowPlaying track={np} /> : prof?.song && <SongCard song={prof.song} />}
       </div>
     </div>

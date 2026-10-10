@@ -1,5 +1,6 @@
 // Toy box + 1:1 games. Results come from the server (gat_toy / gat_game_*); this only draws them.
-import { IconDice, IconCoin, IconEightBall, IconTruth, IconFlame, IconRock, IconPaper, IconScissors, IconTicTacToe, IconTrophy } from '../../ui/icons'
+import { IconDice, IconCoin, IconEightBall, IconTruth, IconFlame, IconRock, IconPaper, IconScissors, IconTicTacToe, IconTrophy, IconScales, IconPen } from '../../ui/icons'
+import { sendTot } from './Tot'
 import { useEffect, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { gameMove, loadGame, sendToy, startGame, useGames, type Game } from '../../lib/engine'
@@ -186,8 +187,10 @@ function Ttt({ g, side, peerName, busy, move, again }: GP) {
 }
 
 /** The toys tab in the sticker tray. The 8-ball takes whatever you typed as the question. */
-export function ToyGrid({ convId, question, onUsed }: { convId: string; question: string; onUsed: (clearText: boolean) => void }) {
+export function ToyGrid({ convId, question, onUsed, onDoodle }: { convId: string; question: string; onUsed: (clearText: boolean) => void; onDoodle: () => void }) {
   const items: { id: string; label: string; ico: ReactNode; go: () => Promise<void>; clear?: boolean }[] = [
+    { id: 'tot', label: 'this or that', ico: <IconScales size={28} />, go: async () => { sendTot(convId) } },
+    { id: 'doodle', label: 'doodle', ico: <IconPen size={28} />, go: async () => onDoodle() },
     { id: 'dice', label: 'dice', ico: <IconDice size={28} />, go: () => sendToy(convId, 'dice') },
     { id: 'coin', label: 'coin', ico: <IconCoin size={28} />, go: () => sendToy(convId, 'coin') },
     { id: '8ball', label: '8-ball', ico: <IconEightBall size={28} />, go: () => sendToy(convId, '8ball', question), clear: true },

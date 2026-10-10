@@ -75,3 +75,16 @@ export function flipModeFrom(x: number, y: number, commit: (fn: () => void) => v
   root.style.setProperty('--vt-y', y + 'px')
   doc.startViewTransition(() => commit(toggleMode))
 }
+
+/** settings: follow the phone, or pin light / dark on this device */
+export function setModePref(p: Pref) {
+  try {
+    if (p === 'auto') localStorage.removeItem(KEY)
+    else localStorage.setItem(KEY, p)
+  } catch {
+    /* private mode */
+  }
+  const mode = resolve(p)
+  apply(mode, p)
+  useModeStore.setState({ pref: p, mode })
+}

@@ -14,8 +14,10 @@ import type { FaceMood } from '../../ui/GoofyFace'
 import { forgetMe, logout, setBlocked, useBlocks, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
-import { Sheet, Toggle } from '../../ui/kit'
-import { IconBrush, IconCrown, IconSpotify } from '../../ui/icons'
+import { Segmented, Sheet, Toggle } from '../../ui/kit'
+import { setModePref, useModeStore } from '../../themes/mode'
+import { useReward } from '../rewards/Reward'
+import { IconBrush, IconCrown, IconFlame, IconSpotify } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { FaceBuilder } from '../onboarding/FaceBuilder'
 import { ProfileCardView } from '../profile/ProfileCard'
@@ -273,6 +275,33 @@ function PhotoButton({ current }: { current: AvatarConfig }) {
         </button>
       )}
     </div>
+  )
+}
+
+function Looks() {
+  const pref = useModeStore((s) => s.pref)
+  const freezes = useReward((s) => s.freezes)
+  return (
+    <>
+      <h3 className="settings-label">appearance</h3>
+      <div className="me-mode">
+        <Segmented
+          layoutId="me-mode"
+          value={pref}
+          onChange={setModePref}
+          items={[
+            { id: 'auto', label: 'auto' },
+            { id: 'light', label: 'light' },
+            { id: 'dark', label: 'dark' },
+          ]}
+        />
+      </div>
+      <div className="settings-row" style={{ marginTop: 10 }}>
+        <IconFlame size={22} />
+        <span className="grow">streak freezes</span>
+        <b className="tnum">{freezes}/2</b>
+      </div>
+    </>
   )
 }
 
@@ -544,6 +573,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
       {!temp && <BioRow />}
       {!temp && <SongRow />}
       {spotifyEnabled() && <Music />}
+      <Looks />
       <h3 className="settings-label">privacy</h3>
       <GhostRow />
       <div className="settings-row">

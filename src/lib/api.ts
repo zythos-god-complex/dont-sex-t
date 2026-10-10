@@ -138,6 +138,7 @@ export const api = {
   photoSubmit: (token: string, url: string | null) => rpc<string | null>('gat_photo_submit', { p_token: token, p_url: url }),
   photoStatus: (token: string) => rpc<string | null>('gat_photo_status', { p_token: token }),
   setNowPlaying: (token: string, np: { t: string; by: string; img: string; url: string } | null) => rpc<null>('gat_set_now_playing', { p_token: token, p_np: np }),
+  checkin: (token: string) => rpc<{ freezes: number; got: boolean }>('gat_checkin', { p_token: token }),
   friend: (token: string, conv: string, on: boolean) => rpc<Record<string, unknown>>('gat_friend', { p_token: token, p_conversation: conv, p_on: on }),
   setBio: (token: string, bio: string) => rpc<Me>('gat_set_bio', { p_token: token, p_bio: bio }),
   setSong: (token: string, song: Song | null) => rpc<Me>('gat_set_song', { p_token: token, p_song: song }),
