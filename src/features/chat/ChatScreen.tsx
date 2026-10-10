@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { WishCard, WishSheet, isWishReply, wishOf } from '../toys/Wish'
 import { FX_BY_THEME, fireFx } from '../../themes/fx'
 import { GameBubble, ToyBubble, ToyGrid, gameOf, toyOf } from '../toys/Toys'
 import { shareSticker } from '../stickers/share'
@@ -96,6 +97,7 @@ function ChatView({ conv }: { conv: Conversation }) {
   const [settings, setSettings] = useState(false)
   const [egg, setEgg] = useState(0)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
+  const [wishOpen, setWishOpen] = useState(false)
   const confetti = useRef<ConfettiHandle>(null)
   const taps = useRef<{ n: number; t: number; x: number; y: number }>({ n: 0, t: 0, x: 0, y: 0 })
   const themeId = useRef(conv.theme)
@@ -116,6 +118,7 @@ function ChatView({ conv }: { conv: Conversation }) {
       if (fx) {
         fireFx(fx)
         if (fx === 'thunder') navigator.vibrate?.([30, 50, 80])
+        if (fx === 'wish') setTimeout(() => setWishOpen(true), 1500)
       } else confetti.current?.burst(k.x, k.y, landing)
       sendConfetti(conv.id, { x: Math.min(1, Math.max(0, k.x / window.innerWidth)), y: Math.min(1, Math.max(0, k.y / window.innerHeight)) }, landing)
     }
@@ -199,6 +202,7 @@ function ChatView({ conv }: { conv: Conversation }) {
       <AnimatePresence>{egg > 0 && <EasterEgg key="egg" me={me?.username ?? ''} />}</AnimatePresence>
 
       <ProfileCard name={peer.username} id={peer.id} open={card} onClose={() => setCard(false)} />
+      <WishSheet convId={conv.id} open={wishOpen} onClose={() => setWishOpen(false)} />
       <Sheet open={settings} onClose={() => setSettings(false)} label="chat settings">
         <SettingsBody conv={conv} onPicked={() => setSettings(false)} />
       </Sheet>
@@ -244,7 +248,7 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
   const allMsgs = useMessages(conv.id)
   // only messages that arrive while the chat is open animate in; opening a chat paints instantly
   const openedAt = useRef(Date.now())
-  const msgs = useMemo(() => allMsgs.filter((x) => x.body !== '[[unsent]]'), [allMsgs])
+  const msgs = useMemo(() => allMsgs.filter((x) => x.body !== '[[unsent]]' && !isWishReply(x.body)), [allMsgs])
   const typing = usePeerTyping(conv.id)
   const mine = useMyLastStatus(conv.id)
   const hasMore = useHasMore(conv.id)
@@ -417,6 +421,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
   const cpl = coupleOf(m.body)
   const voice = voiceOf(m.body)
   const toy = toyOf(m.body)
+  const wish = wishOf(m.body)
   const game = gameOf(m.body)
   const img = imageOf(m.body)
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, s.conversations[m.conversation_id]?.peer))
@@ -434,7 +439,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
   }, [viewer])
   const emoji = stk || cpl || voice || img || gone ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
-  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', toy || game ? 'b-toy' : '', voice ? 'b-voice' : '', img ? 'b-img' : ''].join(' ')
+  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', toy || game || wish ? 'b-toy' : '', voice ? 'b-voice' : '', img ? 'b-img' : ''].join(' ')
   const [picker, setPicker] = useState(false)
   const [burst, setBurst] = useState(0)
   const [more, setMore] = useState(false)
@@ -548,7 +553,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
               <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {img ? <ImageBubble img={img} open={viewer} blur={once} onClose={() => setViewer(false)} /> : gone ? <span className="once-gone"><IconImage size={16} /> opened</span> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : toy ? <ToyBubble toy={toy} fresh={fresh} /> : game ? <GameBubble id={game} meId={meId} peerName={peerName} /> : linkify(m.body).map((p, i) =>
+          {img ? <ImageBubble img={img} open={viewer} blur={once} onClose={() => setViewer(false)} /> : gone ? <span className="once-gone"><IconImage size={16} /> opened</span> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : wish !== null ? <WishCard m={m} mine={mine} peerName={peerName} /> : toy ? <ToyBubble toy={toy} fresh={fresh} /> : game ? <GameBubble id={game} meId={meId} peerName={peerName} /> : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}

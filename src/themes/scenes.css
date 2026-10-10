@@ -184,50 +184,15 @@
 .mx-rain { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .amb-matrix { opacity: .5; }
 
-/* ------------------------------------------------------------ night scenes (ember's list) */
-.nx-star { position: absolute; width: var(--s); height: var(--s); border-radius: 50%; background: #fff; opacity: .7; animation: nx-tw var(--d) ease-in-out infinite alternate; }
-@keyframes nx-tw { from { opacity: .2; } to { opacity: .9; } }
-
-/* meteor shower: slow streaks now and then */
-.sc-meteor .mt-glow { position: absolute; inset: 0; background: radial-gradient(80% 40% at 70% 0%, rgba(110,140,255,.16), transparent 70%), radial-gradient(60% 30% at 10% 100%, rgba(80,60,160,.18), transparent 70%); }
-.sc-meteor .mt-fall { position: absolute; width: 0; height: 0; animation: mt-fall calc(var(--d) / var(--spd, 1)) linear infinite; animation-delay: var(--w); opacity: 0; }
-.sc-meteor .mt-fall i { position: absolute; right: 0; top: 0; width: 130px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, rgba(190,210,255,.55) 70%, #fff); transform: rotate(-32deg); transform-origin: right center; box-shadow: 0 0 6px rgba(200,220,255,.6); }
-@keyframes mt-fall { 0% { transform: translate(0, 0); opacity: 0; } 2% { opacity: 1; } 11% { transform: translate(-260px, 165px); opacity: 0; } 100% { transform: translate(-260px, 165px); opacity: 0; } }
-.mt-wish { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; }
-.mt-big { position: absolute; left: 105%; top: -10%; width: 0; height: 0; animation: mt-big 2.2s cubic-bezier(.3,.6,.4,1) forwards; }
-.mt-big i { position: absolute; right: -10px; top: -5px; width: min(70vw, 420px); height: 10px; border-radius: 10px; background: linear-gradient(90deg, transparent, rgba(255,236,170,.45) 60%, #FFF6D8); transform: rotate(-30deg); transform-origin: right center; box-shadow: 0 0 22px 6px rgba(255,230,160,.55); }
-.mt-big i::after { content: ''; position: absolute; right: -8px; top: -9px; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle, #fff, #FFE9A8 45%, transparent 70%); }
-@keyframes mt-big { to { transform: translate(-115vw, 70vh); } }
-.mt-text { position: absolute; left: 50%; top: 38%; translate: -50% 0; width: min(86vw, 420px); text-align: center; margin: 0; padding: 14px 18px; border-radius: 20px; background: rgba(6,10,30,.72); color: #FFF3D6; font: 720 18px/1.35 var(--font-display); box-shadow: 0 10px 40px rgba(0,0,0,.4); animation: mt-text 3.8s ease forwards; }
-@keyframes mt-text { 0%, 18% { opacity: 0; transform: translateY(10px) scale(.96); } 30%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
-
-/* rain temple: silhouettes, mist, rain, thunder on four taps */
+/* ------------------------------------------------------------ night scenes (ember's list): canvas painted */
+.scene-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.sc-temple { position: absolute; inset: 0; background: linear-gradient(180deg, #0D2729 0%, #0B2023 50%, #061211 100%); }
 .sc-temple .tp-land { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 58%; }
-.sc-temple .tp-far { fill: #17393A; opacity: .75; }
-.sc-temple .tp-near { fill: #061212; }
-.sc-temple .tp-lamp { fill: rgba(255,190,110,.18); }
-.sc-temple .tp-mist { position: absolute; left: -20%; right: -20%; bottom: 18%; height: 30%; background: radial-gradient(50% 50% at 50% 50%, rgba(170,210,205,.14), transparent 70%); animation: tp-mist 30s ease-in-out infinite alternate; }
+.sc-temple .tp-far { fill: #17393A; opacity: .7; }
+.sc-temple .tp-near { fill: #051010; }
+.sc-temple .tp-lamp { fill: rgba(255,190,110,.2); }
+.sc-temple .tp-mist { position: absolute; left: -20%; right: -20%; bottom: 16%; height: 34%; background: radial-gradient(50% 50% at 50% 50%, rgba(170,210,205,.16), transparent 70%); animation: tp-mist 30s ease-in-out infinite alternate; }
 @keyframes tp-mist { to { transform: translateX(12%); } }
-.sc-temple .tp-drop { position: absolute; top: -40px; width: 1.4px; height: var(--h); border-radius: 1px; background: linear-gradient(transparent, rgba(210,240,236,.7)); transform: rotate(8deg); animation: tp-drop calc(var(--d) / var(--spd, 1)) linear infinite; animation-delay: var(--w); }
-@keyframes tp-drop { to { transform: rotate(8deg) translateY(calc(100vh + 60px)); } }
 .tp-strike { position: fixed; inset: 0; z-index: 90; pointer-events: none; animation: tp-flash .9s ease-out forwards; }
-@keyframes tp-flash { 0% { background: rgba(225,240,255,0); } 8% { background: rgba(225,240,255,.55); } 18% { background: rgba(225,240,255,.05); } 28% { background: rgba(225,240,255,.35); } 100% { background: rgba(225,240,255,0); } }
-.tp-bolt { position: absolute; top: 0; width: 70px; height: 46vh; fill: #F2F8FF; filter: drop-shadow(0 0 10px #BFE0FF); animation: tp-bolt .9s ease-out forwards; }
-@keyframes tp-bolt { 0%, 4% { opacity: 0; } 8%, 22% { opacity: 1; } 30% { opacity: .2; } 36% { opacity: .9; } 100% { opacity: 0; } }
-
-/* sakura night: moon, blossom tree, street lamp and bench, petals */
-.sc-sknight .sk-moon { position: absolute; top: 7%; right: 12%; width: 74px; height: 74px; border-radius: 50%; background: radial-gradient(circle at 40% 38%, #FFFFFF, #DCE6FF 70%); box-shadow: 0 0 50px 16px rgba(190,205,255,.28); }
-.sc-sknight .sk-tree { position: absolute; left: -6%; top: -2%; width: 62%; max-width: 360px; }
-.sc-sknight .sk-street { position: absolute; right: 0; bottom: 0; width: 46%; max-width: 280px; height: 52%; }
-.sc-sknight .sk-lampglow { position: absolute; right: -10%; bottom: 22%; width: 70%; height: 46%; background: radial-gradient(closest-side, rgba(255,205,140,.28), rgba(255,205,140,.08) 55%, transparent); }
-.sc-sknight .sk-petal { position: absolute; top: -12px; width: 9px; height: 6px; border-radius: 70% 10% 70% 10%; background: #F2B4D2; opacity: .85; animation: sk-fall calc(var(--d) / var(--spd, 1)) linear infinite; animation-delay: var(--w); }
-@keyframes sk-fall { to { transform: translate(var(--x), calc(100vh + 30px)) rotate(420deg); } }
-
-/* blue butterflies: lamp light, bokeh, glowing wings drifting */
-.sc-bfly .bf-lamp { position: absolute; inset: 0; background: radial-gradient(40% 30% at 18% 12%, rgba(255,240,200,.22), transparent 70%), radial-gradient(50% 40% at 85% 75%, rgba(80,170,255,.12), transparent 70%); }
-.sc-bfly .bf-orb { position: absolute; width: var(--s); height: var(--s); border-radius: 50%; background: radial-gradient(circle, rgba(150,215,255,.45), transparent 70%); animation: bf-orb var(--d) ease-in-out infinite alternate; }
-@keyframes bf-orb { from { opacity: .25; transform: translateY(0); } to { opacity: .8; transform: translateY(-14px); } }
-.sc-bfly .bf-path { position: absolute; animation: bf-path calc(var(--d) / var(--spd, 1)) ease-in-out infinite alternate; animation-delay: var(--w); }
-@keyframes bf-path { 0% { transform: translate(0, 0) rotate(-8deg); } 33% { transform: translate(60px, -40px) rotate(6deg); } 66% { transform: translate(-30px, -80px) rotate(-4deg); } 100% { transform: translate(40px, -20px) rotate(10deg); } }
-.sc-bfly .bf { display: block; overflow: visible; fill: #3E8DFF; filter: drop-shadow(0 0 6px rgba(90,170,255,.8)); }
-@media (prefers-reduced-motion: reduce) { .sc-meteor *, .sc-temple *, .sc-sknight *, .sc-bfly * { animation: none !important; } }
+@keyframes tp-flash { 0% { background: rgba(225,240,255,0); } 8% { background: rgba(225,240,255,.45); } 18% { background: rgba(225,240,255,.04); } 28% { background: rgba(225,240,255,.28); } 100% { background: rgba(225,240,255,0); } }
+@media (prefers-reduced-motion: reduce) { .sc-temple *, .tp-strike { animation: none !important; } }

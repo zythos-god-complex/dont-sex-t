@@ -81,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   webpush.setVapidDetails('https://goofyahhtalk.vercel.app', VAPID_PUBLIC, VAPID_PRIVATE)
   const payload = JSON.stringify({
     title: claim.title || 'GoofyAhhTalk',
-    body: /^\[\[voice:/.test(claim.body || '') ? 'voice message' : /^\[\[img:/.test(claim.body || '') ? 'photo' : /^\[\[sticker:[a-z_]+\]\]$/.test(claim.body || '') ? 'sent a sticker' : /^\[\[toy:/.test(claim.body || '') ? 'rolled something in the toy box' : /^\[\[game:/.test(claim.body || '') ? '🎮 wants to play' : claim.body || '',
+    body: /^\[\[voice:/.test(claim.body || '') ? 'voice message' : /^\[\[img:/.test(claim.body || '') ? 'photo' : /^\[\[sticker:[a-z_]+\]\]$/.test(claim.body || '') ? 'sent a sticker' : /^\[\[toy:/.test(claim.body || '') ? 'rolled something in the toy box' : /^\[\[game:/.test(claim.body || '') ? '🎮 wants to play' : /^\[\[wish:/.test(claim.body || '') ? '🌠 made a wish' : /^\[\[wishre:/.test(claim.body || '') ? '🌠 answered your wish' : claim.body || '',
     url: claim.url || '/',
     tag: claim.tag || undefined,
   })

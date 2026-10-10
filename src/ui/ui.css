@@ -932,3 +932,26 @@ button.b-who { border: 0; background: none; padding: 0; cursor: pointer; text-al
 .about-input:focus { outline: none; border-color: var(--ink); }
 .pc-about { font: 650 13px/1.2 var(--font-display); color: var(--pc-sub, var(--muted)); }
 .card-about { font: 650 11.5px/1.2 var(--font-display); color: var(--ink-2); margin-top: -2px; max-width: 100%; }
+
+/* make a wish */
+.wish-sheet { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 4px 8px; text-align: center; }
+.wish-star { font-size: 44px; line-height: 1; filter: drop-shadow(0 4px 14px rgba(255,210,120,.55)); }
+.wish-title { font: 820 24px/1.1 var(--font-display); letter-spacing: -0.02em; margin: 4px 0 0; }
+.wish-sub { color: var(--muted); font: 600 14px/1.3 var(--font-display); margin: 0 0 6px; }
+.wish-input { width: 100%; resize: none; border-radius: 18px; border: 2px solid transparent; background: var(--bg-2); color: var(--ink); padding: 14px 16px; font: 500 17px/1.4 var(--font-text); }
+.wish-input:focus { outline: none; border-color: #E8B04A; }
+.wish-send { width: 100%; height: 52px; margin-top: 4px; border: 0; border-radius: 999px; background: linear-gradient(120deg, #1B2A6B, #3B2C7A 55%, #6B3E8F); color: #FFF3D6; font: 780 16px/1 var(--font-display); box-shadow: 0 8px 24px -10px rgba(60,40,140,.7); cursor: pointer; }
+.wish-send:disabled { opacity: .45; }
+
+.wish-card { position: relative; width: min(270px, 72vw); padding: 14px 16px 14px; border-radius: 22px; overflow: hidden; color: #F2EEFF; background: radial-gradient(120% 90% at 85% 0%, rgba(255,214,140,.22), transparent 55%), linear-gradient(160deg, #0A1238 0%, #1B1B57 60%, #2A1E5C 100%); box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, 0 10px 26px -14px rgba(10,8,40,.9); display: flex; flex-direction: column; gap: 8px; }
+.wish-card::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(1px 1px at 12% 22%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 68% 14%, #fff 50%, transparent 51%), radial-gradient(1.4px 1.4px at 84% 62%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 32% 78%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 52% 44%, rgba(255,255,255,.7) 50%, transparent 51%); opacity: .6; }
+.wish-card > * { position: relative; }
+.wish-card-k { font: 750 12px/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase; color: #E8C27A; }
+.wish-card-t { margin: 0; font: 600 18px/1.35 var(--font-display); overflow-wrap: anywhere; }
+.wish-card-w { font: 600 12.5px/1.2 var(--font-display); color: rgba(242,238,255,.6); }
+.wish-card-a { display: flex; gap: 8px; margin-top: 2px; }
+.wish-card-a button { flex: 1; height: 40px; border-radius: 999px; border: 0; font: 760 14px/1 var(--font-display); cursor: pointer; }
+.wish-did { background: linear-gradient(120deg, #F6D58A, #E8A94A); color: #2A1A00; }
+.wish-no { background: rgba(255,255,255,.12); color: #F2EEFF; }
+.wish-card-v { align-self: flex-start; padding: 7px 12px; border-radius: 999px; font: 720 13px/1 var(--font-display); background: rgba(255,255,255,.12); }
+.wish-card.is-did .wish-card-v { background: linear-gradient(120deg, #F6D58A, #E8A94A); color: #2A1A00; }

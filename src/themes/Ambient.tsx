@@ -30,10 +30,10 @@ function AmbientImpl({ kind, spicy = false }: { kind: AmbientKind; spicy?: boole
   if (kind === 'bats') return <div style={spd} className="amb-wrap"><BatmanScene /></div>
   if (kind === 'lovebeat') return <div style={spd} className="amb-wrap"><LoveScene n={n} /></div>
   if (kind === 'party') return <div style={spd} className="amb-wrap"><BffScene n={n} /></div>
-  if (kind === 'meteor') return <div style={spd} className="amb-wrap"><MeteorScene n={n} /></div>
-  if (kind === 'rain') return <div style={spd} className="amb-wrap"><TempleScene n={n} /></div>
-  if (kind === 'sakuranight') return <div style={spd} className="amb-wrap"><SakuraNightScene n={n} /></div>
-  if (kind === 'butterflies') return <div style={spd} className="amb-wrap"><ButterflyScene n={n} /></div>
+  if (kind === 'meteor') return <div className="amb-wrap"><MeteorScene amount={amount} speed={speed} /></div>
+  if (kind === 'rain') return <div className="amb-wrap"><TempleScene amount={amount} speed={speed} /></div>
+  if (kind === 'sakuranight') return <div className="amb-wrap"><SakuraNightScene amount={amount} speed={speed} /></div>
+  if (kind === 'butterflies') return <div className="amb-wrap"><ButterflyScene amount={amount} speed={speed} /></div>
   if (kind === 'matrix') return <div className="amb-wrap amb-matrix" aria-hidden="true"><MatrixRain /></div>
   if (kind === 'fog') return <div style={spd} className="amb-wrap"><SpookyScene n={n} /></div>
   if (kind === 'embers') return <div style={spd} className="amb-wrap"><LustScene n={n} spicy={spicy} /></div>
