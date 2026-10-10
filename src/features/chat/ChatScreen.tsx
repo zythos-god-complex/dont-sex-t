@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { shareSticker } from '../stickers/share'
 import { Flame } from '../../ui/Flame'
 import { seasonOn } from '../../lib/season'
 import { Ink } from '../../ui/Ink'
@@ -26,7 +27,7 @@ import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, nee
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend } from '../../ui/icons'
+import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight } from '../../ui/icons'
 import { getTheme, themeList, themeVars } from '../../themes/themes'
 import { flipModeFrom, useThemeMode } from '../../themes/mode'
 import { flushSync } from 'react-dom'
@@ -506,6 +507,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
               onReply(m)
             }
           }}
+          data-mid={m.id}
           onPointerDown={onDown}
           onPointerMove={onMove}
           onPointerUp={onUp}
@@ -560,6 +562,11 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
               <button type="button" aria-label="reply" onClick={() => { setActions(false); onReply(m) }}>
                 <IconReply size={19} />
               </button>
+              {stk && (
+                <button type="button" aria-label="share sticker" onClick={() => { setActions(false); void shareSticker(document.querySelector(`[data-mid="${m.id}"] .stk`), STICKERS.find((x) => x.id === stk)?.caption ?? 'sticker') }}>
+                  <IconArrowRight size={19} style={{ transform: 'rotate(-45deg)' }} />
+                </button>
+              )}
               {mine && (
                 <button type="button" aria-label="unsend" onClick={() => { setActions(false); void unsend(m) }}>
                   <IconClose size={19} />
@@ -761,6 +768,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const myName = useMe()?.username ?? ''
   const spicyTray = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
   const [ice] = useState(() => takeIce(conv.peer.username))
+  const lp = useRef<{ t?: ReturnType<typeof setTimeout>; fired: boolean }>({ fired: false })
   const [text, setText] = useState(() => getDraft(conv.id) || (ice && !ice.auto ? ice.text : ''))
   useEffect(() => {
     if (ice?.auto) sendMessage(conv.id, ice.text, null)
@@ -903,7 +911,20 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         transition={{ delay: 0.025 * i, type: 'spring', stiffness: 520, damping: 22 }}
                         whileTap={{ scale: 0.82 }}
+                        onPointerDown={(e) => {
+                          const el = e.currentTarget
+                          lp.current.fired = false
+                          lp.current.t = setTimeout(() => {
+                            lp.current.fired = true
+                            navigator.vibrate?.(14)
+                            void shareSticker(el, st.caption)
+                          }, 520)
+                        }}
+                        onPointerUp={() => clearTimeout(lp.current.t)}
+                        onPointerLeave={() => clearTimeout(lp.current.t)}
+                        onContextMenu={(e) => e.preventDefault()}
                         onClick={() => {
+                          if (lp.current.fired) return
                           navigator.vibrate?.(8)
                           sendMessage(conv.id, stickerBody(st.id), replyTo)
                           onClearReply()
