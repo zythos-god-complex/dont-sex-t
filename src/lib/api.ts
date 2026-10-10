@@ -137,6 +137,7 @@ export const api = {
   hideChat: (token: string, conv: string) => rpc<boolean>('gat_hide_chat', { p_token: token, p_conversation: conv }),
   photoSubmit: (token: string, url: string | null) => rpc<string | null>('gat_photo_submit', { p_token: token, p_url: url }),
   photoStatus: (token: string) => rpc<string | null>('gat_photo_status', { p_token: token }),
+  setNowPlaying: (token: string, np: { t: string; by: string; img: string; url: string } | null) => rpc<null>('gat_set_now_playing', { p_token: token, p_np: np }),
   setAbout: (token: string, place: string, showAge: boolean) => rpc<Me>('gat_set_about', { p_token: token, p_place: place, p_show_age: showAge }),
   forgetMe: (token: string) => rpc<boolean>('gat_forget_me', { p_token: token }),
   uploadTicket: (token: string, bucket: 'gat-img' | 'gat-voice' | 'gat-pfp', ext: string) => rpc<string>('gat_upload_ticket', { p_token: token, p_bucket: bucket, p_ext: ext }),

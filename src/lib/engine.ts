@@ -5,6 +5,7 @@ import type { AvatarConfig } from '../ui/face'
 // Actions are plain exported functions (see bottom). window.__gat exposes them for QA.
 import type { RealtimeChannel } from '@supabase/realtime-js'
 import { api, isApiError, isRetryable, ApiError } from './api'
+import { initSpotify } from './spotify'
 import { archiveMsgs, claimArchive, olderMsgs, wipeConv } from './archive'
 import { canPush, channel, getRealtime, onSocket, reconnectNow, removeChannel } from './realtime'
 import { clearSession, readSession, setManifestToken, takeUrlToken, writeSession, writeTempSession } from './session'
@@ -1130,6 +1131,9 @@ export function boot(): void {
   if (booted) return
   booted = true
   installGlobalListeners()
+  initSpotify((np) => {
+    if (token) void api.setNowPlaying(token, np).catch(() => {})
+  })
   onSocket(onSocketEvent)
   getRealtime() // open the websocket immediately
   if (typeof navigator !== 'undefined' && navigator.onLine === false) set({ connection: 'offline' })

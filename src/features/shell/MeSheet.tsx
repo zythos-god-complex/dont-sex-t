@@ -7,12 +7,14 @@ import { useLocation } from 'wouter'
 import { useStore } from '../../lib/store'
 import { useShallow } from 'zustand/react/shallow'
 import { pendingPhoto, saveAbout, saveGhost, saveMood, submitPhoto, useGhost, useMood } from '../../lib/engine'
+import { connectSpotify, disconnectSpotify, spotifyEnabled, useSpotify } from '../../lib/spotify'
+import { NowPlaying } from '../music/NowPlaying'
 import type { FaceMood } from '../../ui/GoofyFace'
 import { forgetMe, logout, setBlocked, useBlocks, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle } from '../../ui/kit'
-import { IconBrush, IconCrown } from '../../ui/icons'
+import { IconBrush, IconCrown, IconSpotify } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { FaceBuilder } from '../onboarding/FaceBuilder'
 import { ProfileCardView } from '../profile/ProfileCard'
@@ -283,6 +285,32 @@ function PhotoButton({ current }: { current: AvatarConfig }) {
   )
 }
 
+function Music() {
+  const connected = useSpotify((s) => s.connected)
+  const track = useSpotify((s) => s.track)
+  return (
+    <>
+      <h3 className="settings-label">music</h3>
+      {connected ? (
+        <>
+          {track ? (
+            <NowPlaying track={track} />
+          ) : (
+            <p className="settings-hint">nothing playing on spotify right now</p>
+          )}
+          <button type="button" className="block-btn" style={{ marginTop: 10 }} onClick={() => disconnectSpotify()}>
+            disconnect spotify
+          </button>
+        </>
+      ) : (
+        <button type="button" className="acc-btn sp-connect" onClick={() => void connectSpotify()}>
+          <IconSpotify size={18} /> connect spotify
+        </button>
+      )}
+    </>
+  )
+}
+
 function About() {
   const me = useMe()
   const [place, setPlace] = useState(me?.place ?? '')
@@ -443,6 +471,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
       </div>
       <MoodRow name={me.username} spicy={me.nsfw === true && me.adult === true} />
       {!temp && <About />}
+      {spotifyEnabled() && <Music />}
       <h3 className="settings-label">privacy</h3>
       <GhostRow />
       <div className="settings-row">
