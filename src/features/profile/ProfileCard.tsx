@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useMe } from '../../lib/hooks'
 import { report, setBlocked, useBlocks } from '../../lib/engine'
 import { closePeek, usePeek } from './peek'
+import { icebreaker, setIce } from '../../lib/drafts'
+import { motion } from 'motion/react'
+import { useLocation } from 'wouter'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Aura, CARDS } from '../../ui/Aura'
@@ -86,12 +89,54 @@ function BlockBtn({ id }: { id: string }) {
   )
 }
 
-export function ProfileCard({ name, id, sub, open, onClose }: { name: string; id?: string | null; sub?: string | null; open: boolean; onClose: () => void }) {
+/** Same number for both people: hash of the two names, sorted. */
+export function compat(a: string, b: string): number {
+  const k = [a.toLowerCase(), b.toLowerCase()].sort().join('|')
+  let h = 2166136261
+  for (let i = 0; i < k.length; i++) h = Math.imul(h ^ k.charCodeAt(i), 16777619)
+  return 37 + ((h >>> 0) % 63)
+}
+
+function Compat({ me, them }: { me: string; them: string }) {
+  return (
+    <div className="cp" key={them}>
+      <motion.span initial={{ x: -26 }} animate={{ x: [-26, 6, 0] }} transition={{ duration: 0.5, times: [0, 0.7, 1] }}>
+        <GoofyFace name={me} size={54} mood="happy" blink={false} />
+      </motion.span>
+      <motion.span initial={{ x: 26 }} animate={{ x: [26, -6, 0] }} transition={{ duration: 0.5, times: [0, 0.7, 1] }}>
+        <GoofyFace name={them} size={54} mood="happy" blink={false} />
+      </motion.span>
+      <motion.span className="cp-stamp" initial={{ scale: 2.6, opacity: 0, rotate: -26 }} animate={{ scale: 1, opacity: 1, rotate: -9 }} transition={{ delay: 0.45, type: 'spring', stiffness: 620, damping: 17 }}>
+        {compat(me, them)}% chaos compat
+      </motion.span>
+    </div>
+  )
+}
+
+export function ProfileCard({ name, id, sub, open, onClose, chat = false }: { name: string; id?: string | null; sub?: string | null; open: boolean; onClose: () => void; chat?: boolean }) {
   const me = useMe()
+  const [, nav] = useLocation()
   const mine = me?.username.toLowerCase() === name.toLowerCase()
+  const blocked = useBlocks((b) => !!id && (b.blocked.includes(id) || b.blockedBy.includes(id)))
+  const open2 = (text: string, auto: boolean) => {
+    setIce(name, text, auto)
+    onClose()
+    nav('/dm/' + encodeURIComponent(name))
+  }
   return (
     <Sheet open={open} onClose={onClose} label={name + ' profile'}>
       <ProfileCardView name={name} sub={sub} />
+      {!mine && me && <Compat me={me.username} them={name} />}
+      {!mine && me && chat && !blocked && (
+        <div className="pc-say">
+          <button type="button" className="pc-hi" onClick={() => open2(icebreaker(), false)}>
+            say hi
+          </button>
+          <button type="button" className="pc-wave" onClick={() => open2('👋', true)} aria-label="wave">
+            👋
+          </button>
+        </div>
+      )}
       {!mine && me && (
         <div className="pc-acts">
           {id && <BlockBtn id={id} />}
@@ -107,5 +152,5 @@ export function PeekHost() {
   const last = useRef(name)
   if (name) last.current = name
   if (!last.current) return null
-  return <ProfileCard name={last.current} id={id} open={!!name} onClose={closePeek} />
+  return <ProfileCard name={last.current} id={id} open={!!name} onClose={closePeek} chat />
 }

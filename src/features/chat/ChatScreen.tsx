@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { seasonOn } from '../../lib/season'
 import { Ink } from '../../ui/Ink'
-import { getDraft, setDraft } from '../../lib/drafts'
+import { getDraft, setDraft, takeIce } from '../../lib/drafts'
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation } from 'wouter'
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'motion/react'
@@ -756,7 +756,11 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const [recording, setRecording] = useState(false)
   const myName = useMe()?.username ?? ''
   const spicyTray = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
-  const [text, setText] = useState(() => getDraft(conv.id))
+  const [ice] = useState(() => takeIce(conv.peer.username))
+  const [text, setText] = useState(() => getDraft(conv.id) || (ice && !ice.auto ? ice.text : ''))
+  useEffect(() => {
+    if (ice?.auto) sendMessage(conv.id, ice.text, null)
+  }, [ice, conv.id])
   useEffect(() => setDraft(conv.id, text), [conv.id, text])
   const ta = useRef<HTMLTextAreaElement>(null)
   const lastSent = useRef<{ body: string; at: number } | null>(null)

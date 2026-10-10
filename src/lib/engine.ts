@@ -308,7 +308,8 @@ function myMeta() {
   const me = get().me
   if (!me) return null
   if (!lobbySince) lobbySince = new Date().toISOString()
-  return { id: me.id, username: me.username, gender: me.gender, since: lobbySince, away: !visible, avatar: me.avatar ?? null, show_status: me.show_status !== false, nsfw: me.nsfw === true }
+  const md = readMood()
+  return { id: me.id, username: me.username, gender: me.gender, since: lobbySince, away: !visible, avatar: me.avatar ?? null, show_status: me.show_status !== false, nsfw: me.nsfw === true, looking, mood: md?.mood ?? null, mood_until: md?.until ?? 0 }
 }
 
 function trackMe() {
@@ -1866,4 +1867,38 @@ export function adminCall<T = unknown>(op: string, a: Record<string, unknown> = 
   const t = getToken()
   if (!t) return Promise.reject(new ApiError('unauthorized'))
   return api.admin<T>(t, op, a)
+}
+
+// ---- live match queue + mood rn (both ride on lobby presence) ---------------------------------
+let looking = false
+/** Hold the dice: show up as wanting a live match. */
+export function setLooking(on: boolean): void {
+  if (looking === on) return
+  looking = on
+  trackMe()
+}
+
+export type MoodRn = { mood: string; until: number }
+export const useMood = create<{ mood: MoodRn | null }>(() => ({ mood: readMoodRaw() }))
+function readMoodRaw(): MoodRn | null {
+  try {
+    const v = JSON.parse(localStorage.getItem('gat.mood') ?? 'null') as MoodRn | null
+    return v && v.until > Date.now() ? v : null
+  } catch {
+    return null
+  }
+}
+function readMood(): MoodRn | null {
+  const m = useMood?.getState().mood ?? null
+  return m && m.until > Date.now() ? m : null
+}
+export function setMoodRn(mood: MoodRn | null): void {
+  useMood.setState({ mood })
+  try {
+    if (mood) localStorage.setItem('gat.mood', JSON.stringify(mood))
+    else localStorage.removeItem('gat.mood')
+  } catch {
+    /* blocked */
+  }
+  trackMe()
 }

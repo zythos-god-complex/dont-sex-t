@@ -103,6 +103,8 @@ export type OnlineUser = {
   avatar?: AvatarConfig | null // custom face, when they built one
   show_status?: boolean
   nsfw?: boolean
+  looking?: boolean // holding the dice: wants a live match
+  mood?: string | null // mood rn, already checked for expiry
 }
 
 /** In-app banner for a message that arrived in a conversation that is not open+visible. */

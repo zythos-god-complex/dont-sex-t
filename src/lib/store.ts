@@ -265,10 +265,14 @@ export function presenceToOnline(
       const avatar = isAvatar(raw.avatar) ? raw.avatar : null
       const show_status = raw.show_status !== false
       const nsfw = raw.nsfw === true
+      const looking = raw.looking === true
+      const mood = typeof raw.mood === 'string' && typeof raw.mood_until === 'number' && raw.mood_until > Date.now() ? raw.mood.slice(0, 12) : null
       const cur = acc[id]
-      if (!cur) acc[id] = { id, username, gender, since, away, avatar, show_status, nsfw }
+      if (!cur) acc[id] = { id, username, gender, since, away, avatar, show_status, nsfw, looking, mood }
       else {
         cur.away = cur.away && away // away only when every tab is away
+        cur.looking = cur.looking || looking
+        cur.mood = cur.mood ?? mood
         if (ts(since) < ts(cur.since)) cur.since = since
       }
     }
@@ -284,7 +288,7 @@ export function presenceToOnline(
       if (p.avatar !== undefined) n.avatar = isAvatar(p.avatar) ? p.avatar : n.avatar
     }
     const o = prev[id]
-    if (o && o.username === n.username && o.gender === n.gender && o.since === n.since && o.away === n.away && JSON.stringify(o.avatar ?? null) === JSON.stringify(n.avatar ?? null) && o.show_status === n.show_status && o.nsfw === n.nsfw) out[id] = o
+    if (o && o.username === n.username && o.gender === n.gender && o.since === n.since && o.away === n.away && JSON.stringify(o.avatar ?? null) === JSON.stringify(n.avatar ?? null) && o.show_status === n.show_status && o.nsfw === n.nsfw && o.looking === n.looking && o.mood === n.mood) out[id] = o
     else {
       out[id] = n
       changed = true

@@ -1,17 +1,48 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useLocation } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
 import { useNow, useOnline, useTypingToMe, useUnreadFrom, useUnreadTotal, type OnlineFilter } from '../../lib/hooks'
 import { hereFor } from '../../lib/format'
 import type { OnlineUser } from '../../lib/types'
-import { GoofyFace, useLookAt } from '../../ui/GoofyFace'
+import { GoofyFace, useLookAt, type FaceMood } from '../../ui/GoofyFace'
 import { faceTilt } from '../../ui/face'
 import { Badge, Segmented, TypingDots, Wordmark, spring, useIsDesktop } from '../../ui/kit'
 import { GenderIcon, IconDice, IconDm, IconRooms } from '../../ui/icons'
 import { loadRooms, useRoomsUnread } from '../rooms/rooms'
 import { MeButton } from '../shell/MeSheet'
-import { useBlocks } from '../../lib/engine'
+import { setLooking, useBlocks, useMood } from '../../lib/engine'
+import { icebreaker, setIce } from '../../lib/drafts'
+import { peek } from '../profile/peek'
 import { useStore } from '../../lib/store'
+
+const CELL = 120
+
+// slot reel: faces whiz past and land on the stranger you get
+function Reel({ strip, onDone }: { strip: OnlineUser[]; onDone: (u: OnlineUser) => void }) {
+  const last = strip[strip.length - 1]
+  return (
+    <motion.div className="reel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <div className="reel-win">
+        <motion.div
+          className="reel-strip"
+          initial={{ y: 0 }}
+          animate={{ y: -(strip.length - 1) * CELL }}
+          transition={{ duration: 1.5, ease: [0.12, 0.7, 0.18, 1] }}
+          onAnimationComplete={() => setTimeout(() => onDone(last), 450)}
+        >
+          {strip.map((u, i) => (
+            <span key={i} className="reel-cell">
+              <GoofyFace name={u.username} size={92} blink={false} mood={i === strip.length - 1 ? 'happy' : 'shocked'} />
+            </span>
+          ))}
+        </motion.div>
+      </div>
+      <motion.p className="reel-name" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.45 }}>
+        {last.username}
+      </motion.p>
+    </motion.div>
+  )
+}
 
 function Card({ u, now }: { u: OnlineUser; now: number }) {
   const [, nav] = useLocation()
@@ -20,6 +51,18 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
   const [ref, look] = useLookAt<HTMLButtonElement>()
   const tilt = faceTilt(u.username, 1.6)
   const showStatus = useStore((s) => s.me?.show_status !== false && s.profiles[u.id]?.show_status !== false && u.show_status !== false)
+  const hold = useRef<{ t: ReturnType<typeof setTimeout>; fired: boolean } | null>(null)
+  const down = () => {
+    const h = { fired: false, t: setTimeout(() => {
+      h.fired = true
+      navigator.vibrate?.(12)
+      nav('/dm/' + encodeURIComponent(u.username))
+    }, 450) }
+    hold.current = h
+  }
+  const up = () => {
+    if (hold.current) clearTimeout(hold.current.t)
+  }
   return (
     <motion.button
       ref={ref}
@@ -31,11 +74,19 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
       exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.18 } }}
       transition={spring}
       whileTap={{ scale: 0.96 }}
-      onClick={() => nav('/dm/' + encodeURIComponent(u.username))}
+      onPointerDown={down}
+      onPointerUp={up}
+      onPointerLeave={up}
+      onPointerCancel={up}
+      onContextMenu={(e) => e.preventDefault()}
+      onClick={() => {
+        if (hold.current?.fired) return
+        peek(u.username, u.id)
+      }}
     >
       {unread > 0 && <Badge n={unread} className="card-badge" />}
       <span className="card-face">
-        <GoofyFace name={u.username} size={104} presence={showStatus ? (u.away ? 'away' : 'online') : null} look={look} />
+        <GoofyFace name={u.username} size={104} presence={showStatus ? (u.away ? 'away' : 'online') : null} look={look} mood={(u.mood as FaceMood | null) ?? undefined} />
       </span>
       <span className="card-name ellipsis">{u.username}</span>
       <span className={'card-meta' + (typing ? ' is-typing' : '')}>
@@ -60,7 +111,22 @@ export default function Lobby() {
   const { list: all, counts } = useOnline(filter)
   const blocked = useBlocks((b) => b.blocked)
   const blockedBy = useBlocks((b) => b.blockedBy)
-  const list = all.filter((u) => !blocked.includes(u.id) && !blockedBy.includes(u.id))
+  const visible = all.filter((u) => !blocked.includes(u.id) && !blockedBy.includes(u.id))
+  const convByPeer = useStore((s) => s.convByPeer)
+  const conversations = useStore((s) => s.conversations)
+  const typing = useStore((s) => s.typing)
+  const myNsfw = useStore((s) => s.me?.nsfw === true)
+  const myMood = useMood((s) => s.mood?.mood ?? null)
+  // buds first, then people typing to you, shared vibes, same mood, new arrivals, everyone else
+  const list = useMemo(() => {
+    const t = Date.now()
+    const score = (u: OnlineUser) => {
+      const cid = convByPeer[u.id]
+      const c = cid ? conversations[cid] : undefined
+      return (c && c.status !== 'declined' ? 1000 : 0) + (cid && (typing[cid] ?? 0) > t ? 100 : 0) + (myNsfw && u.nsfw ? 10 : 0) + (myMood && u.mood === myMood ? 5 : 0) + (t - Date.parse(u.since) < 5 * 60e3 ? 2 : 0)
+    }
+    return visible.map((u, i) => ({ u, i, s: score(u) })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.u)
+  }, [visible, convByPeer, conversations, typing, myNsfw, myMood])
   const unread = useUnreadTotal()
   const roomsUnread = useRoomsUnread()
   useEffect(() => void loadRooms(), [])
@@ -68,13 +134,51 @@ export default function Lobby() {
   const [, go] = useLocation()
   const meId = useStore((s) => s.me?.id)
   const [copied, setCopied] = useState(false)
+  const [reel, setReel] = useState<OnlineUser[] | null>(null)
+  const [queue, setQueue] = useState(false)
+  const holdT = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const held = useRef(false)
+  const pool = list.filter((u) => u.id !== meId)
   const roll = () => {
-    const pool = list.filter((u) => u.id !== meId)
     const awake = pool.filter((u) => !u.away)
     const from = awake.length ? awake : pool
     const pick = from[Math.floor(Math.random() * from.length)]
-    if (pick) go('/dm/' + encodeURIComponent(pick.username))
+    if (!pick) return
+    // a reel of random faces that lands on the pick
+    const strip = Array.from({ length: 14 }, () => pool[Math.floor(Math.random() * pool.length)])
+    setReel([...strip, pick])
   }
+  const landed = (u: OnlineUser) => {
+    setReel(null)
+    setIce(u.username, icebreaker())
+    go('/dm/' + encodeURIComponent(u.username))
+  }
+  const diceDown = () => {
+    held.current = false
+    holdT.current = setTimeout(() => {
+      held.current = true
+      navigator.vibrate?.([10, 30, 10])
+      setQueue(true)
+    }, 450)
+  }
+  const diceUp = () => {
+    if (holdT.current) clearTimeout(holdT.current)
+  }
+  useEffect(() => {
+    setLooking(queue)
+  }, [queue])
+  useEffect(() => () => setLooking(false), [])
+  // everyone looking pairs up the same way: sort ids, 1st with 2nd, 3rd with 4th...
+  const lookers = queue && meId ? [meId, ...pool.filter((u) => u.looking).map((u) => u.id)].sort() : []
+  const mate = lookers.length > 1 ? lookers[lookers.indexOf(meId!) ^ 1] : undefined
+  const mateUser = mate ? pool.find((u) => u.id === mate) : undefined
+  useEffect(() => {
+    if (!mateUser) return
+    setQueue(false)
+    navigator.vibrate?.([20, 40, 20])
+    setIce(mateUser.username, icebreaker())
+    go('/dm/' + encodeURIComponent(mateUser.username))
+  }, [mateUser, go])
   const share = () => {
     const url = location.origin
     if (navigator.share) void navigator.share({ title: 'GoofyAhhTalk', url }).catch(() => {})
@@ -150,22 +254,38 @@ export default function Lobby() {
         )}
       </div>
       <AnimatePresence>
-        {list.filter((u) => u.id !== meId).length >= 2 && (
-          <motion.button
-            type="button"
-            className="roll"
-            onClick={roll}
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            whileTap={{ scale: 0.94 }}
-            transition={spring}
-          >
-            <IconDice size={20} />
-            roll a stranger
+        {queue ? (
+          <motion.button key="q" type="button" className="roll is-queue" onClick={() => setQueue(false)} initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} transition={spring}>
+            <span className="roll-dot" />
+            finding a match{lookers.length > 1 ? '' : '...'} · tap to stop
           </motion.button>
+        ) : (
+          pool.length >= 1 && (
+            <motion.button
+              key="r"
+              type="button"
+              className="roll"
+              onClick={() => (held.current ? (held.current = false) : pool.length >= 2 ? roll() : landed(pool[0]))}
+              onPointerDown={diceDown}
+              onPointerUp={diceUp}
+              onPointerLeave={diceUp}
+              onPointerCancel={diceUp}
+              onContextMenu={(e) => e.preventDefault()}
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              whileTap={{ scale: 0.94 }}
+              transition={spring}
+            >
+              <span className={'roll-dice' + (reel ? ' is-spin' : '')}>
+                <IconDice size={20} />
+              </span>
+              roll a stranger
+            </motion.button>
+          )
         )}
       </AnimatePresence>
+      <AnimatePresence>{reel && <Reel strip={reel} onDone={landed} />}</AnimatePresence>
     </div>
   )
 }
