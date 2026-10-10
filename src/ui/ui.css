@@ -909,3 +909,8 @@ button.b-who { border: 0; background: none; padding: 0; cursor: pointer; text-al
 .toy-pick { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px 10px; border-radius: 18px; border: 0; background: var(--theme-composer, var(--bg-2)); color: var(--theme-composer-ink, var(--ink)); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .toy-ico { font-size: 28px; line-height: 1; }
 .toy-lbl { font: 700 11px/1.15 var(--font-display); text-align: center; }
+
+/* audio file upload status */
+.pick-wrap { position: relative; }
+.aud-pill { position: absolute; bottom: calc(100% + 8px); left: 0; white-space: nowrap; padding: 7px 12px; border-radius: 999px; background: var(--ink); color: var(--bg); font: 700 12px/1 var(--font-display); box-shadow: var(--shadow-pop); pointer-events: none; }
+.aud-pill.is-err { background: var(--danger); color: #fff; }

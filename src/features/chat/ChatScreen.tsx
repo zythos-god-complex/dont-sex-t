@@ -36,7 +36,7 @@ import { goHome } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
 import { Recorder } from '../voice/Recorder'
 import { VoiceBubble } from '../voice/VoiceBubble'
-import { voiceOf } from '../voice/voice'
+import { audioType, readAudioFile, uploadVoice, voiceBody, voiceOf } from '../voice/voice'
 import { GONE, imageOf, imageBody, prepImage, uploadImage } from '../image/image'
 import { useChill } from '../../lib/chill'
 import { ImageBubble } from '../image/ImageBubble'
@@ -788,15 +788,17 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const [upload, setUpload] = useState<{ preview: string; err?: boolean } | null>(null)
   // A fresh native input per tap, no accept filter: on some Android phones the gallery app never
   // returns the photo to Chrome, while the system document picker does. Some Androids only fire 'input'.
-  const openPicker = () => {
+  const [aud, setAud] = useState<'sending' | 'big' | 'error' | null>(null)
+  const openPicker = (kind: 'image' | 'audio' = 'image') => {
     const el = document.createElement('input')
     el.type = 'file'
+    if (kind === 'audio') el.accept = 'audio/*'
     el.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0'
     let handled = false
     const take = () => {
       if (handled) return
       handled = true
-      void pickImage(el.files?.[0])
+      void (kind === 'audio' ? pickAudio(el.files?.[0]) : pickImage(el.files?.[0]))
       setTimeout(() => el.remove(), 1000)
     }
     el.addEventListener('change', take)
@@ -804,6 +806,27 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
     el.addEventListener('cancel', () => el.remove())
     document.body.appendChild(el)
     el.click()
+  }
+  // an audio file from the phone goes out as a voice note (same player, real waveform); never video
+  const pickAudio = async (file: File | undefined) => {
+    if (!file) return
+    if (!audioType(file, file.name)) return flash('error')
+    if (file.size > 5 * 1024 * 1024) return flash('big')
+    setAud('sending')
+    const reply = replyTo
+    onClearReply()
+    try {
+      const { dur, peaks } = await readAudioFile(file)
+      const url = await uploadVoice(file, meId ?? 'anon', file.name)
+      sendMessage(conv.id, voiceBody(url, Math.max(1, dur), peaks), reply)
+      setAud(null)
+    } catch {
+      flash('error')
+    }
+  }
+  const flash = (s: 'big' | 'error') => {
+    setAud(s)
+    setTimeout(() => setAud(null), 3000)
   }
   const pickImage = async (file: File | undefined) => {
     if (!file) return
@@ -1007,19 +1030,29 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
         >
           <IconSticker size={24} />
         </button>
-        {imagesOk && (
+        {(imagesOk || voiceOk) && (
           <span className="pick-wrap">
-            <button type="button" className="stk-toggle img-tg" aria-label="photo" disabled={!!upload} onPointerDown={(e) => e.preventDefault()} onClick={() => setPmenu((v) => !v)}>
+            {aud && <span className={'aud-pill' + (aud === 'sending' ? '' : ' is-err')}>{aud === 'sending' ? 'sending audio...' : aud === 'big' ? 'too big, 5mb max' : "couldn't send that"}</span>}
+            <button type="button" className="stk-toggle img-tg" aria-label="photo or audio" disabled={!!upload || aud === 'sending'} onPointerDown={(e) => e.preventDefault()} onClick={() => setPmenu((v) => !v)}>
               <IconImage size={24} />
             </button>
             {pmenu && (
               <span className="pick-menu">
-                <button type="button" onClick={() => { onceRef.current = false; setPmenu(false); openPicker() }}>
-                  <IconImage size={18} /> photo
-                </button>
-                <button type="button" onClick={() => { onceRef.current = true; setPmenu(false); openPicker() }}>
-                  <i className="once-1">1</i> view once
-                </button>
+                {imagesOk && (
+                  <>
+                    <button type="button" onClick={() => { onceRef.current = false; setPmenu(false); openPicker() }}>
+                      <IconImage size={18} /> photo
+                    </button>
+                    <button type="button" onClick={() => { onceRef.current = true; setPmenu(false); openPicker() }}>
+                      <i className="once-1">1</i> view once
+                    </button>
+                  </>
+                )}
+                {voiceOk && (
+                  <button type="button" onClick={() => { setPmenu(false); openPicker('audio') }}>
+                    <IconMic size={18} /> audio
+                  </button>
+                )}
               </span>
             )}
           </span>
