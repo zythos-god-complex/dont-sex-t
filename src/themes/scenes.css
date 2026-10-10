@@ -172,12 +172,6 @@
 /* ------------------------------------------------------------ night scenes (ember's list): canvas painted */
 .scene-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .sc-temple { position: absolute; inset: 0; background: linear-gradient(180deg, #0D2729 0%, #0B2023 50%, #061211 100%); }
-.sc-temple .tp-land { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 58%; }
-.sc-temple .tp-far { fill: #17393A; opacity: .7; }
-.sc-temple .tp-near { fill: #051010; }
-.sc-temple .tp-lamp { fill: rgba(255,190,110,.2); }
-.sc-temple .tp-mist { position: absolute; left: -20%; right: -20%; bottom: 16%; height: 34%; background: radial-gradient(50% 50% at 50% 50%, rgba(170,210,205,.16), transparent 70%); animation: tp-mist 30s ease-in-out infinite alternate; }
-@keyframes tp-mist { to { transform: translateX(12%); } }
 .tp-strike { position: fixed; inset: 0; z-index: 90; pointer-events: none; animation: tp-flash .9s ease-out forwards; }
 @keyframes tp-flash { 0% { background: rgba(225,240,255,0); } 8% { background: rgba(225,240,255,.45); } 18% { background: rgba(225,240,255,.04); } 28% { background: rgba(225,240,255,.28); } 100% { background: rgba(225,240,255,0); } }
-@media (prefers-reduced-motion: reduce) { .sc-temple *, .tp-strike { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .tp-strike { animation: none !important; } }

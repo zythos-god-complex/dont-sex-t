@@ -6,7 +6,7 @@ import { density, pace, type Opts } from './common'
 const wrap = { position: 'absolute', inset: 0 } as CSSProperties
 
 /* ================================================================== sakura night */
-type Petal = { x: number; y: number; vx: number; vy: number; rot: number; vr: number; flip: number; vf: number; s: number; c: string }
+type Petal = { x: number; y: number; vx: number; vy: number; rot: number; vr: number; flip: number; vf: number; s: number; c: string; once?: { bx: number; vy: number } }
 const PINKS = ['#FFD3E4', '#F8BCD6', '#F2A3C5', '#FBE4EE', '#E98DB6']
 
 function petalPath(g: CanvasRenderingContext2D, s: number) {
@@ -67,6 +67,10 @@ function makeSakura({ amount, speed }: Opts): Scene {
   let bg: HTMLCanvasElement | null = null
   let petals: Petal[] = []
   let lamps: { x: number; y: number; r: number; p: number }[] = []
+  // blossom spots on both trees (x, y, which way the tree leans in) for the four-tap petal shower
+  let canopy: [number, number, number][] = []
+  let queue = 0
+  let gust = 0
   const dens = density(amount)
   const sp = pace(speed)
   const make = (top: boolean): Petal => ({
@@ -129,9 +133,11 @@ function makeSakura({ amount, speed }: Opts): Scene {
         return { x: w * (0.5 + (i % 2 ? 1 : -1) * (0.08 + k * 0.4)), y: h * (0.78 + k * 0.17), r: 10 + k * 38, p: rand(0, 6) }
       })
       // two blossom trees framing the top corners, grown branch by branch
+      canopy = []
       for (const [x, y, ang, len, wid] of [[-w * 0.03, h * 0.44, -1.22, Math.min(h * 0.14, w * 0.3), 12], [w * 1.03, h * 0.34, -1.92, Math.min(h * 0.12, w * 0.26), 10]] as const) {
         const tips: [number, number][] = []
         tree(g, x, y, ang, len, wid, 0, tips)
+        for (const [tx, ty] of tips) canopy.push([tx, ty, x < w / 2 ? 1 : -1])
         for (const [tx, ty] of tips) glow(g, tx, ty, rand(26, 44), 'rgba(235,120,175,0.22)')
         for (const [tx, ty] of tips) {
           const n = 7 + ((Math.random() * 7) | 0)
@@ -148,17 +154,44 @@ function makeSakura({ amount, speed }: Opts): Scene {
     },
     frame(g, t, dt) {
       if (bg) g.drawImage(bg, 0, 0, w, h)
+      // the shower: petals peel off the canopies over about a second, pushed inward by a gust that dies down
+      if (queue > 0 && canopy.length) {
+        const n = Math.min(queue, Math.ceil(dt * 130))
+        queue -= n
+        for (let i = 0; i < n; i++) {
+          const [cx, cy, side] = canopy[(Math.random() * canopy.length) | 0]
+          const a = rand(0, 6.3)
+          const d = Math.random() * 22
+          const bx = rand(-30, -10) * sp
+          petals.push({ ...make(false), x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d * 0.8, vx: side * rand(30, 95) * (0.6 + gust * 0.6), vy: rand(-6, 14), vr: rand(-3, 3), vf: rand(2.5, 5), once: { bx, vy: rand(34, 70) * sp } })
+        }
+      }
+      gust = Math.max(0, gust - dt / 3)
       for (const l of lamps) {
         const f = 0.85 + 0.15 * Math.sin(t * 3 + l.p) * Math.sin(t * 1.7 + l.p * 2)
         glow(g, l.x, l.y, l.r * 2.4, 'rgba(255,170,90,0.28)', f)
         glow(g, l.x, l.y, l.r * 0.5, 'rgba(255,225,170,0.95)', f)
       }
+      let gone = false
       for (const p of petals) {
+        if (p.once) {
+          // ease from the gust into the same lazy fall as the rest
+          const k = Math.min(1, dt * 0.9)
+          p.vx += (p.once.bx - p.vx) * k
+          p.vy += (p.once.vy - p.vy) * k
+        }
         p.x += (p.vx + Math.sin(t * 0.8 + p.flip) * 14) * dt
         p.y += p.vy * dt
         p.rot += p.vr * dt
         p.flip += p.vf * dt
-        if (p.y > h + 12 || p.x < -20) Object.assign(p, make(true))
+        if (p.y > h + 12 || p.x < -20 || p.x > w + 40) {
+          if (p.once) {
+            p.s = 0
+            gone = true
+            continue
+          }
+          Object.assign(p, make(true))
+        }
         g.save()
         g.translate(p.x, p.y)
         g.rotate(p.rot)
@@ -170,6 +203,14 @@ function makeSakura({ amount, speed }: Opts): Scene {
         g.restore()
       }
       g.globalAlpha = 1
+      if (gone) petals = petals.filter((p) => p.s > 0)
+    },
+    fx(f) {
+      if (f !== 'bloom') return
+      const lite = document.documentElement.dataset.lite === '1'
+      const extra = petals.filter((p) => p.once).length
+      queue = Math.max(0, Math.min(lite ? 70 : 140, (lite ? 90 : 180) - extra))
+      gust = 1
     },
   }
 }

@@ -1,170 +1,177 @@
-// Night scene: blue butterflies, painted on canvas. Still parts are painted once per resize, only the moving bits animate.
+// Night scene: blue butterflies, painted on canvas. Three small morphos wander the night, nothing else moves much.
 import type { CSSProperties } from 'react'
 import { SceneCanvas, glow, layer, rand, type Scene } from '../SceneCanvas'
-import { density, pace, type Opts } from './common'
+import { pace, type Opts } from './common'
 
 const wrap = { position: 'absolute', inset: 0 } as CSSProperties
 
 /* ================================================================== blue butterflies */
-type Fly = { cx: number; cy: number; vx: number; ph: number[]; size: number; flap: number; trail: number }
-type Mote = { x: number; y: number; vx: number; vy: number; age: number; life: number; r: number }
+type Fly = {
+  x: number; y: number; vx: number; vy: number; tx: number; ty: number
+  span: number; cruise: number; head: number; ph: number
+  beat: number; flap: number; glide: number; open: number
+}
+type Speck = { x: number; y: number; vx: number; vy: number; ph: number; r: number }
 
-function wing(g: CanvasRenderingContext2D, s: number, side: number, open: number) {
+/** one side, drawn as if seen from above; s = 1 is a 92px wingspan, flat says how foreshortened the wing is */
+function wing(g: CanvasRenderingContext2D, s: number, side: number, flat: number) {
   g.save()
-  g.scale(side * open, 1)
-  // forewing
-  const fg = g.createRadialGradient(4 * s, -8 * s, 1, 18 * s, -14 * s, 32 * s)
-  fg.addColorStop(0, '#0A2A86')
-  fg.addColorStop(0.45, '#2F7BFF')
-  fg.addColorStop(0.8, '#7FD6FF')
-  fg.addColorStop(1, '#0B1B3A')
+  g.scale(side * flat, 1)
+  // forewing: long leading edge, pointed tip, gently concave outer edge
+  const fg = g.createLinearGradient(0, 0, 42 * s, -18 * s)
+  fg.addColorStop(0, '#0B2E8C')
+  fg.addColorStop(0.35, '#2F86FF')
+  fg.addColorStop(0.7, '#7AD8FF')
+  fg.addColorStop(0.9, '#1A4FB8')
+  fg.addColorStop(1, '#061433')
   g.fillStyle = fg
   g.beginPath()
-  g.moveTo(0, -2 * s)
-  g.bezierCurveTo(6 * s, -16 * s, 22 * s, -28 * s, 36 * s, -25 * s)
-  g.bezierCurveTo(44 * s, -23 * s, 46 * s, -14 * s, 40 * s, -8 * s)
-  g.bezierCurveTo(32 * s, 0, 14 * s, 2 * s, 0, 2 * s)
+  g.moveTo(1 * s, -4 * s)
+  g.bezierCurveTo(10 * s, -20 * s, 28 * s, -30 * s, 44 * s, -27 * s)
+  g.bezierCurveTo(46 * s, -20 * s, 41 * s, -12 * s, 38 * s, -4 * s)
+  g.bezierCurveTo(28 * s, 0, 14 * s, 1 * s, 1 * s, 1 * s)
   g.closePath()
   g.fill()
-  g.strokeStyle = 'rgba(2,10,28,0.85)'
-  g.lineWidth = 1.6 * s
-  g.stroke()
-  // hindwing
-  const hg = g.createRadialGradient(4 * s, 6 * s, 1, 16 * s, 16 * s, 26 * s)
-  hg.addColorStop(0, '#0A2A86')
-  hg.addColorStop(0.5, '#2A6CF0')
-  hg.addColorStop(0.85, '#68C4FF')
-  hg.addColorStop(1, '#0B1B3A')
+  // hindwing: rounded with a soft scalloped margin
+  const hg = g.createLinearGradient(0, 0, 30 * s, 24 * s)
+  hg.addColorStop(0, '#0B2E8C')
+  hg.addColorStop(0.4, '#2A78F4')
+  hg.addColorStop(0.75, '#5EC2FF')
+  hg.addColorStop(1, '#071838')
   g.fillStyle = hg
   g.beginPath()
-  g.moveTo(0, 2 * s)
-  g.bezierCurveTo(12 * s, 2 * s, 30 * s, 6 * s, 31 * s, 18 * s)
-  g.bezierCurveTo(32 * s, 28 * s, 21 * s, 32 * s, 13 * s, 28 * s)
-  g.bezierCurveTo(6 * s, 24 * s, 2 * s, 14 * s, 0, 6 * s)
+  g.moveTo(1 * s, 1 * s)
+  g.bezierCurveTo(14 * s, -1 * s, 31 * s, 3 * s, 33 * s, 13 * s)
+  g.quadraticCurveTo(33 * s, 19 * s, 29 * s, 22 * s)
+  g.quadraticCurveTo(25 * s, 28 * s, 18 * s, 28 * s)
+  g.quadraticCurveTo(11 * s, 30 * s, 7 * s, 23 * s)
+  g.bezierCurveTo(3 * s, 16 * s, 1 * s, 9 * s, 1 * s, 1 * s)
   g.closePath()
   g.fill()
+  // dark veins near the body and a hint of the white margin spots
+  g.strokeStyle = 'rgba(4,14,40,0.55)'
+  g.lineWidth = 1.4 * s
+  g.beginPath()
+  g.moveTo(1 * s, 0)
+  g.lineTo(38 * s, -4 * s)
   g.stroke()
-  // white dots along the forewing edge
-  g.fillStyle = 'rgba(235,248,255,0.85)'
-  for (const [x, y] of [[36, -20], [40, -14], [31, -22]]) {
+  g.fillStyle = 'rgba(230,246,255,0.8)'
+  for (const [x, y] of [[41, -22], [39, -15], [27, 22]] as const) {
     g.beginPath()
-    g.arc(x * s, y * s, 1.2 * s, 0, Math.PI * 2)
+    g.arc(x * s, y * s, 1.6 * s, 0, Math.PI * 2)
     g.fill()
   }
   g.restore()
 }
 
-function butterfly(g: CanvasRenderingContext2D, x: number, y: number, size: number, open: number, tilt: number) {
-  const s = size / 46
+function butterfly(g: CanvasRenderingContext2D, f: Fly, bob: number) {
+  const s = f.span / 92
   g.save()
-  g.translate(x, y)
-  g.rotate(tilt)
-  glow(g, 0, 0, size * 1.3, 'rgba(70,150,255,0.22)')
-  wing(g, s, -1, open)
-  wing(g, s, 1, open)
-  g.fillStyle = '#061226'
+  g.translate(f.x, f.y + bob)
+  g.rotate(f.head)
+  glow(g, 0, 0, f.span * 0.95, 'rgba(70,160,255,0.16)')
+  wing(g, s, -1, f.open)
+  wing(g, s, 1, f.open)
+  // body and antennae
+  g.fillStyle = '#050B18'
   g.beginPath()
-  g.ellipse(0, 2 * s, 1.8 * s, 9 * s, 0, 0, Math.PI * 2)
+  g.ellipse(0, 3 * s, 2.4 * s, 12 * s, 0, 0, Math.PI * 2)
   g.fill()
-  g.strokeStyle = '#061226'
-  g.lineWidth = 0.9 * s
+  g.beginPath()
+  g.arc(0, -9.5 * s, 2.6 * s, 0, Math.PI * 2)
+  g.fill()
+  g.strokeStyle = '#050B18'
+  g.lineWidth = Math.max(0.6, 1.1 * s)
   for (const k of [-1, 1]) {
     g.beginPath()
-    g.moveTo(0, -6 * s)
-    g.quadraticCurveTo(k * 3 * s, -14 * s, k * 6 * s, -17 * s)
+    g.moveTo(k * 1 * s, -11 * s)
+    g.quadraticCurveTo(k * 3 * s, -20 * s, k * 8 * s, -24 * s)
     g.stroke()
-    g.beginPath()
-    g.arc(k * 6 * s, -17 * s, 1 * s, 0, Math.PI * 2)
-    g.fill()
   }
   g.restore()
 }
 
-function makeButterflies({ amount, speed }: Opts): Scene {
+function makeButterflies({ speed }: Opts): Scene {
   let w = 0
   let h = 0
   let bg: HTMLCanvasElement | null = null
   let flies: Fly[] = []
-  let motes: Mote[] = []
-  let dust: Mote[] = []
-  const dens = density(amount)
+  let specks: Speck[] = []
   const sp = pace(speed)
+  const pick = (f: Fly) => {
+    f.tx = rand(w * 0.06, w * 0.94)
+    f.ty = rand(h * 0.08, h * 0.88)
+  }
   return {
     init(W, H) {
       w = W
       h = H
       const [c, g] = layer(w, h)
       const sk = g.createLinearGradient(0, 0, 0, h)
-      sk.addColorStop(0, '#04121F')
-      sk.addColorStop(0.5, '#062538')
-      sk.addColorStop(1, '#030E18')
+      sk.addColorStop(0, '#030D18')
+      sk.addColorStop(0.45, '#05202F')
+      sk.addColorStop(1, '#020A12')
       g.fillStyle = sk
       g.fillRect(0, 0, w, h)
-      // lamp light from the top left with soft rays
-      glow(g, w * 0.12, h * 0.08, w * 0.75, 'rgba(255,236,200,0.22)')
-      g.save()
-      g.globalCompositeOperation = 'lighter'
-      for (let i = 0; i < 5; i++) {
-        const a0 = 0.35 + i * 0.16
-        const rg = g.createLinearGradient(w * 0.12, h * 0.08, w * 0.12 + Math.cos(a0) * h, h * 0.08 + Math.sin(a0) * h)
-        rg.addColorStop(0, 'rgba(255,240,210,0.07)')
-        rg.addColorStop(1, 'rgba(255,240,210,0)')
-        g.fillStyle = rg
-        g.beginPath()
-        g.moveTo(w * 0.12, h * 0.08)
-        g.lineTo(w * 0.12 + Math.cos(a0 - 0.05) * h * 1.2, h * 0.08 + Math.sin(a0 - 0.05) * h * 1.2)
-        g.lineTo(w * 0.12 + Math.cos(a0 + 0.05) * h * 1.2, h * 0.08 + Math.sin(a0 + 0.05) * h * 1.2)
-        g.closePath()
-        g.fill()
-      }
-      g.restore()
-      // out of focus bokeh in teal and blue
-      for (let i = 0; i < 16; i++) {
-        const r = rand(14, 46)
-        glow(g, Math.random() * w, Math.random() * h, r, Math.random() < 0.5 ? 'rgba(90,200,255,0.16)' : 'rgba(120,255,220,0.10)')
-      }
-      // dark foliage glow along the bottom
-      glow(g, w * 0.15, h * 1.05, w * 0.6, 'rgba(0,30,25,0.8)')
-      glow(g, w * 0.9, h * 1.02, w * 0.55, 'rgba(0,26,30,0.8)')
+      // faint deep-blue depth, far out of focus
+      for (let i = 0; i < 7; i++) glow(g, Math.random() * w, Math.random() * h, rand(60, 140), 'rgba(40,120,200,0.07)')
+      // vignette
+      const vg = g.createRadialGradient(w / 2, h * 0.45, Math.min(w, h) * 0.3, w / 2, h * 0.45, Math.max(w, h) * 0.75)
+      vg.addColorStop(0, 'rgba(0,0,0,0)')
+      vg.addColorStop(1, 'rgba(0,4,10,0.55)')
+      g.fillStyle = vg
+      g.fillRect(0, 0, w, h)
       bg = c
-      const n = Math.max(2, Math.round(3 * dens))
-      flies = Array.from({ length: n }, (_, i) => ({ cx: rand(0, w), cy: h * (0.18 + (i / n) * 0.6), vx: rand(10, 22) * (Math.random() < 0.5 ? -1 : 1) * sp, ph: [rand(0, 6), rand(0, 6), rand(0, 6), rand(0, 6)], size: rand(30, 46), flap: rand(7, 10), trail: 0 }))
-      dust = Array.from({ length: Math.round(34 * dens) }, () => ({ x: Math.random() * w, y: Math.random() * h, vx: rand(-4, 4), vy: rand(-12, -4), age: rand(0, 6), life: rand(5, 9), r: rand(0.6, 1.6) }))
+      flies = Array.from({ length: 3 }, (_, i) => {
+        const f: Fly = {
+          x: rand(w * 0.15, w * 0.85), y: h * (0.2 + i * 0.28), vx: 0, vy: 0, tx: 0, ty: 0,
+          span: rand(22, 30), cruise: rand(34, 52) * sp, head: 0, ph: rand(0, 6.3),
+          beat: rand(9, 12) * Math.min(1.6, sp), flap: rand(0, 6.3), glide: 0, open: 1,
+        }
+        pick(f)
+        return f
+      })
+      specks = Array.from({ length: 10 }, () => ({ x: Math.random() * w, y: Math.random() * h, vx: rand(-3, 3), vy: rand(-7, -2), ph: rand(0, 6.3), r: rand(0.6, 1.2) }))
     },
     frame(g, t, dt) {
       if (bg) g.drawImage(bg, 0, 0, w, h)
-      for (const d of dust) {
-        d.age += dt
-        d.x += d.vx * dt
-        d.y += d.vy * dt
-        if (d.age > d.life || d.y < -10) Object.assign(d, { x: Math.random() * w, y: h + 5, age: 0 })
-        const a = Math.sin((d.age / d.life) * Math.PI)
-        glow(g, d.x, d.y, d.r * 5, `rgba(170,225,255,${0.45 * a})`)
+      for (const p of specks) {
+        p.x += p.vx * dt
+        p.y += p.vy * dt
+        if (p.y < -6) Object.assign(p, { x: Math.random() * w, y: h + 6 })
+        glow(g, p.x, p.y, p.r * 4, `rgba(160,215,255,${0.18 + 0.14 * Math.sin(t * 0.8 + p.ph)})`)
       }
       for (const f of flies) {
-        f.cx += f.vx * dt
-        if (f.cx < -80) f.cx = w + 60
-        if (f.cx > w + 80) f.cx = -60
-        const x = f.cx + Math.sin(t * 0.7 + f.ph[0]) * 40 + Math.sin(t * 1.9 + f.ph[1]) * 12
-        const y = f.cy + Math.sin(t * 0.9 + f.ph[2]) * 46 + Math.sin(t * 2.3 + f.ph[3]) * 10
-        const open = 0.22 + 0.78 * Math.abs(Math.cos(t * f.flap + f.ph[0]))
-        const tilt = Math.sin(t * 0.9 + f.ph[1]) * 0.35 + (f.vx > 0 ? 0.25 : -0.25)
-        f.trail -= dt
-        if (f.trail <= 0) {
-          f.trail = 0.06
-          motes.push({ x, y: y + 6, vx: rand(-8, 8), vy: rand(4, 16), age: 0, life: rand(0.9, 1.6), r: rand(0.6, 1.4) })
+        // steer toward a wandering waypoint, pick a new one when close
+        const dx = f.tx - f.x
+        const dy = f.ty - f.y
+        const d = Math.hypot(dx, dy)
+        if (d < 30) pick(f)
+        const gliding = f.glide > 0
+        const want = f.cruise * (gliding ? 0.7 : 1)
+        const wob = Math.sin(t * 1.3 + f.ph) * 0.9 + Math.sin(t * 3.1 + f.ph * 2) * 0.35
+        const ang = Math.atan2(dy, dx) + wob * 0.5
+        const k = Math.min(1, dt * 1.6)
+        f.vx += (Math.cos(ang) * want - f.vx) * k
+        f.vy += (Math.sin(ang) * want + (gliding ? 10 : 0) - f.vy) * k
+        f.x += f.vx * dt
+        f.y += f.vy * dt
+        // body follows the heading, softly
+        const target = Math.atan2(f.vy, f.vx) + Math.PI / 2
+        let dh = target - f.head
+        dh = Math.atan2(Math.sin(dh), Math.cos(dh))
+        f.head += dh * Math.min(1, dt * 3)
+        // flapping in bursts with short glides between
+        if (gliding) {
+          f.glide -= dt
+          f.open += (0.92 - f.open) * Math.min(1, dt * 8)
+        } else {
+          f.flap += dt * f.beat
+          f.open = 0.14 + 0.86 * Math.abs(Math.cos(f.flap))
+          if (Math.random() < dt * 0.35) f.glide = rand(0.5, 1.3)
         }
-        butterfly(g, x, y, f.size, open, tilt)
+        butterfly(g, f, gliding ? 0 : Math.sin(f.flap) * 1.4)
       }
-      motes = motes.filter((m) => {
-        m.age += dt
-        if (m.age >= m.life) return false
-        m.x += m.vx * dt
-        m.y += m.vy * dt
-        const a = 1 - m.age / m.life
-        glow(g, m.x, m.y, m.r * 4, `rgba(150,215,255,${0.7 * a})`)
-        return true
-      })
     },
   }
 }

@@ -12,7 +12,7 @@ import ChatScreen from './features/chat/ChatScreen'
 import { useRoomsUnread } from './features/rooms/rooms'
 import Toasts from './features/toasts/Toasts'
 import { Badge, Wordmark, useIsDesktop } from './ui/kit'
-import { IconLive, IconRooms } from './ui/icons'
+import { IconClose, IconLive, IconMegaphone, IconRooms } from './ui/icons'
 import { bindEdgeBack, bindVisualViewport, goBack, goHome, trackNav } from './features/shell/nav'
 import { MeButton } from './features/shell/MeSheet'
 import { refreshBlocks } from './lib/engine'
@@ -252,9 +252,9 @@ function Notice() {
   }
   return (
     <motion.button className="notice" onClick={hide} initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} aria-label="hide notice">
-      <span className="notice-ico" aria-hidden="true">📣</span>
+      <IconMegaphone className="notice-ico" size={20} />
       <span className="notice-text">{n.text}</span>
-      <span className="notice-x" aria-hidden="true">✕</span>
+      <IconClose className="notice-x" size={16} />
     </motion.button>
   )
 }
