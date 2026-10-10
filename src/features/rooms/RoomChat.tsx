@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { seasonOn } from '../../lib/season'
 import { peek } from '../profile/peek'
 import { Ink } from '../../ui/Ink'
 import { getDraft, setDraft } from '../../lib/drafts'
@@ -201,7 +202,7 @@ function Composer({ room }: { room: Room }) {
           <motion.div className="stk-tray" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={spring}>
             <div className="stk-tray-in">
               <div className="stk-grid">
-                {STICKERS.filter((st) => st.pack !== 'lust').map((st) => (
+                {STICKERS.filter((st) => st.pack !== 'lust' && (st.pack !== 'boo' || seasonOn('spooky'))).map((st) => (
                   <motion.button
                     key={st.id}
                     type="button"

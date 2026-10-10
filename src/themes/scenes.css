@@ -165,3 +165,17 @@
 /* the only filtered layer that moves: rasterize once, then just composite */
 .sc-bff .bf-stk { will-change: transform; }
 @media (prefers-reduced-motion: reduce) { .amb-wrap * { animation: none !important; } }
+
+/* ------------------------------------------------------------ spooky: moon, rolling fog, bats */
+.sc-spooky { --fog: rgba(120, 90, 160, .16); --bat: #E9DDF5; }
+.scheme-light .sc-spooky { --fog: rgba(255, 255, 255, .75); --bat: #2A1838; }
+.sc-spooky .sp-moon { position: absolute; top: 8%; right: 10%; width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle at 38% 38%, #FFF4D6, #FFC86B 72%); box-shadow: 0 0 46px 12px rgba(255, 190, 100, .22); opacity: .8; }
+.sc-spooky .sp-fog { position: absolute; left: -50%; width: 200%; height: 36%; bottom: -8%; background: radial-gradient(38% 58% at 22% 60%, var(--fog), transparent 70%), radial-gradient(32% 50% at 62% 50%, var(--fog), transparent 70%), radial-gradient(30% 54% at 88% 64%, var(--fog), transparent 70%); animation: sp-roll calc(40s / var(--spd, 1)) ease-in-out infinite alternate; will-change: transform; }
+.sc-spooky .sp-fog-b { bottom: 20%; height: 26%; opacity: .55; animation-duration: calc(56s / var(--spd, 1)); animation-direction: alternate-reverse; }
+@keyframes sp-roll { from { transform: translateX(0); } to { transform: translateX(24%); } }
+/* each track spans the scene so translate % is a share of its width */
+.sc-spooky .sp-track { position: absolute; left: 0; width: 100%; height: 0; animation: sp-fly calc(var(--d) / var(--spd, 1)) linear infinite; animation-delay: calc(var(--i) * -4.3s); will-change: transform; }
+.sc-spooky .sp-bat { position: absolute; left: -34px; fill: var(--bat); opacity: .85; animation: sp-flap .3s ease-in-out infinite alternate; }
+@keyframes sp-fly { 0% { transform: translate(-6%, 0); } 30% { transform: translate(30%, -16px); } 60% { transform: translate(66%, 8px); } 100% { transform: translate(112%, -6px); } }
+@keyframes sp-flap { from { transform: scaleY(1); } to { transform: scaleY(.3); } }
+@media (prefers-reduced-motion: reduce) { .sc-spooky * { animation: none !important; } }

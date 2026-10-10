@@ -3,7 +3,7 @@ import type { AvatarConfig } from '../ui/face'
 
 export type Gender = 'm' | 'f'
 
-export type HatId = 'none' | 'crown' | 'cap' | 'beanie' | 'halo' | 'bow' | 'tophat' | 'party'
+export type HatId = 'none' | 'crown' | 'cap' | 'beanie' | 'halo' | 'bow' | 'tophat' | 'party' | 'pumpkin' | 'witch' | 'ghost'
 export type CardId = 'ink' | 'gold' | 'rose' | 'grape' | 'mint' | 'sky'
 export type AuraId = 'none' | 'gold' | 'sunset' | 'galaxy' | 'sakura' | 'aurora' | 'hearts'
 /** Perk-only extras (server-validated). */
@@ -68,6 +68,7 @@ export const THEME_IDS = [
   'love',
   'bff',
   'lust',
+  'spooky',
 ] as const
 export type ThemeId = (typeof THEME_IDS)[number]
 

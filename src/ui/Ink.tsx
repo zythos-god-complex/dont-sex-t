@@ -2,7 +2,7 @@
 import { Fragment } from 'react'
 import { useStore } from '../lib/store'
 
-const SWEAR = /\b(f+u+c*k+\w*|f+k+|wtf|stfu|sh+i+t+\w*|b+i+t+c+h+\w*|a+s+s+h+o+l+e+s?|d+i+c+k+s?|p+u+s+s+y+|c+u+n+t+s?|c+o+c+k+s?|bastards?|sluts?|whores?|motherf\w*|mf|bc|mc|bkl|chut\w*|madarch\w*|behench\w*|bhench\w*|bhosd\w*|gand(u|oo)\w*|lund\w*|lawd\w*|rand(i|ii)\w*|harami\w*|kutt[ae]\w*)\b/gi
+const SWEAR = /\b(f+u+c*k+\w*|f+k+|wtf|stfu|sh+i+t+\w*|b+i+t+c+h+\w*|a+s+s+h+o+l+e+s?|d+i+c+k+s?|p+u+s+s+y+|c+u+n+t+s?|c+o+c+k+s?|bastards?|sluts?|whores?|motherf\w*|bkl|chut\w*|madarch\w*|behench\w*|bhench\w*|bhosd\w*|gand(u|oo)\w*|lund\w*|lawd\w*|rand(i|ii)\w*|harami\w*|kutt[ae]\w*)\b/gi
 
 export function Ink({ text }: { text: string }) {
   const clean = useStore((s) => s.me?.nsfw !== true)

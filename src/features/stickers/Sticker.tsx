@@ -213,7 +213,7 @@ function StickerImpl({ kind, name, size = 132 }: { kind: StickerKind; name: stri
         {fx.back}
       </span>
       <span className="stk-body">
-        <GoofyFace name={name} size={face} mood={meta.mood} blink={kind !== 'gn' && kind !== 'sad' && kind !== 'hate'} horns={HORNED.includes(kind) ? true : undefined} look={AWAY[kind]} />
+        <GoofyFace name={name} size={face} mood={meta.mood} blink={kind !== 'gn' && kind !== 'sad' && kind !== 'hate'} horns={HORNED.includes(kind) ? true : undefined} look={AWAY[kind]} hat={meta.hat} />
         {fx.body}
         {kind === 'hugs' && (
           <>

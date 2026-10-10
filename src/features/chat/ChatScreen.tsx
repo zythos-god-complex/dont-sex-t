@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { seasonOn } from '../../lib/season'
 import { Ink } from '../../ui/Ink'
 import { getDraft, setDraft } from '../../lib/drafts'
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
@@ -751,7 +752,7 @@ const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)
 
 function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversation; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; meId: string | null }) {
   const [tray, setTray] = useState(false)
-  const [trayTab, setTrayTab] = useState<'me' | 'us' | 'hate' | 'lust'>('me')
+  const [trayTab, setTrayTab] = useState<'me' | 'us' | 'hate' | 'lust' | 'boo'>('me')
   const [recording, setRecording] = useState(false)
   const myName = useMe()?.username ?? ''
   const spicyTray = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
@@ -877,6 +878,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
                     { id: 'me' as const, label: 'me' },
                     { id: 'us' as const, label: 'us two' },
                     { id: 'hate' as const, label: 'hate' },
+                    ...(seasonOn('spooky') ? [{ id: 'boo' as const, label: 'boo' }] : []),
                     ...(spicyTray ? [{ id: 'lust' as const, label: 'lust' }] : []),
                   ]}
                 />

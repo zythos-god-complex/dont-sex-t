@@ -1,6 +1,7 @@
+import { seasonOn } from '../lib/season'
 import type { CSSProperties } from 'react'
 
-export type Ambient = 'none' | 'petals' | 'stars' | 'bubbles' | 'leaves' | 'hearts' | 'sparkles' | 'aurora' | 'scanlines' | 'haze' | 'bats' | 'lovebeat' | 'party' | 'embers'
+export type Ambient = 'none' | 'petals' | 'stars' | 'bubbles' | 'leaves' | 'hearts' | 'sparkles' | 'aurora' | 'scanlines' | 'haze' | 'bats' | 'lovebeat' | 'party' | 'embers' | 'fog'
 
 export type ThemeDef = {
   id: string
@@ -253,6 +254,23 @@ const SPECS: ThemeSpec[] = [
     },
   },
   {
+    id: 'spooky', name: 'spooky', ambient: 'fog',
+    light: {
+      bg: 'radial-gradient(80% 50% at 50% 0%, rgba(255,138,30,.22) 0%, transparent 70%), linear-gradient(180deg, #E9DDF2 0%, #DCCDE8 60%, #CFC0DF 100%)',
+      ink: '#1D1029', meta: 'rgba(29,16,41,.58)', header: 'rgba(233,221,242,.86)',
+      sent: ['#FF9A3C', '#FF8A1E', '#EE7A0C'], sentInk: '#1D1029',
+      recv: '#FFFFFF', recvInk: '#1D1029', accent: '#5B2A86', accentInk: '#FFFFFF',
+      composer: '#F6F0FA', composerInk: '#1D1029',
+    },
+    dark: {
+      bg: 'radial-gradient(70% 45% at 50% 0%, rgba(255,138,30,.14) 0%, transparent 70%), linear-gradient(180deg, #1A1024 0%, #110A18 60%, #0A0610 100%)',
+      ink: '#EEE6F5', meta: 'rgba(238,230,245,.52)', header: 'rgba(14,8,20,.86)',
+      sent: ['#3A2148', '#331D40', '#2B1836'], sentInk: '#FFA347',
+      recv: '#21152B', recvInk: '#EEE6F5', accent: '#FF8A1E', accentInk: '#1A0F00',
+      composer: '#1A1122', composerInk: '#EEE6F5',
+    },
+  },
+  {
     id: 'love', name: 'love', ambient: 'lovebeat',
     light: {
       bg: 'radial-gradient(90% 55% at 50% 115%, #FFB0C4 0%, transparent 62%), radial-gradient(70% 45% at 0% 0%, #FFD9E3 0%, transparent 60%), radial-gradient(60% 40% at 100% 20%, #FFE3EA 0%, transparent 60%), #FFF2F5',
@@ -321,11 +339,11 @@ const byId = new Map(SPECS.map((t) => [t.id, t]))
 export const THEME_IDS = SPECS.map((t) => t.id)
 
 export function getTheme(id: string | null | undefined, mode: ThemeMode = currentMode): ThemeDef {
-  return build((id && byId.get(id)) || SPECS[0], mode)
+  return build((id && (id !== 'spooky' || seasonOn('spooky')) && byId.get(id)) || SPECS[0], mode)
 }
 
 export function themeList(mode: ThemeMode = currentMode): ThemeDef[] {
-  return SPECS.map((s) => build(s, mode))
+  return SPECS.filter((s) => s.id !== 'spooky' || seasonOn('spooky')).map((s) => build(s, mode))
 }
 
 /** Back compat: theme list in the current mode. */

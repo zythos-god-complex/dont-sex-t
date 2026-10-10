@@ -365,6 +365,7 @@ export function faceTilt(username: string | null | undefined, range = 1.5): numb
 export type TopKind = 'none' | 'antenna' | 'sprout'
 export type AvatarConfig = {
   v: 1
+  hat?: import('../lib/season').SeasonHat | null
   color: string
   blob: BlobKind
   eyes: EyeKind
