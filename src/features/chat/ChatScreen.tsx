@@ -29,7 +29,7 @@ import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, nee
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight } from '../../ui/icons'
+import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight, IconGhost, IconHi } from '../../ui/icons'
 import { getTheme, themeList, themeVars } from '../../themes/themes'
 import { flipModeFrom, useThemeMode } from '../../themes/mode'
 import { flushSync } from 'react-dom'
@@ -702,8 +702,8 @@ function EmptyChat({ conv, now, sinceOnline, online }: { conv: Conversation; now
       <GoofyFace name={conv.peer.username} size={124} look={{ x: 0, y: 0.9 }} />
       <p className="chat-empty-name">{conv.peer.username}</p>
       {sub && <p className="chat-empty-sub">{sub}</p>}
-      <motion.button className="say-hi" whileTap={{ scale: 0.94 }} onClick={() => sendMessage(conv.id, 'hi 👋')}>
-        👋 say hi
+      <motion.button className="say-hi" whileTap={{ scale: 0.94 }} onClick={() => sendMessage(conv.id, 'hi')}>
+        <IconHi size={20} /> say hi
       </motion.button>
     </motion.div>
   )
@@ -727,7 +727,7 @@ function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: C
       </>
     )
   else if (conv.blocked === 'them') content = <p>you can't reply to this chat</p>
-  else if (ghost && !conv.status) content = <p>👻 ghosts can only reply</p>
+  else if (ghost && !conv.status) content = <p className="ghost-only"><IconGhost size={16} /> ghosts can only reply</p>
   else if (conv.status === 'pending' && conv.requester === meId)
     content = (
       <p>

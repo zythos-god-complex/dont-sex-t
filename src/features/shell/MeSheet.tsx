@@ -12,7 +12,7 @@ import { forgetMe, logout, setBlocked, useBlocks, makeKey, renameMe, saveAvatar,
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle } from '../../ui/kit'
-import { IconBrush } from '../../ui/icons'
+import { IconBrush, IconCrown } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { FaceBuilder } from '../onboarding/FaceBuilder'
 import { ProfileCardView } from '../profile/ProfileCard'
@@ -457,7 +457,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
       <Blocked />
       {me.admin && (
         <button type="button" className="me-admin" onClick={() => { onClose(); nav('/admin') }}>
-          👑 control room
+          <IconCrown size={18} /> control room
         </button>
       )}
       <button type="button" className="fb-done" style={{ marginTop: 18 }} onClick={onClose}>

@@ -1,5 +1,6 @@
 // Toy box + 1:1 games. Results come from the server (gat_toy / gat_game_*); this only draws them.
-import { useEffect, useState } from 'react'
+import { IconDice, IconCoin, IconEightBall, IconTruth, IconFlame, IconRock, IconPaper, IconScissors, IconTicTacToe, IconTrophy } from '../../ui/icons'
+import { useEffect, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { gameMove, loadGame, sendToy, startGame, useGames, type Game } from '../../lib/engine'
 
@@ -83,7 +84,7 @@ export function ToyBubble({ toy, fresh }: { toy: Toy; fresh?: boolean }) {
 // game taps must not open the bubble menu or count toward the confetti taps
 const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
 
-const RPS: Record<string, string> = { rock: '✊', paper: '✋', scissors: '✌️' }
+const RPS: Record<string, ReactNode> = { rock: <IconRock size={26} />, paper: <IconPaper size={26} />, scissors: <IconScissors size={26} /> }
 
 export function GameBubble({ id, meId, peerName }: { id: string; meId: string | null; peerName: string }) {
   const g = useGames((s) => s[id])
@@ -128,7 +129,7 @@ function Rps({ g, side, other, peerName, busy, move, again }: GP & { other: 'a' 
       )}
       {g.done ? (
         <div className="game-end">
-          <b>{mine > theirs ? 'you win 🏆' : `${peerName} wins`}</b>
+          <b>{mine > theirs ? <>you win <IconTrophy size={16} /></> : `${peerName} wins`}</b>
           <button type="button" className="game-btn" onClick={again}>
             rematch
           </button>
@@ -172,7 +173,7 @@ function Ttt({ g, side, peerName, busy, move, again }: GP) {
       </div>
       {g.done ? (
         <div className="game-end">
-          <b>{st.winner === 'draw' ? 'draw 🤝' : st.winner === side ? 'you win 🏆' : `${peerName} wins`}</b>
+          <b>{st.winner === 'draw' ? 'draw' : st.winner === side ? <>you win <IconTrophy size={16} /></> : `${peerName} wins`}</b>
           <button type="button" className="game-btn" onClick={again}>
             rematch
           </button>
@@ -186,14 +187,14 @@ function Ttt({ g, side, peerName, busy, move, again }: GP) {
 
 /** The toys tab in the sticker tray. The 8-ball takes whatever you typed as the question. */
 export function ToyGrid({ convId, question, onUsed }: { convId: string; question: string; onUsed: (clearText: boolean) => void }) {
-  const items: { id: string; label: string; ico: string; go: () => Promise<void>; clear?: boolean }[] = [
-    { id: 'dice', label: 'dice', ico: '🎲', go: () => sendToy(convId, 'dice') },
-    { id: 'coin', label: 'coin', ico: '🪙', go: () => sendToy(convId, 'coin') },
-    { id: '8ball', label: '8-ball', ico: '🎱', go: () => sendToy(convId, '8ball', question), clear: true },
-    { id: 'truth', label: 'truth', ico: '🤔', go: () => sendToy(convId, 'truth') },
-    { id: 'dare', label: 'dare', ico: '😈', go: () => sendToy(convId, 'dare') },
-    { id: 'rps', label: 'rock paper scissors', ico: '✊', go: () => startGame(convId, 'rps') },
-    { id: 'ttt', label: 'tic tac toe', ico: '⭕', go: () => startGame(convId, 'ttt') },
+  const items: { id: string; label: string; ico: ReactNode; go: () => Promise<void>; clear?: boolean }[] = [
+    { id: 'dice', label: 'dice', ico: <IconDice size={28} />, go: () => sendToy(convId, 'dice') },
+    { id: 'coin', label: 'coin', ico: <IconCoin size={28} />, go: () => sendToy(convId, 'coin') },
+    { id: '8ball', label: '8-ball', ico: <IconEightBall size={28} />, go: () => sendToy(convId, '8ball', question), clear: true },
+    { id: 'truth', label: 'truth', ico: <IconTruth size={28} />, go: () => sendToy(convId, 'truth') },
+    { id: 'dare', label: 'dare', ico: <IconFlame size={28} />, go: () => sendToy(convId, 'dare') },
+    { id: 'rps', label: 'rock paper scissors', ico: <IconScissors size={28} />, go: () => startGame(convId, 'rps') },
+    { id: 'ttt', label: 'tic tac toe', ico: <IconTicTacToe size={28} />, go: () => startGame(convId, 'ttt') },
   ]
   return (
     <div className="toy-grid">

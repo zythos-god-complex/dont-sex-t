@@ -8,7 +8,7 @@ import { useStore } from '../../lib/store'
 import { ago, duration } from '../../lib/format'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots } from '../../ui/kit'
-import { IconBack } from '../../ui/icons'
+import { IconBack, IconFlag } from '../../ui/icons'
 import { ProfileCardView } from '../profile/ProfileCard'
 import { goHome } from '../shell/nav'
 import './admin.css'
@@ -262,7 +262,7 @@ function seen(r: Row, online: boolean): string {
 function Tags({ r }: { r: Row }) {
   return (
     <>
-      {r.reports > 0 && <i className="adm-tag is-red">{r.reports} 🚩</i>}
+      {r.reports > 0 && <i className="adm-tag is-red"><IconFlag size={11} strokeWidth={2.6} /> {r.reports}</i>}
       {r.until && <i className="adm-tag is-red">timeout</i>}
       {r.banned && <i className="adm-tag">gone</i>}
       {r.admin && <i className="adm-tag is-gold">admin</i>}
@@ -504,7 +504,7 @@ function Reports({ bump, open, onChange }: { bump: number; open: (id: string) =>
       {list === null ? (
         <Loading />
       ) : list.length === 0 ? (
-        <p className="adm-empty">{s === 'open' ? 'all quiet 😌' : 'nothing sorted yet'}</p>
+        <p className="adm-empty">{s === 'open' ? 'all quiet' : 'nothing sorted yet'}</p>
       ) : (
         list.map((r) => (
           <article key={r.id} className="adm-rep">

@@ -1,5 +1,6 @@
 // Steam / Discord style profile card. Everyone gets the basic card; perk users get their card colours,
 // live banner and bio.
+import { IconHi } from '../../ui/icons'
 import { useStore } from '../../lib/store'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useMe } from '../../lib/hooks'
@@ -59,7 +60,7 @@ function Report({ name }: { name: string }) {
     setState('busy')
     report(name, r).then(() => setState('done'), (e) => setState(isApiError(e, 'rate_limited') ? 'limit' : 'pick'))
   }
-  if (state === 'done') return <span className="rp-done">reported 🫡</span>
+  if (state === 'done') return <span className="rp-done">reported</span>
   if (state === 'limit') return <span className="rp-done">easy there, try tomorrow</span>
   if (state === 'idle')
     return (
@@ -140,8 +141,8 @@ export function ProfileCard({ name, id, sub, open, onClose, chat = false }: { na
           <button type="button" className="pc-hi" onClick={() => open2(icebreaker(), false)}>
             say hi
           </button>
-          <button type="button" className="pc-wave" onClick={() => open2('👋', true)} aria-label="wave">
-            👋
+          <button type="button" className="pc-wave" onClick={() => open2('[[sticker:hey]]', true)} aria-label="wave">
+            <IconHi size={24} />
           </button>
         </div>
       )}

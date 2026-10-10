@@ -1,4 +1,5 @@
 // Ink flame on chats where both people talk every day; droops after 8pm if today isn't kept yet.
+import { IconHourglass } from './icons'
 import type { CSSProperties } from 'react'
 import { usePulse } from '../lib/pulse'
 
@@ -21,7 +22,7 @@ export function Melt({ convId }: { convId: string }) {
   if (!m) return null
   return (
     <span className="melt" aria-label="melting soon">
-      ⏳
+      <IconHourglass size={13} strokeWidth={2.4} />
     </span>
   )
 }
