@@ -67,3 +67,5 @@
 .fl-bio:focus { outline: none; border-color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) { .aura *, .aura-flow { animation: none !important; } }
+.aura-matrix { background: #000; }
+.aura-matrix::after { background: linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,.2) 65%, transparent); }

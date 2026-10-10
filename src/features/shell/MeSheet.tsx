@@ -167,7 +167,7 @@ function FlairEditor() {
       </div>
       <h3 className="settings-label">nameplate</h3>
       <div className="fl-chips">
-        {AURAS.map((a) => (
+        {AURAS.filter((a) => a !== 'matrix' || me.admin).map((a) => (
           <button key={a} type="button" className={'fl-chip' + ((f.aura ?? 'none') === a ? ' is-on' : '')} aria-label={a} onClick={() => void saveFlair({ aura: a })}>
             {a === 'none' ? 'off' : <Aura id={a} />}
           </button>

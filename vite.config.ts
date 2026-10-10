@@ -3,7 +3,15 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // Every build gets an id; open tabs poll /version.json and offer a refresh when it changes.
-const BUILD_ID = Date.now().toString(36)
+// a silent release (release.json { silent: true, keep: <live id> }) keeps the live id, so no update popup anywhere
+const REL = (() => {
+  try {
+    return JSON.parse(readFileSync('release.json', 'utf8')) as { silent?: boolean; keep?: string }
+  } catch {
+    return {}
+  }
+})()
+const BUILD_ID = REL.silent && REL.keep ? REL.keep : Date.now().toString(36)
 
 function versionFile(): Plugin {
   return {

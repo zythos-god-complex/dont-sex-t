@@ -1261,7 +1261,7 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
         {themeOpen && (
           <motion.div className="theme-drop" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 36 }}>
       <div className="swatches">
-        {themeList(mode).map((t) => {
+        {themeList(mode).filter((t) => t.id !== 'matrix' || useStore.getState().me?.admin).map((t) => {
           const on = t.id === conv.theme
           return (
             <motion.button key={t.id} className={'swatch' + (on ? ' is-on' : '')} onClick={(e) => {

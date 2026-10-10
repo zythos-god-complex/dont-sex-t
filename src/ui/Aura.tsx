@@ -1,4 +1,5 @@
 // Live nameplate backgrounds for perk users. Fill the nearest positioned parent; transform + opacity only.
+import { MatrixRain } from '../themes/MatrixRain'
 import type { CSSProperties } from 'react'
 import type { AuraId, CardId } from '../lib/types'
 
@@ -6,6 +7,12 @@ const SPRINKLES: Partial<Record<AuraId, number>> = { gold: 4, galaxy: 7, sakura:
 
 export function Aura({ id }: { id: AuraId | undefined }) {
   if (!id || id === 'none') return null
+  if (id === 'matrix')
+    return (
+      <span className="aura aura-matrix" aria-hidden="true">
+        <MatrixRain size={10} fps={14} />
+      </span>
+    )
   const n = SPRINKLES[id] ?? 0
   return (
     <span className={'aura aura-' + id} aria-hidden="true">
@@ -17,7 +24,7 @@ export function Aura({ id }: { id: AuraId | undefined }) {
   )
 }
 
-export const AURAS: AuraId[] = ['none', 'gold', 'sunset', 'galaxy', 'sakura', 'aurora', 'hearts']
+export const AURAS: AuraId[] = ['none', 'gold', 'sunset', 'galaxy', 'sakura', 'aurora', 'hearts', 'matrix']
 export const CARDS: { id: CardId; bg: string; edge: string }[] = [
   { id: 'ink', bg: '#16141C', edge: '#3A3646' },
   { id: 'gold', bg: '#1E1608', edge: '#C99A2E' },

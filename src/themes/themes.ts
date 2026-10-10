@@ -1,7 +1,7 @@
 import { seasonOn } from '../lib/season'
 import type { CSSProperties } from 'react'
 
-export type Ambient = 'none' | 'petals' | 'stars' | 'bubbles' | 'leaves' | 'hearts' | 'sparkles' | 'aurora' | 'scanlines' | 'haze' | 'bats' | 'lovebeat' | 'party' | 'embers' | 'fog'
+export type Ambient = 'none' | 'petals' | 'stars' | 'bubbles' | 'leaves' | 'hearts' | 'sparkles' | 'aurora' | 'scanlines' | 'haze' | 'bats' | 'lovebeat' | 'party' | 'embers' | 'fog' | 'matrix'
 
 export type ThemeDef = {
   id: string
@@ -268,6 +268,23 @@ const SPECS: ThemeSpec[] = [
       sent: ['#3A2148', '#331D40', '#2B1836'], sentInk: '#FFA347',
       recv: '#21152B', recvInk: '#EEE6F5', accent: '#FF8A1E', accentInk: '#1A0F00',
       composer: '#1A1122', composerInk: '#EEE6F5',
+    },
+  },
+  {
+    id: 'matrix', name: 'matrix', ambient: 'matrix', mono: true,
+    light: {
+      bg: '#000000',
+      ink: '#B8FFC4', meta: 'rgba(0,255,65,.55)', header: 'rgba(0,0,0,.86)',
+      sent: ['#00FF41', '#00E63B', '#00C934'], sentInk: '#001A06',
+      recv: 'rgba(3,22,9,.92)', recvInk: '#00FF41', accent: '#00FF41', accentInk: '#000000',
+      composer: '#020B04', composerInk: '#00FF41',
+    },
+    dark: {
+      bg: '#000000',
+      ink: '#B8FFC4', meta: 'rgba(0,255,65,.55)', header: 'rgba(0,0,0,.86)',
+      sent: ['#00FF41', '#00E63B', '#00C934'], sentInk: '#001A06',
+      recv: 'rgba(3,22,9,.92)', recvInk: '#00FF41', accent: '#00FF41', accentInk: '#000000',
+      composer: '#020B04', composerInk: '#00FF41',
     },
   },
   {

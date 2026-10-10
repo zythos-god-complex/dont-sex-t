@@ -5,7 +5,7 @@ export type Gender = 'm' | 'f'
 
 export type HatId = 'none' | 'crown' | 'cap' | 'beanie' | 'halo' | 'bow' | 'tophat' | 'party' | 'pumpkin' | 'witch' | 'ghost'
 export type CardId = 'ink' | 'gold' | 'rose' | 'grape' | 'mint' | 'sky'
-export type AuraId = 'none' | 'gold' | 'sunset' | 'galaxy' | 'sakura' | 'aurora' | 'hearts'
+export type AuraId = 'matrix' | 'none' | 'gold' | 'sunset' | 'galaxy' | 'sakura' | 'aurora' | 'hearts'
 /** Perk-only extras (server-validated). */
 export type Flair = { hat?: HatId; bio?: string; card?: CardId; aura?: AuraId }
 export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean; nsfw?: boolean; vip?: boolean; flair?: Flair | null; admin?: boolean }
@@ -69,6 +69,7 @@ export const THEME_IDS = [
   'bff',
   'lust',
   'spooky',
+  'matrix',
 ] as const
 export type ThemeId = (typeof THEME_IDS)[number]
 

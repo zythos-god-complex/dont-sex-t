@@ -1,4 +1,5 @@
 import { memo, type CSSProperties } from 'react'
+import { MatrixRain } from './MatrixRain'
 import type { Ambient as AmbientKind } from './themes'
 import { useAmbientPrefs } from './ambientPrefs'
 import { BatmanScene, BffScene, LoveScene, LustScene, SpookyScene } from './scenes'
@@ -28,6 +29,7 @@ function AmbientImpl({ kind, spicy = false }: { kind: AmbientKind; spicy?: boole
   if (kind === 'bats') return <div style={spd} className="amb-wrap"><BatmanScene /></div>
   if (kind === 'lovebeat') return <div style={spd} className="amb-wrap"><LoveScene n={n} /></div>
   if (kind === 'party') return <div style={spd} className="amb-wrap"><BffScene n={n} /></div>
+  if (kind === 'matrix') return <div className="amb-wrap amb-matrix" aria-hidden="true"><MatrixRain /></div>
   if (kind === 'fog') return <div style={spd} className="amb-wrap"><SpookyScene n={n} /></div>
   if (kind === 'embers') return <div style={spd} className="amb-wrap"><LustScene n={n} spicy={spicy} /></div>
   return (
