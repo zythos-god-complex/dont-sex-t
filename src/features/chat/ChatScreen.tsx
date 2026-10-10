@@ -30,7 +30,7 @@ import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
 import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight, IconGhost, IconHi } from '../../ui/icons'
-import { getTheme, themeList, themeVars } from '../../themes/themes'
+import { EMBER_THEMES, getTheme, themeList, themeVars } from '../../themes/themes'
 import { flipModeFrom, useThemeMode } from '../../themes/mode'
 import { flushSync } from 'react-dom'
 import { goHome } from '../shell/nav'
@@ -1260,6 +1260,7 @@ function PinRow({ convId }: { convId: string }) {
 function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => void }) {
   const mode = useThemeMode()
   const [themeOpen, setThemeOpen] = useState(false)
+  const [themeTab, setThemeTab] = useState<'default' | 'ember'>(EMBER_THEMES.includes(conv.theme ?? '') ? 'ember' : 'default')
   const push = usePushState(conv.id)
   const busy = usePushBusy()
   const hint = push === 'needs-install' ? 'share ⬆︎ then add to home screen, open it from there' : push === 'denied' ? 'blocked in browser settings' : push === 'unsupported' ? 'not supported in this browser' : null
@@ -1282,8 +1283,19 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
       <AnimatePresence initial={false}>
         {themeOpen && (
           <motion.div className="theme-drop" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 36 }}>
-      <div className="swatches">
-        {themeList(mode).filter((t) => t.id !== 'matrix' || useStore.getState().me?.admin).map((t) => {
+      <div className="theme-tabs">
+        <Segmented
+          layoutId="theme-tab"
+          value={themeTab}
+          onChange={setThemeTab}
+          items={[
+            { id: 'default', label: 'default' },
+            { id: 'ember', label: 'ember' },
+          ]}
+        />
+      </div>
+      <div className="swatches" key={themeTab}>
+        {themeList(mode).filter((t) => (t.id !== 'matrix' || useStore.getState().me?.admin) && EMBER_THEMES.includes(t.id) === (themeTab === 'ember')).map((t) => {
           const on = t.id === conv.theme
           return (
             <motion.button key={t.id} className={'swatch' + (on ? ' is-on' : '')} onClick={(e) => {

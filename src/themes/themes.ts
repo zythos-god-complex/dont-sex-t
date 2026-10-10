@@ -409,6 +409,9 @@ export function getTheme(id: string | null | undefined, mode: ThemeMode = curren
   return build((id && byId.get(id)) || SPECS[0], mode)
 }
 
+/** the night themes made for Ember, shown on their own tab in the picker */
+export const EMBER_THEMES = ['meteor', 'temple', 'sakuranight', 'butterfly']
+
 export function themeList(mode: ThemeMode = currentMode): ThemeDef[] {
   return SPECS.map((s) => build(s, mode))
 }
