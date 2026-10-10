@@ -61,16 +61,20 @@ function tree(g: CanvasRenderingContext2D, x: number, y: number, ang: number, le
   if (depth >= 2) tips.push([ex, ey])
 }
 
+type Tree = { c: HTMLCanvasElement; x0: number; y0: number; bw: number; bh: number; px: number; py: number; side: number; ph: number }
+
 function makeSakura({ amount, speed }: Opts): Scene {
   let w = 0
   let h = 0
   let bg: HTMLCanvasElement | null = null
+  let trees: Tree[] = []
   let petals: Petal[] = []
   let lamps: { x: number; y: number; r: number; p: number }[] = []
   // blossom spots on both trees (x, y, which way the tree leans in) for the four-tap petal shower
   let canopy: [number, number, number][] = []
   let queue = 0
-  let gust = 0
+  let shook = -1
+  let now = 0
   const dens = density(amount)
   const sp = pace(speed)
   const make = (top: boolean): Petal => ({
@@ -127,50 +131,89 @@ function makeSakura({ amount, speed }: Opts): Scene {
       for (let i = 0; i < 7; i++) glow(g, mx + rand(-1, 1) * w * 0.35, my + rand(0.4, 1.6) * mr * 2, rand(40, 90), 'rgba(120,140,230,0.10)')
       hills(g, w, h, h * 0.8, h * 0.08, '#18204E', 1.3)
       hills(g, w, h, h * 0.88, h * 0.06, '#0F1536', 3.1)
+      bg = c
       // a lantern lit lane fading to the horizon
       lamps = Array.from({ length: 7 }, (_, i) => {
         const k = i / 6
         return { x: w * (0.5 + (i % 2 ? 1 : -1) * (0.08 + k * 0.4)), y: h * (0.78 + k * 0.17), r: 10 + k * 38, p: rand(0, 6) }
       })
-      // two blossom trees framing the top corners, grown branch by branch
+      // two blossom trees framing the top corners, each on its own layer so it can sway from the trunk
       canopy = []
+      trees = []
       for (const [x, y, ang, len, wid] of [[-w * 0.03, h * 0.44, -1.22, Math.min(h * 0.14, w * 0.3), 12], [w * 1.03, h * 0.34, -1.92, Math.min(h * 0.12, w * 0.26), 10]] as const) {
+        // grow once on a scratch canvas to learn the shape, then paint it for real on a cropped layer
         const tips: [number, number][] = []
-        tree(g, x, y, ang, len, wid, 0, tips)
-        for (const [tx, ty] of tips) canopy.push([tx, ty, x < w / 2 ? 1 : -1])
-        for (const [tx, ty] of tips) glow(g, tx, ty, rand(26, 44), 'rgba(235,120,175,0.22)')
+        const scratch = document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D
+        const state = Math.random
+        const seed = (Math.random() * 233280) | 0
+        let s0 = seed
+        const replay = () => (s0 = (s0 * 9301 + 49297) % 233280) / 233280
+        Math.random = replay
+        tree(scratch, x, y, ang, len, wid, 0, tips)
+        Math.random = state
+        const m = 70
+        const xs = [x, ...tips.map((p) => p[0])]
+        const ys = [y, ...tips.map((p) => p[1])]
+        const x0 = Math.floor(Math.min(...xs) - m)
+        const y0 = Math.floor(Math.min(...ys) - m)
+        const bw = Math.ceil(Math.max(...xs) + m) - x0
+        const bh = Math.ceil(Math.max(...ys) + m) - y0
+        const [tc, tg] = layer(bw, bh)
+        tg.translate(-x0, -y0)
+        tips.length = 0
+        s0 = seed
+        Math.random = replay
+        tree(tg, x, y, ang, len, wid, 0, tips)
+        Math.random = state
+        for (const [tx, ty] of tips) glow(tg, tx, ty, rand(26, 44), 'rgba(235,120,175,0.22)')
         for (const [tx, ty] of tips) {
           const n = 7 + ((Math.random() * 7) | 0)
           for (let i = 0; i < n; i++) {
             const a = rand(0, 6.3)
             const d = Math.random() * 20
             const lit = ty < h * 0.25 ? 1 : 0
-            flower(g, tx + Math.cos(a) * d, ty + Math.sin(a) * d * 0.8, rand(3.4, 6.4), PINKS[(Math.random() * (PINKS.length - lit)) | 0], rand(0, 6.3))
+            flower(tg, tx + Math.cos(a) * d, ty + Math.sin(a) * d * 0.8, rand(3.4, 6.4), PINKS[(Math.random() * (PINKS.length - lit)) | 0], rand(0, 6.3))
           }
         }
+        const side = x < w / 2 ? 1 : -1
+        for (const [tx, ty] of tips) canopy.push([tx, ty, side])
+        trees.push({ c: tc, x0, y0, bw, bh, px: x, py: y, side, ph: rand(0, 6.3) })
       }
-      bg = c
       petals = Array.from({ length: Math.round(30 * dens) }, () => make(false))
     },
+    points() {
+      return canopy.map(([x, y]) => [x, y] as [number, number])
+    },
     frame(g, t, dt) {
+      now = t
       if (bg) g.drawImage(bg, 0, 0, w, h)
-      // the shower: petals peel off the canopies over about a second, pushed inward by a gust that dies down
+      for (const l of lamps) {
+        const f = 0.85 + 0.15 * Math.sin(t * 3 + l.p) * Math.sin(t * 1.7 + l.p * 2)
+        glow(g, l.x, l.y, l.r * 2.4, 'rgba(255,170,90,0.28)', f)
+        glow(g, l.x, l.y, l.r * 0.5, 'rgba(255,225,170,0.95)', f)
+      }
+      // trees breathe in the night air; after four taps a gust rocks them and slowly settles
+      const since = shook < 0 ? 99 : t - shook
+      const gust = since < 6 ? (1 - Math.exp(-since * 9)) * Math.exp(-since * 0.9) : 0
+      for (const tr of trees) {
+        const a = tr.side * (0.006 * Math.sin(t * 0.7 + tr.ph) + gust * (0.05 * Math.sin(since * 6.2 + tr.ph) + 0.025))
+        g.save()
+        g.translate(tr.px, tr.py)
+        g.rotate(a)
+        g.translate(-tr.px, -tr.py)
+        g.drawImage(tr.c, tr.x0, tr.y0, tr.bw, tr.bh)
+        g.restore()
+      }
+      // a handful of petals let go behind the bubbles too, the rest fall on the chat from the overlay
       if (queue > 0 && canopy.length) {
-        const n = Math.min(queue, Math.ceil(dt * 130))
+        const n = Math.min(queue, Math.ceil(dt * 50))
         queue -= n
         for (let i = 0; i < n; i++) {
           const [cx, cy, side] = canopy[(Math.random() * canopy.length) | 0]
           const a = rand(0, 6.3)
           const d = Math.random() * 22
-          const bx = rand(-30, -10) * sp
-          petals.push({ ...make(false), x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d * 0.8, vx: side * rand(30, 95) * (0.6 + gust * 0.6), vy: rand(-6, 14), vr: rand(-3, 3), vf: rand(2.5, 5), once: { bx, vy: rand(34, 70) * sp } })
+          petals.push({ ...make(false), x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d * 0.8, vx: side * rand(25, 80), vy: rand(-6, 14), vr: rand(-3, 3), vf: rand(2.5, 5), once: { bx: rand(-30, -10) * sp, vy: rand(34, 70) * sp } })
         }
-      }
-      gust = Math.max(0, gust - dt / 3)
-      for (const l of lamps) {
-        const f = 0.85 + 0.15 * Math.sin(t * 3 + l.p) * Math.sin(t * 1.7 + l.p * 2)
-        glow(g, l.x, l.y, l.r * 2.4, 'rgba(255,170,90,0.28)', f)
-        glow(g, l.x, l.y, l.r * 0.5, 'rgba(255,225,170,0.95)', f)
       }
       let gone = false
       for (const p of petals) {
@@ -180,7 +223,7 @@ function makeSakura({ amount, speed }: Opts): Scene {
           p.vx += (p.once.bx - p.vx) * k
           p.vy += (p.once.vy - p.vy) * k
         }
-        p.x += (p.vx + Math.sin(t * 0.8 + p.flip) * 14) * dt
+        p.x += (p.vx + Math.sin(t * 0.8 + p.flip) * 14 - gust * 40) * dt
         p.y += p.vy * dt
         p.rot += p.vr * dt
         p.flip += p.vf * dt
@@ -207,10 +250,9 @@ function makeSakura({ amount, speed }: Opts): Scene {
     },
     fx(f) {
       if (f !== 'bloom') return
-      const lite = document.documentElement.dataset.lite === '1'
+      shook = now
       const extra = petals.filter((p) => p.once).length
-      queue = Math.max(0, Math.min(lite ? 70 : 140, (lite ? 90 : 180) - extra))
-      gust = 1
+      queue = Math.max(0, Math.min(document.documentElement.dataset.lite === '1' ? 25 : 50, 70 - extra))
     },
   }
 }

@@ -1,7 +1,7 @@
 // One canvas per signature scene: a static layer painted on resize, a light per-frame layer on top.
 // Pauses when the tab is hidden, caps fps and pixel ratio, draws one frame for reduced motion.
 import { useEffect, useRef } from 'react'
-import { onFx, type Fx } from './fx'
+import { onFx, setFxSource, type Fx } from './fx'
 
 export type Scene = {
   /** (re)build anything that only depends on size */
@@ -9,6 +9,18 @@ export type Scene = {
   /** draw one frame; t in seconds, dt seconds since the last frame */
   frame(g: CanvasRenderingContext2D, t: number, dt: number): void
   fx?(f: Fx): void
+  /** canvas spots a theme moment starts from (the sakura canopies), handed to the overlay in screen coords */
+  points?(): [number, number][]
+}
+
+/** tiny seeded generator: init runs on it so a scene grows the same trees and stars every time it mounts or resizes */
+function seeded(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
 }
 
 export function SceneCanvas({ make, fps = 30 }: { make: () => Scene; fps?: number }) {
@@ -28,13 +40,26 @@ export function SceneCanvas({ make, fps = 30 }: { make: () => Scene; fps?: numbe
       cv.width = Math.round(w * dpr)
       cv.height = Math.round(h * dpr)
       g.setTransform(dpr, 0, 0, dpr, 0, 0)
-      scene.init(w, h)
+      const real = Math.random
+      Math.random = seeded(7)
+      try {
+        scene.init(w, h)
+      } finally {
+        Math.random = real
+      }
       if (still) scene.frame(g, 0, 0)
     }
     fit()
     const ro = new ResizeObserver(fit)
     ro.observe(cv)
-    const off = onFx((f) => scene.fx?.(f))
+    const offFx = onFx((f) => scene.fx?.(f))
+    const offSrc = scene.points
+      ? setFxSource(() => {
+          const r = cv.getBoundingClientRect()
+          return scene.points!().map(([x, y]) => [x + r.left, y + r.top] as [number, number])
+        })
+      : () => {}
+    const off = () => (offFx(), offSrc())
     if (still) return () => (ro.disconnect(), off())
     const every = 1000 / (lite ? Math.min(fps, 24) : fps)
     let raf = 0

@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import { WishCard, WishSheet, isWishReply, wishOf } from '../toys/Wish'
-import { FX_BY_THEME, fireFx } from '../../themes/fx'
+import { FX_BY_THEME, fireFx, fxSource } from '../../themes/fx'
 import { GameBubble, ToyBubble, ToyGrid, gameOf, toyOf } from '../toys/Toys'
 import { shareSticker } from '../stickers/share'
 import { Flame } from '../../ui/Flame'
@@ -118,6 +118,7 @@ function ChatView({ conv }: { conv: Conversation }) {
         fireFx(fx)
         if (fx === 'thunder') navigator.vibrate?.([30, 50, 80])
         if (fx === 'wish') setTimeout(() => setWishOpen(true), 1500)
+        if (fx === 'bloom') confetti.current?.shower(fxSource(), landing)
       } else confetti.current?.burst(k.x, k.y, landing)
       sendConfetti(conv.id, { x: Math.min(1, Math.max(0, k.x / window.innerWidth)), y: Math.min(1, Math.max(0, k.y / window.innerHeight)) }, landing)
     }
@@ -127,7 +128,11 @@ function ChatView({ conv }: { conv: Conversation }) {
       onPeerConfetti((id, pos, landing) => {
         if (id !== conv.id) return
         const fx = FX_BY_THEME[themeId.current ?? '']
-        if (fx) return fireFx(fx)
+        if (fx) {
+          fireFx(fx)
+          if (fx === 'bloom') confetti.current?.shower(fxSource(), landing)
+          return
+        }
         if (pos) confetti.current?.burst(pos.x * window.innerWidth, pos.y * window.innerHeight, landing)
         else confetti.current?.rain(landing)
       }),

@@ -11,6 +11,15 @@ export const fireFx = (f: Fx) => {
     setTimeout(() => d.remove(), 950)
   }
 }
+let source: (() => [number, number][]) | null = null
+/** the mounted scene says where its moment starts on screen; the bubble-landing overlay rains from there */
+export function setFxSource(f: () => [number, number][]): () => void {
+  source = f
+  return () => {
+    if (source === f) source = null
+  }
+}
+export const fxSource = (): [number, number][] => source?.() ?? []
 export function onFx(s: (f: Fx) => void): () => void {
   subs.add(s)
   return () => {

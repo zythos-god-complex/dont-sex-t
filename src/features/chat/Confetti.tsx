@@ -8,10 +8,13 @@ type Part = {
   x: number; y: number; vx: number; vy: number; rot: number; vr: number; s: number; c: string; shape: Shape; img?: HTMLImageElement
   state: 'fly' | 'rest' | 'drop' | 'slide'; el?: Element; ox?: number; oy?: number; phase: number
   sv?: number; cx?: number; top?: number; edge?: number; dir?: number
+  /** not let go yet (performance.now ms): shower petals peel off the tree one by one */
+  wait?: number
 }
 
 const LOOK: Record<string, { shape: Shape; colors: string[] }> = {
   petals: { shape: 'petal', colors: ['#FFB3CB', '#FFC8D9', '#FF9EBB', '#FFD9E5'] },
+  sakuranight: { shape: 'petal', colors: ['#FFD3E4', '#F8BCD6', '#F2A3C5', '#FBE4EE', '#E98DB6'] },
   leaves: { shape: 'leaf', colors: ['#8CC56A', '#6FAF4C', '#A9D67E', '#5E9C3F'] },
   stars: { shape: 'star', colors: ['#FFFFFF', '#FFE58A', '#C9D6FF'] },
   sparkles: { shape: 'star', colors: ['#FFFFFF', '#FFE44D', '#FF9FE0', '#8ED6FF'] },
@@ -27,14 +30,19 @@ const TILT = Math.tan((9 * Math.PI) / 180) // bubble tilt for the slide landing,
 
 import type { Landing } from '../../themes/ambientPrefs'
 /** landing: whose style plays (the tapper's, so both screens match); missing = shake */
-export type ConfettiHandle = { burst: (x: number, y: number, landing?: Landing) => void; rain: (landing?: Landing) => void }
+export type ConfettiHandle = {
+  burst: (x: number, y: number, landing?: Landing) => void
+  rain: (landing?: Landing) => void
+  /** petals let go from these screen points over a second and drift down onto the bubbles */
+  shower: (from: [number, number][], landing?: Landing) => void
+}
 
 /** Theme particle burst that lands on message bubbles and gets shaken off. */
 export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () => HTMLElement | null; spicy?: boolean }>(function Confetti({ themeId, host, spicy = false }, ref) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const parts = useRef<Part[]>([])
   const raf = useRef(0)
-  const phase = useRef<{ start: number; released: boolean; landing?: Landing } | null>(null)
+  const phase = useRef<{ start: number; released: boolean; landing?: Landing; hold: number } | null>(null)
   const themeRef = useRef(themeId)
   themeRef.current = themeId
   const spicyRef = useRef(spicy)
@@ -53,9 +61,12 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
     ctx.beginPath()
     switch (p.shape) {
       case 'petal':
+        if (p.state !== 'rest') ctx.scale(0.35 + 0.65 * Math.abs(Math.cos(performance.now() / 380 + p.phase)), 1)
         ctx.moveTo(0, -s)
-        ctx.bezierCurveTo(s * 0.9, -s * 0.6, s * 0.7, s * 0.7, 0, s)
-        ctx.bezierCurveTo(-s * 0.7, s * 0.7, -s * 0.9, -s * 0.6, 0, -s)
+        ctx.bezierCurveTo(s * 0.55, -s * 1.05, s * 0.95, -s * 0.2, s * 0.1, s)
+        ctx.lineTo(0, s * 0.82)
+        ctx.lineTo(-s * 0.1, s)
+        ctx.bezierCurveTo(-s * 0.95, -s * 0.2, -s * 0.55, -s * 1.05, 0, -s)
         ctx.fill()
         break
       case 'leaf':
@@ -148,6 +159,13 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
     const t = (now - ph.start) / 1000
     let flying = 0
     for (const p of parts.current) {
+      if (p.wait) {
+        if (now < p.wait) {
+          flying++
+          continue
+        }
+        p.wait = undefined
+      }
       if (p.state === 'rest' && p.el) {
         const r = p.el.getBoundingClientRect()
         p.x = r.left + p.ox!
@@ -178,7 +196,8 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
       p.rot += p.vr
       if (p.state === 'fly') {
         flying++
-        if (p.vy > 0)
+        // late arrivals after the shake just fall through
+        if (p.vy > 0 && !ph.released)
           for (const { el, r } of rects) {
             if (p.x > r.left + 4 && p.x < r.right - 4 && py <= r.top && p.y >= r.top) {
               p.state = 'rest'
@@ -192,9 +211,9 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
       }
     }
     parts.current = parts.current.filter((p) => p.state === 'rest' || p.y < H + 40)
-    for (const p of parts.current) draw(ctx, p)
+    for (const p of parts.current) if (!p.wait) draw(ctx, p)
     // once the shower is over, hold a beat, then the bubbles shake everything off
-    if (!ph.released && (flying === 0 || t > 3.4) && t > 1.4) {
+    if (!ph.released && (flying === 0 || t > ph.hold) && t > 1.4) {
       ph.released = true
       setTimeout(() => {
         if (ph.landing === 'slide') {
@@ -266,11 +285,20 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
       phase: Math.random() * 10,
     })
   }
-  const kick = (landing?: Landing) => {
+  const kick = (landing?: Landing, hold = 3.4) => {
     navigator.vibrate?.([10, 30, 10])
     const running = !!phase.current
-    phase.current = { start: performance.now(), released: false, landing }
+    phase.current = { start: performance.now(), released: false, landing, hold }
     if (!running) raf.current = requestAnimationFrame(loop)
+  }
+
+  // shower from the top edge, same on every screen size
+  const rainAll = (landing?: Landing) => {
+    const lk = look()
+    const n = count()
+    const W = window.innerWidth
+    for (let i = 0; i < n; i++) add(lk, i, Math.random() * W, -20 - Math.random() * 260, (Math.random() - 0.5) * 3, 1 + Math.random() * 2.5)
+    kick(landing)
   }
 
   useImperativeHandle(ref, () => ({
@@ -284,13 +312,24 @@ export const Confetti = forwardRef<ConfettiHandle, { themeId: string; host: () =
       }
       kick(landing)
     },
-    // shower from the top edge, same on every screen size
-    rain(landing) {
+    rain: rainAll,
+    shower(from, landing) {
+      if (!from.length) return rainAll(landing)
       const lk = look()
-      const n = count()
+      const n = document.documentElement.dataset.lite ? 45 : 85
       const W = window.innerWidth
-      for (let i = 0; i < n; i++) add(lk, i, Math.random() * W, -20 - Math.random() * 260, (Math.random() - 0.5) * 3, 1 + Math.random() * 2.5)
-      kick(landing)
+      const t0 = performance.now()
+      for (let i = 0; i < n; i++) {
+        const [x, y] = from[(Math.random() * from.length) | 0]
+        const a = Math.random() * Math.PI * 2
+        const d = Math.random() * 22
+        // petals are pushed in from their tree, toward the middle of the screen
+        add(lk, i, x + Math.cos(a) * d, y + Math.sin(a) * d * 0.8, (x < W / 2 ? 1 : -1) * (0.4 + Math.random() * 1.8), Math.random() * 0.8)
+        const p = parts.current[parts.current.length - 1]
+        p.wait = t0 + 250 + Math.random() * 1300
+        p.s = 5 + Math.random() * 4
+      }
+      kick(landing, 6)
     },
   }))
 
