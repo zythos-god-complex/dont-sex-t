@@ -425,7 +425,7 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
   ))
 
   const top = geo.top
-  // neo (admin only): charcoal blob with a green outline, to sit on the matrix nameplate
+  // neo (admin only): plain black body, eyes / mouth / brows in dark green
   const neo = hat === 'neo'
   const hatOn = !!hat && hat !== 'none' && !neo
   return (
@@ -450,8 +450,8 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
             <path d={`M${top[0]} ${top[1] - 4} q8 -1 10 -8 q-8 -1 -10 8 Z`} fill="#9BE37E" stroke={FACE_INK} strokeWidth={2} strokeLinejoin="round" />
           </g>
         )}
-        <path d={geo.d} fill={neo ? '#16181D' : t.color} stroke={FACE_INK} strokeWidth={3} strokeLinejoin="round" />
-        {t.spots && (
+        <path d={geo.d} fill={neo ? '#0A0A0B' : t.color} stroke={neo ? '#0A0A0B' : FACE_INK} strokeWidth={3} strokeLinejoin="round" />
+        {t.spots && !neo && (
           <g fill={t.shade} opacity={0.35}>
             <circle cx={30} cy={34} r={3.2} />
             <circle cx={72} cy={70} r={4} />
@@ -460,14 +460,14 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
         )}
         {hatOn && <Hat kind={hat!} x={top[0]} y={top[1]} />}
       </g>
-      <g transform={`translate(${geo.cx + t.ox} ${geo.cy + t.oy}) rotate(${t.featureRot}) scale(${geo.s})`}>
+      <g transform={`translate(${geo.cx + t.ox} ${geo.cy + t.oy}) rotate(${t.featureRot}) scale(${geo.s})`} className={neo ? 'gf-feat' : undefined}>
         {t.blush && !neo && (
           <g fill="#FF6F91" opacity={0.42}>
             <ellipse cx={-dx - 5} cy={7} rx={6} ry={3.6} />
             <ellipse cx={dx + 5} cy={7} rx={6} ry={3.6} />
           </g>
         )}
-        {t.freckles && (
+        {t.freckles && !neo && (
           <g fill={t.deep} opacity={0.55}>
             <circle cx={-dx - 6} cy={5} r={1.1} />
             <circle cx={-dx - 2} cy={7.5} r={1.1} />
