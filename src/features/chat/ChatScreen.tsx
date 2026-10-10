@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { Flame } from '../../ui/Flame'
 import { seasonOn } from '../../lib/season'
 import { Ink } from '../../ui/Ink'
 import { getDraft, setDraft, takeIce } from '../../lib/drafts'
@@ -166,7 +167,7 @@ function ChatView({ conv }: { conv: Conversation }) {
           {plate && <Aura id={peerAura} />}
           <GoofyFace name={peer.username} size={40} presence={conv.peer.show_status !== false && me?.show_status !== false && status.online ? (status.away ? 'away' : 'online') : null} />
           <div className="chat-peer-text">
-            <span className="chat-peer-name ellipsis">{peer.username}{peerFl && <i className="vchk" aria-label="verified" />}</span>
+            <span className="chat-peer-name ellipsis">{peer.username}{peerFl && <i className="vchk" aria-label="verified" />}<Flame convId={conv.id} /></span>
             <AnimatePresence mode="wait" initial={false}>
               {statusLine && (
                 <motion.span key={String(status.typing) + String(status.online)} className={'chat-peer-status' + (status.typing ? ' is-typing' : '')} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.15 }}>

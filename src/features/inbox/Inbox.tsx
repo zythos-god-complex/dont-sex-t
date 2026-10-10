@@ -1,4 +1,5 @@
 import { Link, useLocation, useRoute } from 'wouter'
+import { Flame, Melt } from '../../ui/Flame'
 import { AnimatePresence, motion } from 'motion/react'
 import { useConversations, useIsOnline, useMe, useNow, usePeerTyping } from '../../lib/hooks'
 import { messagePreview, relTime } from '../../lib/format'
@@ -62,7 +63,7 @@ function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolea
       {plate && <Aura id={aura} />}
       <GoofyFace name={c.peer.username} size={50} presence={online ? 'online' : null} />
       <span className="row-main">
-        <span className="row-name ellipsis">{c.peer.username}{fl && <i className="vchk" aria-label="verified" />}</span>
+        <span className="row-name ellipsis">{c.peer.username}{fl && <i className="vchk" aria-label="verified" />}<Flame convId={c.id} /></span>
         <span className={'row-preview ellipsis' + (typing ? ' is-typing' : '')}>
           {typing ? (
             <>
@@ -78,7 +79,8 @@ function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolea
         </span>
       </span>
       <span className="row-side">
-        <span className="row-time tnum">
+        <Melt convId={c.id} />
+          <span className="row-time tnum">
           {pinned && <IconPin size={13} filled className="row-pin" />}
           {relTime(when, now)}
         </span>

@@ -1,4 +1,5 @@
 import './styles/index.css'
+import { startPulse } from './lib/pulse'
 import { Analytics } from '@vercel/analytics/react'
 import UpdateBanner from './features/update/UpdateBanner'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
@@ -267,6 +268,7 @@ export default function App() {
   const ban = useBan((s) => s.until)
   useEffect(() => trackNav(loc), [loc])
   useEffect(() => bindVisualViewport(), [])
+  useEffect(() => startPulse(), [])
   useEffect(
     () =>
       bindEdgeBack(() => {

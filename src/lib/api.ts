@@ -129,6 +129,7 @@ export const api = {
   appeal: (token: string, text: string) => rpc<boolean>('gat_appeal', { p_token: token, p_text: text }),
   setMood: (token: string, mood: string | null) => rpc<{ mood: string; until: string } | null>('gat_set_mood', { p_token: token, p_mood: mood }),
   setGhost: (token: string, on: boolean) => rpc<boolean>('gat_set_ghost', { p_token: token, p_on: on }),
+  pulse: (token: string) => rpc<{ streaks: Record<string, { n: number; droop: boolean; me: boolean; peer: boolean }>; melt: Record<string, string> }>('gat_pulse', { p_token: token }),
   forgetMe: (token: string) => rpc<boolean>('gat_forget_me', { p_token: token }),
   uploadTicket: (token: string, bucket: 'gat-img' | 'gat-voice', ext: string) => rpc<string>('gat_upload_ticket', { p_token: token, p_bucket: bucket, p_ext: ext }),
   unsend: (token: string, msg: string) => rpc<Message>('gat_unsend', { p_token: token, p_msg: msg }),
