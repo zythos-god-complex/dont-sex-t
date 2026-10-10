@@ -398,7 +398,7 @@
 }
 .composer textarea {
   flex: 1; min-width: 0; background: none; border: 0; outline: none; color: inherit; font: 400 16px/1.35 var(--theme-font);
-  padding: 9px 0 9px; max-height: 132px; overflow-y: auto;
+  padding: 9px 0 9px; max-height: max(132px, 28vh); overflow-y: auto; overflow-wrap: anywhere;
 }
 .composer textarea::placeholder { color: color-mix(in srgb, var(--theme-composer-ink) 45%, transparent); }
 .send {
@@ -915,3 +915,11 @@ button.b-who { border: 0; background: none; padding: 0; cursor: pointer; text-al
 .aud-pill { position: absolute; bottom: calc(100% + 8px); left: 0; white-space: nowrap; padding: 7px 12px; border-radius: 999px; background: var(--ink); color: var(--bg); font: 700 12px/1 var(--font-display); box-shadow: var(--shadow-pop); pointer-events: none; }
 .aud-pill.is-err { background: var(--danger); color: #fff; }
 
+
+/* dm list long-press menu */
+.rm-menu { display: flex; flex-direction: column; gap: 10px; padding: 4px 2px 6px; }
+.rm-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.rm-name { font: 760 18px/1.2 var(--font-display); }
+.rm-btn { height: 52px; border-radius: 18px; border: 0; background: var(--bg-2); color: var(--ink); font: 720 16px/1 var(--font-display); cursor: pointer; }
+.rm-btn.is-red { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--bg-2)); }
+.rm-btn.is-red.is-armed { background: var(--danger); color: #fff; }

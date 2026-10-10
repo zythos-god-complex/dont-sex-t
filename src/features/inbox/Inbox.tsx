@@ -1,4 +1,7 @@
 import { Link, useLocation, useRoute } from 'wouter'
+import { Sheet } from '../../ui/kit'
+import { removeChat } from '../../lib/engine'
+import { create } from 'zustand'
 import { Flame, Melt } from '../../ui/Flame'
 import { AnimatePresence, motion } from 'motion/react'
 import { useConversations, useIsOnline, useMe, useNow, usePeerTyping } from '../../lib/hooks'
@@ -16,17 +19,14 @@ export type InboxProps = { variant: 'screen' | 'rail' }
 
 function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolean; now: number; meId: string | null; pinned: boolean }) {
   const [, nav] = useLocation()
-  const [nope, setNope] = useState(0)
+  const [nope] = useState(0)
   // long press pins / unpins; a full set of pins makes the row shake instead
   const press = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number; fired: boolean } | null>(null)
   const down = (e: React.PointerEvent) => {
     const st = { x: e.clientX, y: e.clientY, fired: false, t: setTimeout(() => {
       st.fired = true
-      if (togglePin(c.id)) navigator.vibrate?.(14)
-      else {
-        navigator.vibrate?.([10, 40, 10])
-        setNope((n) => n + 1)
-      }
+      navigator.vibrate?.(14)
+      useRowMenu.setState({ c })
     }, 450) }
     press.current = st
   }
@@ -90,6 +90,57 @@ function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolea
   )
 }
 
+// long press on a chat: pin it, or remove it from the list
+const useRowMenu = create<{ c: Conversation | null }>(() => ({ c: null }))
+
+function RowMenu() {
+  const c = useRowMenu((s) => s.c)
+  const pins = usePins((s) => s.ids)
+  const [arm, setArm] = useState(false)
+  const [full, setFull] = useState(false)
+  const last = useRef(c)
+  if (c) last.current = c
+  const close = () => {
+    useRowMenu.setState({ c: null })
+    setArm(false)
+    setFull(false)
+  }
+  const cur = last.current
+  if (!cur) return null
+  const pinned = pins.includes(cur.id)
+  return (
+    <Sheet open={!!c} onClose={close} label={'chat with ' + cur.peer.username}>
+      <div className="rm-menu">
+        <div className="rm-head">
+          <GoofyFace name={cur.peer.username} size={44} />
+          <span className="rm-name ellipsis">{cur.peer.username}</span>
+        </div>
+        <button
+          type="button"
+          className="rm-btn"
+          onClick={() => {
+            if (togglePin(cur.id)) close()
+            else setFull(true)
+          }}
+        >
+          {pinned ? 'unpin' : full ? 'pins are full' : 'pin to top'}
+        </button>
+        <button
+          type="button"
+          className={'rm-btn is-red' + (arm ? ' is-armed' : '')}
+          onClick={() => {
+            if (!arm) return setArm(true)
+            void removeChat(cur.id)
+            close()
+          }}
+        >
+          {arm ? 'remove for good?' : 'remove chat'}
+        </button>
+      </div>
+    </Sheet>
+  )
+}
+
 export default function Inbox({ variant }: InboxProps) {
   const me = useMe()
   const convs = useConversations()
@@ -132,6 +183,7 @@ export default function Inbox({ variant }: InboxProps) {
           </AnimatePresence>
         )}
       </div>
+      <RowMenu />
     </div>
   )
 }

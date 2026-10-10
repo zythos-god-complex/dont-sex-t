@@ -854,8 +854,12 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const resize = () => {
     const el = ta.current
     if (!el) return
+    // setting height to auto resets the scroll, so long text jumped back to the top and hid what you were typing
+    const max = Math.max(132, Math.round(window.innerHeight * 0.28))
+    const atEnd = el.selectionStart >= el.value.length - 1
     el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 132) + 'px'
+    el.style.height = Math.min(el.scrollHeight, max) + 'px'
+    if (atEnd && el.scrollHeight > max) el.scrollTop = el.scrollHeight
   }
   useLayoutEffect(resize, [text])
 

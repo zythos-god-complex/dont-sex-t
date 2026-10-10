@@ -40,7 +40,7 @@ export function FaceBuilder({ name, value, onChange, onDone }: { name: string | 
     <div className="fb">
       <div className="fb-preview">
         <motion.div key={JSON.stringify(value)} initial={{ scale: 0.9 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 600, damping: 14 }}>
-          <GoofyFace name={name} avatar={value} size={128} mood="happy" />
+          <GoofyFace name={name} avatar={value} size={128} />
         </motion.div>
         <motion.button
           type="button"

@@ -32,7 +32,7 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
         <Aura id={flair?.aura} />
       </div>
       <div className="pc-face">
-        <GoofyFace name={name} size={88} mood="happy" hat={given === undefined ? undefined : (given?.hat ?? null)} />
+        <GoofyFace name={name} size={88} hat={given === undefined ? undefined : (given?.hat ?? null)} />
       </div>
       <div className="pc-body">
         <span className="pc-name">{name}</span>

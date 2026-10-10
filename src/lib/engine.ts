@@ -1981,3 +1981,18 @@ export async function gameMove(id: string, move: string): Promise<void> {
     void loadGame(id)
   }
 }
+
+/** Remove a chat from my DM list: cleared for me and hidden until a new message comes in. */
+export async function removeChat(convId: string): Promise<void> {
+  if (!token) return
+  applyWipe(convId, new Date(Date.now() + skew).toISOString())
+  set((st) => {
+    const c = st.conversations[convId]
+    const conversations = { ...st.conversations }
+    const convByPeer = { ...st.convByPeer }
+    Reflect.deleteProperty(conversations, convId)
+    if (c) Reflect.deleteProperty(convByPeer, c.peer.id)
+    return { conversations, convByPeer }
+  })
+  await api.hideChat(token, convId).catch(() => {})
+}

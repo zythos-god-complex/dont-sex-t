@@ -134,6 +134,7 @@ export const api = {
   gameStart: (token: string, conv: string, id: string, kind: string) => rpc<Record<string, unknown>>('gat_game_start', { p_token: token, p_conversation: conv, p_id: id, p_kind: kind }),
   game: <T>(token: string, id: string) => rpc<T>('gat_game_get', { p_token: token, p_game: id }),
   gameMove: <T>(token: string, id: string, move: string) => rpc<T>('gat_game_move', { p_token: token, p_game: id, p_move: move }),
+  hideChat: (token: string, conv: string) => rpc<boolean>('gat_hide_chat', { p_token: token, p_conversation: conv }),
   forgetMe: (token: string) => rpc<boolean>('gat_forget_me', { p_token: token }),
   uploadTicket: (token: string, bucket: 'gat-img' | 'gat-voice', ext: string) => rpc<string>('gat_upload_ticket', { p_token: token, p_bucket: bucket, p_ext: ext }),
   unsend: (token: string, msg: string) => rpc<Message>('gat_unsend', { p_token: token, p_msg: msg }),

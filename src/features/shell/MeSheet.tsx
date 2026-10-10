@@ -286,7 +286,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
   return (
     <div className="me">
       <div className="me-face">
-        <GoofyFace name={me.username} avatar={current} size={112} mood="happy" />
+        <GoofyFace name={me.username} avatar={current} size={112} />
         {!temp && (
           <button
             type="button"
