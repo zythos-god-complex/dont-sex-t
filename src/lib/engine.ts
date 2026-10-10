@@ -1996,3 +1996,9 @@ export async function removeChat(convId: string): Promise<void> {
   })
   await api.hideChat(token, convId).catch(() => {})
 }
+
+/** Optional place and whether to show the passport age. */
+export async function saveAbout(place: string, showAge: boolean): Promise<void> {
+  if (!token) return
+  updateMe(await api.setAbout(token, place, showAge))
+}

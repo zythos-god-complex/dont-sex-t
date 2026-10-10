@@ -52,6 +52,10 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
   const tilt = faceTilt(u.username, 1.6)
   const showStatus = useStore((s) => s.me?.show_status !== false && s.profiles[u.id]?.show_status !== false && u.show_status !== false)
   const hold = useRef<{ t: ReturnType<typeof setTimeout>; fired: boolean } | null>(null)
+  const about = useStore((s) => {
+    const p = s.profiles[u.id]
+    return p ? [p.age ? String(p.age) : '', p.place ?? ''].filter(Boolean).join(' · ') : ''
+  })
   // already chatted: straight to the DM, strangers get the peek card
   const known = useStore((s) => !!s.convByPeer[u.id])
   const down = () => {
@@ -92,6 +96,7 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
         <GoofyFace name={u.username} size={104} presence={showStatus ? (u.away ? 'away' : 'online') : null} look={look} mood={(u.mood as FaceMood | null) ?? undefined} />
       </span>
       <span className="card-name ellipsis">{u.username}</span>
+      {about && <span className="card-about ellipsis">{about}</span>}
       <span className={'card-meta' + (typing ? ' is-typing' : '')}>
         {typing ? (
           <>

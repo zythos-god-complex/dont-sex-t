@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { isPhoto } from './photoUrl'
 import { seasonOn } from '../lib/season'
 import { BLOBS, FACE_INK, TONGUE, applyAvatar, faceTraits, type AvatarConfig, type FaceTraits, type MouthKind } from './face'
 import { useAvatarFor, useHornsFor } from './avatars'
@@ -36,6 +37,54 @@ function Eye({ x, r, t, look, kind, side }: { x: number; r: number; t: FaceTrait
   if (kind === 'squint') {
     const s = side
     return <path d={`M${x - r * 0.7 * s} ${-r * 0.55} L${x + r * 0.6 * s} 0 L${x - r * 0.7 * s} ${r * 0.55}`} stroke={FACE_INK} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  }
+  // calmer, less emoji-like eyes
+  if (kind === 'calm') {
+    const pr = r * 0.4
+    return (
+      <g>
+        <circle cx={x + lx * r * 0.12} cy={ly * r * 0.12} r={pr} fill={FACE_INK} />
+        <circle cx={x + lx * r * 0.12 - pr * 0.3} cy={ly * r * 0.12 - pr * 0.32} r={pr * 0.28} fill={W} />
+      </g>
+    )
+  }
+  if (kind === 'soft') {
+    return <path d={`M${x - r * 0.8} ${r * 0.2} Q${x} ${-r * 0.75} ${x + r * 0.8} ${r * 0.2}`} stroke={FACE_INK} strokeWidth={3} fill="none" strokeLinecap="round" />
+  }
+  if (kind === 'almond') {
+    const ir = r * 0.48
+    return (
+      <g>
+        <path d={`M${x - r * 1.15} 0 Q${x} ${-r * 1.05} ${x + r * 1.15} 0 Q${x} ${r * 0.85} ${x - r * 1.15} 0 Z`} fill={W} stroke={FACE_INK} strokeWidth={2.2} strokeLinejoin="round" />
+        <circle cx={x + lx * r * 0.3} cy={ly * r * 0.12} r={ir} fill={FACE_INK} />
+        <circle cx={x + lx * r * 0.3 - ir * 0.35} cy={ly * r * 0.12 - ir * 0.35} r={ir * 0.3} fill={W} />
+      </g>
+    )
+  }
+  if (kind === 'shine') {
+    const ir = r * 0.76
+    const cx = x + lx * r * 0.12
+    const cy = ly * r * 0.1
+    return (
+      <g>
+        <circle cx={x} cy={0} r={r} fill={W} stroke={FACE_INK} strokeWidth={2.2} />
+        <circle cx={cx} cy={cy} r={ir} fill={FACE_INK} />
+        <circle cx={cx - ir * 0.36} cy={cy - ir * 0.38} r={ir * 0.32} fill={W} />
+        <circle cx={cx + ir * 0.34} cy={cy + ir * 0.36} r={ir * 0.14} fill={W} />
+      </g>
+    )
+  }
+  if (kind === 'lashes') {
+    const s = side || 1
+    const pr = r * 0.5
+    return (
+      <g>
+        <circle cx={x} cy={0} r={r} fill={W} stroke={FACE_INK} strokeWidth={2.2} />
+        <circle cx={x + lx * (r - pr - 1.4)} cy={ly * (r - pr - 1.4)} r={pr} fill={FACE_INK} />
+        <circle cx={x + lx * (r - pr - 1.4) - pr * 0.38} cy={ly * (r - pr - 1.4) - pr * 0.38} r={pr * 0.3} fill={W} />
+        <path d={`M${x + s * r * 0.35} ${-r * 0.92} l${s * 2.2} -3.6 M${x + s * r * 0.72} ${-r * 0.66} l${s * 3.2} -2.8 M${x + s * r * 0.95} ${-r * 0.28} l${s * 3.6} -1.2`} stroke={FACE_INK} strokeWidth={2} strokeLinecap="round" />
+      </g>
+    )
   }
   if (kind === 'beady') {
     const pr = r * 0.46
@@ -513,7 +562,11 @@ function GoofyFaceImpl({ name, avatar, horns, hat, size = 40, look, mood = 'neut
   const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : mood === 'kiss' || mood === 'flirty' ? { ...t, blush: true } : t
   return (
     <span className={'gf ' + (className ?? '')} style={{ width: size, height: size, ...style }}>
-      <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} hat={hat === undefined ? (av?.ghost ? 'ghost' : (flairHat ?? seasonal)) : hat} />
+      {isPhoto(av?.photo) ? (
+        <img className="gf-photo" src={av.photo} alt="" loading="lazy" decoding="async" draggable={false} />
+      ) : (
+        <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} hat={hat === undefined ? (av?.ghost ? 'ghost' : (flairHat ?? seasonal)) : hat} />
+      )}
       {presence && <span className={'gf-dot ' + (presence === 'away' ? 'is-away' : 'is-online')} style={{ '--s': `${Math.max(9, Math.round(size * 0.26))}px` } as CSSProperties} />}
     </span>
   )

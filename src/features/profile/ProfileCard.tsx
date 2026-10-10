@@ -1,5 +1,6 @@
 // Steam / Discord style profile card. Everyone gets the basic card; perk users get their card colours,
 // live banner and bio.
+import { useStore } from '../../lib/store'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useMe } from '../../lib/hooks'
 import { report, setBlocked, useBlocks, useGhost } from '../../lib/engine'
@@ -20,6 +21,11 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
   const looked = useFlairFor(given === undefined ? name : null)
   const flair = given === undefined ? looked : given
   const custom = useAvatarFor(name)
+  const about = useStore((s) => {
+    const k = name.toLowerCase()
+    const p = Object.values(s.profiles).find((x) => x.username.toLowerCase() === k) ?? (s.me?.username.toLowerCase() === k ? s.me : null)
+    return p ? [p.age ? String(p.age) : '', p.place ?? ''].filter(Boolean).join(' · ') : ''
+  })
   const color = applyAvatar(faceTraits(name), custom).color
   const card = flair ? (CARDS.find((c) => c.id === flair.card) ?? CARDS[0]) : null
   const style = {
@@ -37,6 +43,7 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
       <div className="pc-body">
         <span className="pc-name">{name}</span>
         {sub && <span className="pc-sub">{sub}</span>}
+        {about && <span className="pc-about">{about}</span>}
         {flair?.bio && <p className="pc-bio">{flair.bio}</p>}
       </div>
     </div>

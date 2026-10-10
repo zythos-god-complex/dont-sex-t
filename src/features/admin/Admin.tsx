@@ -430,6 +430,9 @@ function UserSheet({ id, onClose, onChange }: { id: string | null; onClose: () =
                 reset passport
               </button>
             )}
+            <button type="button" className="adm-btn" disabled={busy} onClick={() => act('pfp', {})}>
+              remove photo
+            </button>
             {!d.banned && (
               <button
                 type="button"

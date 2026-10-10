@@ -19,8 +19,8 @@ export const FACE_PALETTE = [
 export const FACE_INK = '#17131F'
 export const TONGUE = '#FF6F91'
 
-export type BlobKind = 'squircle' | 'bean' | 'egg' | 'cloud' | 'wobble' | 'tall' | 'wide' | 'star'
-export type EyeKind = 'pair' | 'mismatch' | 'squint' | 'three' | 'sleepy' | 'wide' | 'beady'
+export type BlobKind = 'squircle' | 'bean' | 'egg' | 'cloud' | 'wobble' | 'tall' | 'wide' | 'star' | 'circle' | 'soft'
+export type EyeKind = 'pair' | 'mismatch' | 'squint' | 'three' | 'sleepy' | 'wide' | 'beady' | 'calm' | 'soft' | 'almond' | 'shine' | 'lashes'
 export type MouthKind = 'grin' | 'o' | 'wavy' | 'tongue' | 'teeth' | 'smirk' | 'bigD' | 'flat'
 export type BrowKind = 'raised' | 'worried' | 'grumpy' | 'uneven'
 
@@ -188,6 +188,8 @@ function makeBlobs(): Record<BlobKind, BlobGeo> {
 
   return {
     squircle: { d: smoothClosed(squircle), cx: 50, cy: 55, s: 1, top: [50, 17] },
+    circle: { d: 'M50 17 A39 39 0 1 1 49.99 17 Z', cx: 50, cy: 57, s: 1, top: [50, 17] },
+    soft: { d: 'M50 19 C74 19 89 32 89 56 C89 80 74 93 50 93 C26 93 11 80 11 56 C11 32 26 19 50 19 Z', cx: 50, cy: 57, s: 1, top: [50, 19] },
     bean: { d: smoothClosed(bean), cx: 52, cy: 56, s: 0.97, top: [56, 19.5] },
     egg: { d: smoothClosed(egg), cx: 50, cy: 58, s: 0.97, top: [50, 14.5] },
     cloud: { d: smoothClosed(cloud), cx: 50, cy: 58, s: 0.98, top: [50, 18] },
@@ -367,6 +369,7 @@ export type AvatarConfig = {
   v: 1
   hat?: import('../lib/season').SeasonHat | null
   ghost?: boolean // ghost browse: wears a bedsheet
+  photo?: string // optional profile photo (gat-pfp public url)
   color: string
   blob: BlobKind
   eyes: EyeKind
@@ -377,7 +380,7 @@ export type AvatarConfig = {
   top: TopKind
 }
 
-export const EYE_KINDS: EyeKind[] = ['pair', 'beady', 'wide', 'mismatch', 'sleepy', 'squint', 'three']
+export const EYE_KINDS: EyeKind[] = ['calm', 'soft', 'almond', 'shine', 'lashes', 'pair', 'beady', 'wide', 'mismatch', 'sleepy', 'squint', 'three']
 export const MOUTH_KINDS: MouthKind[] = ['grin', 'bigD', 'tongue', 'o', 'smirk', 'teeth', 'wavy', 'flat']
 export const BROW_KINDS: (BrowKind | null)[] = [null, 'raised', 'worried', 'grumpy', 'uneven']
 export const TOP_KINDS: TopKind[] = ['none', 'antenna', 'sprout']

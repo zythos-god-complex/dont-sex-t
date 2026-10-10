@@ -923,3 +923,12 @@ button.b-who { border: 0; background: none; padding: 0; cursor: pointer; text-al
 .rm-btn { height: 52px; border-radius: 18px; border: 0; background: var(--bg-2); color: var(--ink); font: 720 16px/1 var(--font-display); cursor: pointer; }
 .rm-btn.is-red { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--bg-2)); }
 .rm-btn.is-red.is-armed { background: var(--danger); color: #fff; }
+
+/* profile photo + about */
+.gf-photo { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: var(--bg-2); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
+.me-photo { display: flex; gap: 8px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.about-row { display: flex; gap: 8px; align-items: center; }
+.about-input { flex: 1; min-width: 0; height: 44px; border-radius: 14px; border: 2px solid transparent; background: var(--bg-2); color: var(--ink); padding: 0 14px; font: 500 16px/1 var(--font-text); }
+.about-input:focus { outline: none; border-color: var(--ink); }
+.pc-about { font: 650 13px/1.2 var(--font-display); color: var(--pc-sub, var(--muted)); }
+.card-about { font: 650 11.5px/1.2 var(--font-display); color: var(--ink-2); margin-top: -2px; max-width: 100%; }

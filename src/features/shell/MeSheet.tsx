@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { isPhoto } from '../../ui/photoUrl'
+import { uploadPhoto } from '../profile/photo'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMe } from '../../lib/hooks'
 import { useLocation } from 'wouter'
 import { useStore } from '../../lib/store'
 import { useShallow } from 'zustand/react/shallow'
-import { saveGhost, saveMood, useGhost, useMood } from '../../lib/engine'
+import { saveAbout, saveGhost, saveMood, useGhost, useMood } from '../../lib/engine'
 import type { FaceMood } from '../../ui/GoofyFace'
 import { forgetMe, logout, setBlocked, useBlocks, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
@@ -217,6 +219,69 @@ function GhostRow() {
   )
 }
 
+function PhotoButton({ current }: { current: AvatarConfig }) {
+  const [busy, setBusy] = useState(false)
+  const has = isPhoto(current.photo)
+  const pick = () => {
+    const el = document.createElement('input')
+    el.type = 'file'
+    el.accept = 'image/*'
+    el.onchange = () => {
+      const f = el.files?.[0]
+      if (!f || !f.type.startsWith('image/')) return
+      setBusy(true)
+      uploadPhoto(f)
+        .then((url) => saveAvatar({ ...current, photo: url }))
+        .catch(() => {})
+        .finally(() => setBusy(false))
+    }
+    el.click()
+  }
+  return (
+    <div className="me-photo">
+      <button type="button" className="acc-btn" disabled={busy} onClick={pick}>
+        {busy ? 'uploading...' : has ? 'change photo' : 'use a photo'}
+      </button>
+      {has && (
+        <button type="button" className="acc-btn" disabled={busy} onClick={() => void saveAvatar({ ...current, photo: undefined })}>
+          back to face
+        </button>
+      )}
+    </div>
+  )
+}
+
+function About() {
+  const me = useMe()
+  const [place, setPlace] = useState(me?.place ?? '')
+  const [busy, setBusy] = useState(false)
+  if (!me) return null
+  const save = (p: string, show: boolean) => {
+    setBusy(true)
+    saveAbout(p, show).catch(() => {}).finally(() => setBusy(false))
+  }
+  const dirty = place.trim() !== (me.place ?? '')
+  return (
+    <>
+      <h3 className="settings-label">about you</h3>
+      <div className="about-row">
+        <input className="about-input" value={place} maxLength={30} placeholder="city or place (optional)" onChange={(e) => setPlace(e.target.value)} />
+        {dirty && (
+          <button type="button" className="acc-btn" disabled={busy} onClick={() => save(place, me.show_age === true)}>
+            save
+          </button>
+        )}
+      </div>
+      {me.age_set && (
+        <div className="settings-row" style={{ marginTop: 8 }}>
+          <span className="grow">show my age</span>
+          <Toggle label="show my age" on={me.show_age === true} disabled={busy} onChange={(v) => save(me.place ?? '', v)} />
+        </div>
+      )}
+    </>
+  )
+}
+
 function Blocked() {
   const ids = useBlocks((b) => b.blocked)
   const names = useStore(useShallow((s) => ids.map((id) => s.profiles[id]?.username ?? Object.values(s.conversations).find((c) => c.peer.id === id)?.peer.username ?? '')))
@@ -287,13 +352,14 @@ function MeBody({ onClose }: { onClose: () => void }) {
     <div className="me">
       <div className="me-face">
         <GoofyFace name={me.username} avatar={current} size={112} />
+        {!temp && <PhotoButton current={current} />}
         {!temp && (
           <button
             type="button"
             className="ob-face-btn ob-brush me-edit"
             aria-label="edit face"
             onClick={() => {
-              setFace(current)
+              setFace({ ...current, photo: undefined })
               setEditing(true)
             }}
           >
@@ -344,6 +410,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
         />
       </div>
       <MoodRow name={me.username} spicy={me.nsfw === true && me.adult === true} />
+      {!temp && <About />}
       <h3 className="settings-label">privacy</h3>
       <GhostRow />
       <div className="settings-row">
