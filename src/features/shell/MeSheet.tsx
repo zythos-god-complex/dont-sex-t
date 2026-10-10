@@ -137,7 +137,7 @@ function FlairEditor() {
       <ProfileCardView name={me.username} flair={{ ...f, bio }} />
       <h3 className="settings-label">hat</h3>
       <div className="fl-grid">
-        {HATS.map((h) => (
+        {HATS.concat(me.admin ? ['neo'] : []).map((h) => (
           <button key={h} type="button" className={'fl-opt' + (hat === h ? ' is-on' : '')} aria-label={h} onClick={() => void saveFlair({ hat: h })}>
             <GoofyFace name={me.username} hat={h} size={44} blink={false} />
           </button>

@@ -425,9 +425,11 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
   ))
 
   const top = geo.top
-  const hatOn = !!hat && hat !== 'none'
+  // neo (admin only): charcoal blob with a green outline, to sit on the matrix nameplate
+  const neo = hat === 'neo'
+  const hatOn = !!hat && hat !== 'none' && !neo
   return (
-    <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true" style={{ overflow: 'visible' }}>
+    <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true" style={{ overflow: 'visible' }} className={neo ? 'gf-matrix' : undefined}>
       <g transform={`rotate(${t.blobRot} 50 55)`}>
         {horns && (
           <g fill="#E5383B" stroke={FACE_INK} strokeWidth={2.6} strokeLinejoin="round">
@@ -435,20 +437,20 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
             <path d={`M${top[0] + 24} ${top[1] + 12} Q${top[0] + 34} ${top[1] - 6} ${top[0] + 26} ${top[1] - 16} Q${top[0] + 22} ${top[1] - 2} ${top[0] + 10} ${top[1] + 6} Z`} />
           </g>
         )}
-        {t.antenna && !hatOn && (
+        {t.antenna && !hatOn && !neo && (
           <g>
             <path d={`M${top[0]} ${top[1] + 4} Q${top[0] + 4} ${top[1] - 6} ${top[0] + 1} ${top[1] - 11}`} stroke={FACE_INK} strokeWidth={2.4} fill="none" strokeLinecap="round" />
             <circle cx={top[0] + 1} cy={top[1] - 13} r={4.4} fill={t.accent} stroke={FACE_INK} strokeWidth={2.2} />
           </g>
         )}
-        {t.sprout && !hatOn && (
+        {t.sprout && !hatOn && !neo && (
           <g>
             <path d={`M${top[0]} ${top[1] + 4} V${top[1] - 7}`} stroke={FACE_INK} strokeWidth={2.4} strokeLinecap="round" />
             <path d={`M${top[0]} ${top[1] - 6} q-9 -2 -11 -10 q9 -1 11 10 Z`} fill="#7BD66B" stroke={FACE_INK} strokeWidth={2} strokeLinejoin="round" />
             <path d={`M${top[0]} ${top[1] - 4} q8 -1 10 -8 q-8 -1 -10 8 Z`} fill="#9BE37E" stroke={FACE_INK} strokeWidth={2} strokeLinejoin="round" />
           </g>
         )}
-        <path d={geo.d} fill={t.color} stroke={FACE_INK} strokeWidth={3} strokeLinejoin="round" />
+        <path d={geo.d} fill={neo ? '#16181D' : t.color} stroke={FACE_INK} strokeWidth={3} strokeLinejoin="round" />
         {t.spots && (
           <g fill={t.shade} opacity={0.35}>
             <circle cx={30} cy={34} r={3.2} />
@@ -459,7 +461,7 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
         {hatOn && <Hat kind={hat!} x={top[0]} y={top[1]} />}
       </g>
       <g transform={`translate(${geo.cx + t.ox} ${geo.cy + t.oy}) rotate(${t.featureRot}) scale(${geo.s})`}>
-        {t.blush && (
+        {t.blush && !neo && (
           <g fill="#FF6F91" opacity={0.42}>
             <ellipse cx={-dx - 5} cy={7} rx={6} ry={3.6} />
             <ellipse cx={dx + 5} cy={7} rx={6} ry={3.6} />
