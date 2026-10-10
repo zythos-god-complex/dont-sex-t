@@ -42,3 +42,30 @@ export function bindVisualViewport(): () => void {
     cancelAnimationFrame(raf)
   }
 }
+
+/** iOS home-screen apps get no browser back swipe, so give every screen one from the left edge. */
+export function bindEdgeBack(back: () => void): () => void {
+  if ((navigator as Navigator & { standalone?: boolean }).standalone !== true) return () => {}
+  let x0 = -1
+  let y0 = 0
+  const start = (e: TouchEvent) => {
+    const t = e.touches[0]
+    x0 = e.touches.length === 1 && t.clientX < 22 ? t.clientX : -1
+    y0 = t.clientY
+  }
+  const move = (e: TouchEvent) => {
+    if (x0 < 0) return
+    const t = e.touches[0]
+    if (Math.abs(t.clientY - y0) > 40) x0 = -1
+    else if (t.clientX - x0 > 70) {
+      x0 = -1
+      back()
+    }
+  }
+  window.addEventListener('touchstart', start, { passive: true })
+  window.addEventListener('touchmove', move, { passive: true })
+  return () => {
+    window.removeEventListener('touchstart', start)
+    window.removeEventListener('touchmove', move)
+  }
+}

@@ -7,7 +7,7 @@ import type { OnlineUser } from '../../lib/types'
 import { GoofyFace, useLookAt } from '../../ui/GoofyFace'
 import { faceTilt } from '../../ui/face'
 import { Badge, Segmented, TypingDots, Wordmark, spring, useIsDesktop } from '../../ui/kit'
-import { GenderIcon, IconDm, IconRooms } from '../../ui/icons'
+import { GenderIcon, IconDice, IconDm, IconRooms } from '../../ui/icons'
 import { loadRooms, useRoomsUnread } from '../rooms/rooms'
 import { MeButton } from '../shell/MeSheet'
 import { useBlocks } from '../../lib/engine'
@@ -65,6 +65,21 @@ export default function Lobby() {
   const roomsUnread = useRoomsUnread()
   useEffect(() => void loadRooms(), [])
   const now = useNow(30000)
+  const [, go] = useLocation()
+  const meId = useStore((s) => s.me?.id)
+  const [copied, setCopied] = useState(false)
+  const roll = () => {
+    const pool = list.filter((u) => u.id !== meId)
+    const awake = pool.filter((u) => !u.away)
+    const from = awake.length ? awake : pool
+    const pick = from[Math.floor(Math.random() * from.length)]
+    if (pick) go('/dm/' + encodeURIComponent(pick.username))
+  }
+  const share = () => {
+    const url = location.origin
+    if (navigator.share) void navigator.share({ title: 'GoofyAhhTalk', url }).catch(() => {})
+    else void navigator.clipboard?.writeText(url).then(() => setCopied(true), () => {})
+  }
 
   const emptyCopy =
     filter === 'all' ? ["nobody's here rn", "they'll pop up here"] : filter === 'm' ? ['no guys online rn', null] : ['no girls online rn', null]
@@ -115,6 +130,14 @@ export default function Lobby() {
             </div>
             <p className="empty-title">{emptyCopy[0]}</p>
             {emptyCopy[1] && <p className="empty-sub">{emptyCopy[1]}</p>}
+            <div className="empty-acts">
+              <Link href="/rooms" className="empty-act is-ink">
+                hop in a room
+              </Link>
+              <button type="button" className="empty-act" onClick={share}>
+                {copied ? 'link copied' : 'bring a friend'}
+              </button>
+            </div>
           </motion.div>
         ) : (
           <div className="board">
@@ -126,6 +149,23 @@ export default function Lobby() {
           </div>
         )}
       </div>
+      <AnimatePresence>
+        {list.filter((u) => u.id !== meId).length >= 2 && (
+          <motion.button
+            type="button"
+            className="roll"
+            onClick={roll}
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            whileTap={{ scale: 0.94 }}
+            transition={spring}
+          >
+            <IconDice size={20} />
+            roll a stranger
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -113,6 +113,13 @@ export default function Inbox({ variant }: InboxProps) {
           <div className="empty empty-sm">
             <GoofyFace name="lonely.potato" size={variant === 'rail' ? 72 : 110} mood="neutral" />
             <p className="empty-title">no dms yet</p>
+            {variant !== 'rail' && (
+              <div className="empty-acts">
+                <Link href="/" className="empty-act is-ink">
+                  find someone
+                </Link>
+              </div>
+            )}
           </div>
         ) : (
           <AnimatePresence initial={false}>

@@ -12,7 +12,7 @@ import { useRoomsUnread } from './features/rooms/rooms'
 import Toasts from './features/toasts/Toasts'
 import { Badge, Wordmark, useIsDesktop } from './ui/kit'
 import { IconLive, IconRooms } from './ui/icons'
-import { bindVisualViewport, trackNav } from './features/shell/nav'
+import { bindEdgeBack, bindVisualViewport, goBack, goHome, trackNav } from './features/shell/nav'
 import { MeButton } from './features/shell/MeSheet'
 import { refreshBlocks } from './lib/engine'
 import { useBan } from './lib/ban'
@@ -214,11 +214,21 @@ export default function App() {
   const status = useStatus()
   const desktop = useIsDesktop()
   const unread = useUnreadTotal()
-  const [loc] = useLocation()
+  const [loc, nav] = useLocation()
   const me = useMe()
   const ban = useBan((s) => s.until)
   useEffect(() => trackNav(loc), [loc])
   useEffect(() => bindVisualViewport(), [])
+  useEffect(
+    () =>
+      bindEdgeBack(() => {
+        const p = location.pathname
+        if (p === '/' || document.querySelector('.sheet')) return
+        if (p.startsWith('/dm/') || p === '/admin') goHome(nav)
+        else goBack(nav)
+      }),
+    [nav],
+  )
   useEffect(() => {
     if (status !== 'ready') return
     void refreshBlocks()

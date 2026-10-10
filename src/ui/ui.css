@@ -783,3 +783,12 @@
 .rp-done { text-align: center; margin-top: 14px; color: var(--ink-2); font: 650 14px/1 var(--font-display); }
 
 .me-admin { display: block; width: 100%; margin-top: 18px; height: 48px; border-radius: 999px; border: 0; background: linear-gradient(110deg, #3A2500, #8A5A00 55%, #C9962E); color: #FFF3C4; font: 760 15px/1 var(--font-display); cursor: pointer; }
+
+/* lobby: empty state actions + roll a stranger */
+.empty-acts { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; justify-content: center; }
+.empty-act { height: 44px; padding: 0 18px; display: inline-flex; align-items: center; border-radius: 999px; border: 0; background: var(--bg-2); color: var(--ink); font: 720 15px/1 var(--font-display); text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.empty-act.is-ink { background: var(--ink); color: var(--bg); }
+.empty-act:active { transform: scale(.96); }
+.lobby { position: relative; }
+.lobby .board { padding-bottom: 84px; }
+.roll { position: absolute; z-index: 5; left: 50%; translate: -50% 0; bottom: calc(18px + var(--safe-b, 0px)); height: 50px; padding: 0 22px 0 18px; display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; border: 0; background: var(--ink); color: var(--bg); font: 760 16px/1 var(--font-display); box-shadow: var(--shadow-lift); cursor: pointer; -webkit-tap-highlight-color: transparent; white-space: nowrap; }

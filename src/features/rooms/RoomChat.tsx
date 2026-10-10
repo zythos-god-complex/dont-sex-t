@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { getDraft, setDraft } from '../../lib/drafts'
 import { useLocation } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMe, useNow } from '../../lib/hooks'
@@ -171,7 +172,8 @@ function List({ room }: { room: Room }) {
 
 function Composer({ room }: { room: Room }) {
   const me = useMe()
-  const [text, setText] = useState('')
+  const [text, setText] = useState(() => getDraft('r:' + room.id))
+  useEffect(() => setDraft('r:' + room.id, text), [room.id, text])
   const [tray, setTray] = useState(false)
   const ta = useRef<HTMLTextAreaElement>(null)
   const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
