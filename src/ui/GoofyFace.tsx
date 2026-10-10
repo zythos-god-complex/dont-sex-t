@@ -425,7 +425,7 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
   ))
 
   const top = geo.top
-  // neo (admin only): plain black body, eyes / mouth / brows in dark green
+  // neo (admin only): plain black body with two evil green eyes, nothing else
   const neo = hat === 'neo'
   const hatOn = !!hat && hat !== 'none' && !neo
   return (
@@ -477,9 +477,19 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
             <circle cx={dx + 7} cy={9} r={1.1} />
           </g>
         )}
-        {eyeRow}
-        {brows}
-        <g transform="translate(0 12)" className={mood === 'talking' ? 'gf-talk' : undefined}>
+        {neo ? (
+          <g>
+            <path d={`M${-dx - 10} -12 L${-dx + 8} -6 Q${-dx + 2} -1 ${-dx - 8} -4 Z M${dx + 10} -12 L${dx - 8} -6 Q${dx - 2} -1 ${dx + 8} -4 Z`} fill="none" stroke="#39FF6A" strokeWidth={4.5} strokeLinejoin="round" opacity={0.3} />
+            <path d={`M${-dx - 10} -12 L${-dx + 8} -6 Q${-dx + 2} -1 ${-dx - 8} -4 Z M${dx + 10} -12 L${dx - 8} -6 Q${dx - 2} -1 ${dx + 8} -4 Z`} fill="#39FF6A" />
+            <path d={`M${-dx - 1} -9.5 V-3.5 M${dx + 1} -9.5 V-3.5`} stroke="#0A0A0B" strokeWidth={1.6} strokeLinecap="round" />
+          </g>
+        ) : (
+          <>
+            {eyeRow}
+            {brows}
+          </>
+        )}
+        <g transform="translate(0 12)" className={mood === 'talking' ? 'gf-talk' : undefined} display={neo ? 'none' : undefined}>
           <Mouth kind={mouth} t={t} scale={mood === 'shocked' ? 1.25 : 1} />
         </g>
       </g>
