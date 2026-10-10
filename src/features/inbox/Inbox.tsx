@@ -10,7 +10,7 @@ import type { Conversation } from '../../lib/types'
 import { Aura } from '../../ui/Aura'
 import { useFlairFor } from '../../ui/flair'
 import { GoofyFace } from '../../ui/GoofyFace'
-import { Badge, TypingDots, spring } from '../../ui/kit'
+import { Badge, Segmented, TypingDots, spring } from '../../ui/kit'
 import { IconBack, IconPin } from '../../ui/icons'
 import { useRef, useState } from 'react'
 import { togglePin, usePins } from './pins'
@@ -141,6 +141,8 @@ function RowMenu() {
   )
 }
 
+let lastTab: 'friends' | 'strangers' | null = null
+
 export default function Inbox({ variant }: InboxProps) {
   const me = useMe()
   const convs = useConversations()
@@ -148,7 +150,13 @@ export default function Inbox({ variant }: InboxProps) {
   const [inChat, params] = useRoute('/dm/:username')
   const activeName = inChat ? decodeURIComponent(params!.username).toLowerCase() : null
   const pins = usePins((s) => s.ids)
-  const all = convs.filter((c) => c.last_message || c.peer.username.toLowerCase() === activeName || pins.includes(c.id))
+  const shown = convs.filter((c) => c.last_message || c.peer.username.toLowerCase() === activeName || pins.includes(c.id))
+  const isFriend = (c: Conversation) => !!c.my_friend && !!c.peer_friend
+  const friends = shown.filter(isFriend).length
+  const [tab, setTab] = useState<'friends' | 'strangers'>(() => lastTab ?? (friends ? 'friends' : 'strangers'))
+  const pick = (t: 'friends' | 'strangers') => setTab((lastTab = t))
+  const all = shown.filter((c) => isFriend(c) === (tab === 'friends'))
+  const unread = (want: boolean) => shown.filter((c) => isFriend(c) === want && c.unread > 0).length
   const list = [...pins.map((id) => all.find((c) => c.id === id)).filter((c): c is Conversation => !!c), ...all.filter((c) => !pins.includes(c.id))]
 
   return (
@@ -158,15 +166,26 @@ export default function Inbox({ variant }: InboxProps) {
           <Link href="/" className="icon-btn" aria-label="back">
             <IconBack size={26} />
           </Link>
-          <h1 className="m-title">dms</h1>
+          <h1 className="m-title">chats</h1>
           <span className="icon-btn-spacer" />
         </header>
       )}
+      <div className="inbox-tabs">
+        <Segmented
+          layoutId={'inbox-tab-' + variant}
+          value={tab}
+          onChange={pick}
+          items={[
+            { id: 'friends', label: 'friends', ...(unread(true) ? { count: unread(true) } : {}) },
+            { id: 'strangers', label: 'strangers', ...(unread(false) ? { count: unread(false) } : {}) },
+          ]}
+        />
+      </div>
       <div className="inbox-list scroll-y">
         {list.length === 0 ? (
           <div className="empty empty-sm">
             <GoofyFace name="lonely.potato" size={variant === 'rail' ? 72 : 110} mood="neutral" />
-            <p className="empty-title">no dms yet</p>
+            <p className="empty-title">{tab === 'friends' ? 'no friends yet' : 'no strangers yet'}</p>
             {variant !== 'rail' && (
               <div className="empty-acts">
                 <Link href="/" className="empty-act is-ink">

@@ -23,13 +23,13 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti, openOnce, unsend } from '../../lib/engine'
+import { setFriend, clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti, openOnce, unsend } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight, IconGhost, IconHi } from '../../ui/icons'
+import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight, IconGhost, IconHi, IconAddFriend, IconFriend } from '../../ui/icons'
 import { EMBER_THEMES, getTheme, themeList, themeVars } from '../../themes/themes'
 import { flipModeFrom, useThemeMode } from '../../themes/mode'
 import { flushSync } from 'react-dom'
@@ -195,6 +195,7 @@ function ChatView({ conv }: { conv: Conversation }) {
             </AnimatePresence>
           </div>
         </button>
+        <FriendButton conv={conv} />
         <ModeButton />
         <button className="icon-btn" onClick={() => setSettings(true)} aria-label="chat settings">
           <IconGear size={24} />
@@ -211,6 +212,19 @@ function ChatView({ conv }: { conv: Conversation }) {
         <SettingsBody conv={conv} onPicked={() => setSettings(false)} />
       </Sheet>
     </div>
+  )
+}
+
+/** Strangers become friends when both add each other; then the chat moves to the friends tab. */
+function FriendButton({ conv }: { conv: Conversation }) {
+  const mine = !!conv.my_friend
+  const theirs = !!conv.peer_friend
+  if (mine && theirs) return null
+  return (
+    <button type="button" className={'friend-pill' + (mine ? ' is-sent' : theirs ? ' is-back' : '')} onClick={() => void setFriend(conv.id, !mine)} aria-pressed={mine}>
+      {mine ? <IconFriend size={16} /> : <IconAddFriend size={16} />}
+      {mine ? 'added' : theirs ? 'add back' : 'add friend'}
+    </button>
   )
 }
 

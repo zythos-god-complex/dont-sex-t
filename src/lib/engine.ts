@@ -1740,6 +1740,23 @@ export async function setBlocked(peerId: string, on: boolean): Promise<void> {
   void refreshBlocks()
 }
 
+export async function setFriend(convId: string, on: boolean): Promise<void> {
+  if (!token) return
+  const c = get().conversations[convId]
+  if (c) set({ conversations: { ...get().conversations, [convId]: { ...c, my_friend: on } } })
+  try {
+    onConvEvent(await api.friend(token, convId, on) as never)
+  } catch {
+    const c2 = get().conversations[convId]
+    if (c2) set({ conversations: { ...get().conversations, [convId]: { ...c2, my_friend: !on } } })
+  }
+}
+
+export async function saveBio(bio: string): Promise<void> {
+  if (!token) return
+  updateMe(await api.setBio(token, bio))
+}
+
 export async function setVoice(convId: string, on: boolean): Promise<void> {
   if (!token) return
   const c = get().conversations[convId]

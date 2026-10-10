@@ -8,7 +8,6 @@ import { useMe } from '../../lib/hooks'
 import { report, setBlocked, useBlocks, useGhost } from '../../lib/engine'
 import { closePeek, usePeek } from './peek'
 import { icebreaker, setIce } from '../../lib/drafts'
-import { motion } from 'motion/react'
 import { useLocation } from 'wouter'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
@@ -27,7 +26,9 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
     const k = name.toLowerCase()
     return Object.values(s.profiles).find((x) => x.username.toLowerCase() === k) ?? (s.me?.username.toLowerCase() === k ? s.me : null)
   })
-  const about = prof ? [prof.age ? String(prof.age) : '', prof.place ?? ''].filter(Boolean).join(' · ') : ''
+  const since = prof?.joined ? 'since ' + new Date(prof.joined).toLocaleDateString('en', { month: 'short', year: 'numeric' }).toLowerCase() : ''
+  const chips = prof ? [prof.age ? String(prof.age) : '', prof.place ?? '', since].filter(Boolean) : []
+  const bio = prof?.bio || flair?.bio
   const np = prof?.now_playing
   const color = applyAvatar(faceTraits(name), custom).color
   const card = flair ? (CARDS.find((c) => c.id === flair.card) ?? CARDS[0]) : null
@@ -46,8 +47,14 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
       <div className="pc-body">
         <span className="pc-name">{name}</span>
         {sub && <span className="pc-sub">{sub}</span>}
-        {about && <span className="pc-about">{about}</span>}
-        {flair?.bio && <p className="pc-bio">{flair.bio}</p>}
+        {chips.length > 0 && (
+          <span className="pc-chips">
+            {chips.map((c) => (
+              <i key={c}>{c}</i>
+            ))}
+          </span>
+        )}
+        {bio && <p className="pc-bio">{bio}</p>}
         {np ? <NowPlaying track={np} /> : prof?.song && <SongCard song={prof.song} />}
       </div>
     </div>
@@ -100,30 +107,6 @@ function BlockBtn({ id }: { id: string }) {
   )
 }
 
-/** Same number for both people: hash of the two names, sorted. */
-export function compat(a: string, b: string): number {
-  const k = [a.toLowerCase(), b.toLowerCase()].sort().join('|')
-  let h = 2166136261
-  for (let i = 0; i < k.length; i++) h = Math.imul(h ^ k.charCodeAt(i), 16777619)
-  return 37 + ((h >>> 0) % 63)
-}
-
-function Compat({ me, them }: { me: string; them: string }) {
-  return (
-    <div className="cp" key={them}>
-      <motion.span initial={{ x: -26 }} animate={{ x: [-26, 6, 0] }} transition={{ duration: 0.5, times: [0, 0.7, 1] }}>
-        <GoofyFace name={me} size={54} mood="happy" blink={false} />
-      </motion.span>
-      <motion.span initial={{ x: 26 }} animate={{ x: [26, -6, 0] }} transition={{ duration: 0.5, times: [0, 0.7, 1] }}>
-        <GoofyFace name={them} size={54} mood="happy" blink={false} />
-      </motion.span>
-      <motion.span className="cp-stamp" initial={{ scale: 2.6, opacity: 0, rotate: -26 }} animate={{ scale: 1, opacity: 1, rotate: -9 }} transition={{ delay: 0.45, type: 'spring', stiffness: 620, damping: 17 }}>
-        {compat(me, them)}% chaos compat
-      </motion.span>
-    </div>
-  )
-}
-
 export function ProfileCard({ name, id, sub, open, onClose, chat = false }: { name: string; id?: string | null; sub?: string | null; open: boolean; onClose: () => void; chat?: boolean }) {
   const me = useMe()
   const [, nav] = useLocation()
@@ -138,7 +121,6 @@ export function ProfileCard({ name, id, sub, open, onClose, chat = false }: { na
   return (
     <Sheet open={open} onClose={onClose} label={name + ' profile'}>
       <ProfileCardView name={name} sub={sub} />
-      {!mine && me && <Compat me={me.username} them={name} />}
       {!mine && me && chat && !blocked && !ghost && (
         <div className="pc-say">
           <button type="button" className="pc-hi" onClick={() => open2(icebreaker(), false)}>

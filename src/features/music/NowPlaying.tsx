@@ -1,4 +1,5 @@
 // A small "now playing" card: album art, track, artist, a little equalizer. Opens the track in Spotify.
+import { IconPlay } from '../../ui/icons'
 type Track = { t: string; by: string; img: string; url: string }
 
 function Bars() {
@@ -29,23 +30,20 @@ export function NowPlaying({ track, compact }: { track: Track; compact?: boolean
 
 type SongT = { id: string; t: string; by: string; img: string }
 
-/** the profile song: opens a song.link page (every app), with a quick jiosaavn search on the side */
+/** the profile song: big cover on a blurred cover backdrop, opens a song.link page (every music app) */
 export function SongCard({ song }: { song: SongT }) {
-  const saavn = 'https://www.jiosaavn.com/search/song/' + encodeURIComponent(`${song.t} ${song.by}`.slice(0, 80))
   return (
-    <div className="np np-song">
-      <a className="np-main" href={`https://song.link/i/${song.id}`} target="_blank" rel="noopener noreferrer" onPointerDown={(e) => e.stopPropagation()}>
-        <span className="np-art">
-          <img src={song.img} alt="" loading="lazy" decoding="async" />
-        </span>
-        <span className="np-text">
-          <b className="ellipsis">{song.t}</b>
-          <small className="ellipsis">{song.by}</small>
-        </span>
-      </a>
-      <a className="np-saavn" href={saavn} target="_blank" rel="noopener noreferrer" onPointerDown={(e) => e.stopPropagation()}>
-        saavn
-      </a>
-    </div>
+    <a className="song-card" href={`https://song.link/i/${song.id}`} target="_blank" rel="noopener noreferrer" onPointerDown={(e) => e.stopPropagation()}>
+      <img className="song-bg" src={song.img} alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <img className="song-art" src={song.img} alt="" loading="lazy" decoding="async" />
+      <span className="song-meta">
+        <small>on repeat</small>
+        <b className="ellipsis">{song.t}</b>
+        <span className="ellipsis">{song.by}</span>
+      </span>
+      <span className="song-play">
+        <IconPlay size={18} />
+      </span>
+    </a>
   )
 }

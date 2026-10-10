@@ -6,7 +6,7 @@ import { useMe } from '../../lib/hooks'
 import { useLocation } from 'wouter'
 import { useStore } from '../../lib/store'
 import { useShallow } from 'zustand/react/shallow'
-import { pendingPhoto, saveAbout, saveGhost, saveMood, saveSong, searchSongs, submitPhoto, useGhost, useMood } from '../../lib/engine'
+import { pendingPhoto, saveAbout, saveBio, saveGhost, saveMood, saveSong, searchSongs, submitPhoto, useGhost, useMood } from '../../lib/engine'
 import type { Song } from '../../lib/types'
 import { connectSpotify, disconnectSpotify, spotifyEnabled, useSpotify } from '../../lib/spotify'
 import { NowPlaying, SongCard } from '../music/NowPlaying'
@@ -132,14 +132,13 @@ const HATS: HatId[] = ['none', 'crown', 'cap', 'beanie', 'halo', 'bow', 'tophat'
 /** Perk users only: hat, card colours, live nameplate, bio. */
 function FlairEditor() {
   const me = useMe()
-  const [bio, setBio] = useState(me?.flair?.bio ?? '')
   if (!me?.vip) return null
   const f = me.flair ?? {}
   const hat = f.hat ?? 'none'
   return (
     <>
       <h3 className="settings-label">flair</h3>
-      <ProfileCardView name={me.username} flair={{ ...f, bio }} />
+      <ProfileCardView name={me.username} flair={f} />
       <h3 className="settings-label">hat</h3>
       <div className="fl-grid">
         {HATS.concat(me.admin ? ['neo'] : []).map((h) => (
@@ -148,15 +147,6 @@ function FlairEditor() {
           </button>
         ))}
       </div>
-      <h3 className="settings-label">bio</h3>
-      <textarea
-        className="fl-bio"
-        maxLength={140}
-        value={bio}
-        aria-label="bio"
-        onChange={(e) => setBio(e.target.value)}
-        onBlur={() => bio !== (f.bio ?? '') && void saveFlair({ bio })}
-      />
       <h3 className="settings-label">card</h3>
       <div className="fl-chips">
         {CARDS.map((c) => (
@@ -283,6 +273,18 @@ function PhotoButton({ current }: { current: AvatarConfig }) {
         </button>
       )}
     </div>
+  )
+}
+
+function BioRow() {
+  const me = useMe()
+  const saved = me?.bio ?? me?.flair?.bio ?? ''
+  const [bio, setBio] = useState(saved)
+  return (
+    <>
+      <h3 className="settings-label">bio</h3>
+      <textarea className="fl-bio" maxLength={140} value={bio} aria-label="bio" onChange={(e) => setBio(e.target.value)} onBlur={() => bio.trim() !== saved && void saveBio(bio).catch(() => {})} />
+    </>
   )
 }
 
@@ -539,6 +541,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
       </div>
       <MoodRow name={me.username} spicy={me.nsfw === true && me.adult === true} />
       {!temp && <About />}
+      {!temp && <BioRow />}
       {!temp && <SongRow />}
       {spotifyEnabled() && <Music />}
       <h3 className="settings-label">privacy</h3>
