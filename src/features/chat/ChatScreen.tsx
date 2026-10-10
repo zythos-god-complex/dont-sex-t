@@ -1321,7 +1321,7 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
         {themeList(mode).filter((t) => (t.id !== 'matrix' || useStore.getState().me?.admin) && EMBER_THEMES.includes(t.id) === (themeTab === 'ember')).map((t) => {
           const on = t.id === conv.theme
           const meNow = useStore.getState().me
-          const lock = meNow?.admin || on ? null : themeLocked(t.id, meNow?.stats)
+          const lock = meNow?.admin || meNow?.username.toLowerCase() === 'ember' || on ? null : themeLocked(t.id, meNow?.stats)
           return (
             <motion.button key={t.id} className={'swatch' + (on ? ' is-on' : '') + (lock ? ' is-locked' : '')} onClick={(e) => {
                 if (lock || t.id === conv.theme) return
