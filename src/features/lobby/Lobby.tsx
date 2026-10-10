@@ -52,6 +52,8 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
   const tilt = faceTilt(u.username, 1.6)
   const showStatus = useStore((s) => s.me?.show_status !== false && s.profiles[u.id]?.show_status !== false && u.show_status !== false)
   const hold = useRef<{ t: ReturnType<typeof setTimeout>; fired: boolean } | null>(null)
+  // already chatted: straight to the DM, strangers get the peek card
+  const known = useStore((s) => !!s.convByPeer[u.id])
   const down = () => {
     const h = { fired: false, t: setTimeout(() => {
       h.fired = true
@@ -81,7 +83,8 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
       onContextMenu={(e) => e.preventDefault()}
       onClick={() => {
         if (hold.current?.fired) return
-        peek(u.username, u.id)
+        if (known) nav('/dm/' + encodeURIComponent(u.username))
+        else peek(u.username, u.id)
       }}
     >
       {unread > 0 && <Badge n={unread} className="card-badge" />}
