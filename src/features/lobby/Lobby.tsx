@@ -10,7 +10,7 @@ import { Badge, Segmented, TypingDots, Wordmark, spring, useIsDesktop } from '..
 import { GenderIcon, IconDice, IconDm, IconRooms } from '../../ui/icons'
 import { loadRooms, useRoomsUnread } from '../rooms/rooms'
 import { MeButton } from '../shell/MeSheet'
-import { setLooking, useBlocks, useMood } from '../../lib/engine'
+import { setLooking, useBlocks, useGhost, useMood } from '../../lib/engine'
 import { icebreaker, setIce } from '../../lib/drafts'
 import { peek } from '../profile/peek'
 import { useStore } from '../../lib/store'
@@ -107,8 +107,11 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
 
 export default function Lobby() {
   const desktop = useIsDesktop()
-  const [filter, setFilter] = useState<OnlineFilter>('all')
-  const { list: all, counts } = useOnline(filter)
+  const [filter, setFilter] = useState<OnlineFilter | 'mood'>('all')
+  const { list: everyone, counts } = useOnline(filter === 'mood' ? 'all' : filter)
+  const moodNow = useMood((s) => s.mood?.mood ?? null)
+  const all = filter === 'mood' ? everyone.filter((u) => u.mood && u.mood === moodNow) : everyone
+  const ghost = useGhost((g) => g.on)
   const blocked = useBlocks((b) => b.blocked)
   const blockedBy = useBlocks((b) => b.blockedBy)
   const visible = all.filter((u) => !blocked.includes(u.id) && !blockedBy.includes(u.id))
@@ -186,7 +189,7 @@ export default function Lobby() {
   }
 
   const emptyCopy =
-    filter === 'all' ? ["nobody's here rn", "they'll pop up here"] : filter === 'm' ? ['no guys online rn', null] : ['no girls online rn', null]
+    filter === 'all' || filter === 'mood' ? ["nobody's here rn", "they'll pop up here"] : filter === 'm' ? ['no guys online rn', null] : ['no girls online rn', null]
 
   return (
     <div className="lobby">
@@ -222,6 +225,7 @@ export default function Lobby() {
             { id: 'all', label: 'all', count: counts.all },
             { id: 'm', label: 'male', count: counts.m },
             { id: 'f', label: 'female', count: counts.f },
+            ...(moodNow ? [{ id: 'mood' as const, label: 'same mood', count: everyone.filter((u) => u.mood === moodNow).length }] : []),
           ]}
         />
       </div>
@@ -254,7 +258,7 @@ export default function Lobby() {
         )}
       </div>
       <AnimatePresence>
-        {queue ? (
+        {ghost ? null : queue ? (
           <motion.button key="q" type="button" className="roll is-queue" onClick={() => setQueue(false)} initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} transition={spring}>
             <span className="roll-dot" />
             finding a match{lookers.length > 1 ? '' : '...'} · tap to stop

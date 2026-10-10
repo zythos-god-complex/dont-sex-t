@@ -501,7 +501,7 @@ function GoofyFaceImpl({ name, avatar, horns, hat, size = 40, look, mood = 'neut
   const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : mood === 'kiss' || mood === 'flirty' ? { ...t, blush: true } : t
   return (
     <span className={'gf ' + (className ?? '')} style={{ width: size, height: size, ...style }}>
-      <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} hat={hat === undefined ? (flairHat ?? seasonal) : hat} />
+      <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} hat={hat === undefined ? (av?.ghost ? 'ghost' : (flairHat ?? seasonal)) : hat} />
       {presence && <span className={'gf-dot ' + (presence === 'away' ? 'is-away' : 'is-online')} style={{ '--s': `${Math.max(9, Math.round(size * 0.26))}px` } as CSSProperties} />}
     </span>
   )

@@ -4,6 +4,8 @@ import { useMe } from '../../lib/hooks'
 import { useLocation } from 'wouter'
 import { useStore } from '../../lib/store'
 import { useShallow } from 'zustand/react/shallow'
+import { saveGhost, saveMood, useGhost, useMood } from '../../lib/engine'
+import type { FaceMood } from '../../ui/GoofyFace'
 import { forgetMe, logout, setBlocked, useBlocks, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
@@ -177,6 +179,44 @@ function FlairEditor() {
 
 const VALID = /^[A-Za-z0-9_.]{3,20}$/
 
+const MOODS: FaceMood[] = ['happy', 'sleepy', 'angry', 'smug', 'shocked', 'wink', 'disgust', 'kiss', 'flirty']
+
+function MoodRow({ name, spicy }: { name: string; spicy: boolean }) {
+  const cur = useMood((s) => (s.mood && s.mood.until > Date.now() ? s.mood : null))
+  const [busy, setBusy] = useState(false)
+  const pick = (m: string) => {
+    setBusy(true)
+    saveMood(cur?.mood === m ? null : m).catch(() => {}).finally(() => setBusy(false))
+  }
+  const left = cur ? Math.max(1, Math.round((cur.until - Date.now()) / 60e3)) : 0
+  return (
+    <>
+      <h3 className="settings-label">mood rn{cur && <span className="mood-left"> {left >= 60 ? `${Math.floor(left / 60)}h ${left % 60}m` : `${left}m`} left</span>}</h3>
+      <div className="mood-row">
+        {MOODS.filter((m) => spicy || (m !== 'flirty' && m !== 'kiss')).map((m) => (
+          <button key={m} type="button" className={'mood-opt' + (cur?.mood === m ? ' is-on' : '')} disabled={busy} onClick={() => pick(m)} aria-label={m}>
+            <GoofyFace name={name} size={40} mood={m} blink={false} />
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function GhostRow() {
+  const on = useGhost((g) => g.on)
+  const [busy, setBusy] = useState(false)
+  return (
+    <div className="settings-row" style={{ marginTop: 8 }}>
+      <span className="grow">
+        ghost browse
+        <small className="settings-sub">off the board, replies only</small>
+      </span>
+      <Toggle label="ghost browse" on={on} disabled={busy} onChange={(v) => { setBusy(true); saveGhost(v).catch(() => {}).finally(() => setBusy(false)) }} />
+    </div>
+  )
+}
+
 function Blocked() {
   const ids = useBlocks((b) => b.blocked)
   const names = useStore(useShallow((s) => ids.map((id) => s.profiles[id]?.username ?? Object.values(s.conversations).find((c) => c.peer.id === id)?.peer.username ?? '')))
@@ -303,7 +343,9 @@ function MeBody({ onClose }: { onClose: () => void }) {
           }}
         />
       </div>
+      <MoodRow name={me.username} spicy={me.nsfw === true && me.adult === true} />
       <h3 className="settings-label">privacy</h3>
+      <GhostRow />
       <div className="settings-row">
         <span className="grow">show active status</span>
         <Toggle label="show active status" on={me.show_status !== false} onChange={(v) => void savePrivacy(v, null)} />
@@ -327,13 +369,14 @@ function MeBody({ onClose }: { onClose: () => void }) {
 }
 
 export function MeButton({ size = 32 }: { size?: number }) {
+  const moodRn = useMood((m) => (m.mood && m.mood.until > Date.now() ? (m.mood.mood as FaceMood) : undefined))
   const me = useMe()
   const [open, setOpen] = useState(false)
   if (!me) return null
   return (
     <>
       <button type="button" className="me-btn" aria-label="your profile" onClick={() => setOpen(true)}>
-        <GoofyFace name={me.username} size={size} />
+        <GoofyFace name={me.username} size={size} mood={moodRn} />
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} label="your profile">
         <MeBody onClose={() => setOpen(false)} />

@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom'
 import { seasonOn } from '../../lib/season'
 import { Ink } from '../../ui/Ink'
 import { getDraft, setDraft, takeIce } from '../../lib/drafts'
+import { useGhost } from '../../lib/engine'
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation } from 'wouter'
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'motion/react'
@@ -687,6 +688,7 @@ function EmptyChat({ conv, now, sinceOnline, online }: { conv: Conversation; now
 /* ------------------------------------------------------------------ requests / blocks */
 
 function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: Conversation; meId: string | null; now: number; onEgg: () => void; replyTo: Message | null; onClearReply: () => void }) {
+  const ghost = useGhost((g) => g.on)
   const name = conv.peer.username
   let content: React.ReactNode = null
   if (conv.blocked === 'me')
@@ -701,6 +703,7 @@ function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: C
       </>
     )
   else if (conv.blocked === 'them') content = <p>you can't reply to this chat</p>
+  else if (ghost && !conv.status) content = <p>👻 ghosts can only reply</p>
   else if (conv.status === 'pending' && conv.requester === meId)
     content = (
       <p>

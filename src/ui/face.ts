@@ -366,6 +366,7 @@ export type TopKind = 'none' | 'antenna' | 'sprout'
 export type AvatarConfig = {
   v: 1
   hat?: import('../lib/season').SeasonHat | null
+  ghost?: boolean // ghost browse: wears a bedsheet
   color: string
   blob: BlobKind
   eyes: EyeKind

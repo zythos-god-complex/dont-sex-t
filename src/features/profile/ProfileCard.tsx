@@ -2,7 +2,7 @@
 // live banner and bio.
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useMe } from '../../lib/hooks'
-import { report, setBlocked, useBlocks } from '../../lib/engine'
+import { report, setBlocked, useBlocks, useGhost } from '../../lib/engine'
 import { closePeek, usePeek } from './peek'
 import { icebreaker, setIce } from '../../lib/drafts'
 import { motion } from 'motion/react'
@@ -118,6 +118,7 @@ export function ProfileCard({ name, id, sub, open, onClose, chat = false }: { na
   const [, nav] = useLocation()
   const mine = me?.username.toLowerCase() === name.toLowerCase()
   const blocked = useBlocks((b) => !!id && (b.blocked.includes(id) || b.blockedBy.includes(id)))
+  const ghost = useGhost((g) => g.on)
   const open2 = (text: string, auto: boolean) => {
     setIce(name, text, auto)
     onClose()
@@ -127,7 +128,7 @@ export function ProfileCard({ name, id, sub, open, onClose, chat = false }: { na
     <Sheet open={open} onClose={onClose} label={name + ' profile'}>
       <ProfileCardView name={name} sub={sub} />
       {!mine && me && <Compat me={me.username} them={name} />}
-      {!mine && me && chat && !blocked && (
+      {!mine && me && chat && !blocked && !ghost && (
         <div className="pc-say">
           <button type="button" className="pc-hi" onClick={() => open2(icebreaker(), false)}>
             say hi

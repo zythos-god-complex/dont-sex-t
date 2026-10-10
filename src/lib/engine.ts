@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { avatarFromTraits, faceTraits } from '../ui/face'
 import type { AvatarConfig } from '../ui/face'
 // Everything live: wires realtime + api into the store.
 // Actions are plain exported functions (see bottom). window.__gat exposes them for QA.
@@ -314,6 +315,7 @@ function myMeta() {
 
 function trackMe() {
   if (!lobby || lobby.state !== 'joined' || !token) return
+  if (useGhost.getState().on) return untrackMe()
   const meta = myMeta()
   if (meta) lobby.track(meta).catch(() => {})
 }
@@ -1901,4 +1903,36 @@ export function setMoodRn(mood: MoodRn | null): void {
     /* blocked */
   }
   trackMe()
+}
+
+/** Mood rn for 2h (server checks flirty), or null to clear. */
+export async function saveMood(mood: string | null): Promise<void> {
+  if (!token) return
+  const r = await api.setMood(token, mood)
+  setMoodRn(r ? { mood: r.mood, until: Date.parse(r.until) } : null)
+}
+
+// ghost browse: off the board and out of search, replies only, bedsheet on
+export const useGhost = create<{ on: boolean }>(() => {
+  try {
+    return { on: localStorage.getItem('gat.ghost') === '1' }
+  } catch {
+    return { on: false }
+  }
+})
+export async function saveGhost(on: boolean): Promise<void> {
+  const s = get()
+  if (!token || !s.me) return
+  await api.setGhost(token, on)
+  useGhost.setState({ on })
+  try {
+    if (on) localStorage.setItem('gat.ghost', '1')
+    else localStorage.removeItem('gat.ghost')
+  } catch {
+    /* blocked */
+  }
+  if (on) untrackMe()
+  else trackMe()
+  const base = s.me.avatar ?? avatarFromTraits(faceTraits(s.me.username))
+  await saveAvatar({ ...base, ghost: on || undefined })
 }
