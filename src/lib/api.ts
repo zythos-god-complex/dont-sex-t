@@ -19,6 +19,7 @@ const KNOWN_CODES: ReadonlySet<string> = new Set([
   'not_allowed',
   'age_required',
   'banned',
+  'rename_cooldown',
 ])
 
 export class ApiError extends Error {
@@ -124,7 +125,8 @@ export const api = {
   admin: <T = unknown>(token: string, op: string, a: Record<string, unknown> = {}) => rpc<T>('gat_admin', { p_token: token, p_op: op, p_a: a }),
   report: (token: string, name: string, reason: string) => rpc<boolean>('gat_report', { p_token: token, p_name: name, p_reason: reason }),
   notice: () => rpc<{ text: string; at: string } | null>('gat_notice', {}),
-  banInfo: (token: string) => rpc<string | null>('gat_ban_info', { p_token: token }),
+  banState: (token: string) => rpc<{ until: string; appealed: boolean } | null>('gat_ban_state', { p_token: token }),
+  appeal: (token: string, text: string) => rpc<boolean>('gat_appeal', { p_token: token, p_text: text }),
   forgetMe: (token: string) => rpc<boolean>('gat_forget_me', { p_token: token }),
   uploadTicket: (token: string, bucket: 'gat-img' | 'gat-voice', ext: string) => rpc<string>('gat_upload_ticket', { p_token: token, p_bucket: bucket, p_ext: ext }),
   unsend: (token: string, msg: string) => rpc<Message>('gat_unsend', { p_token: token, p_msg: msg }),

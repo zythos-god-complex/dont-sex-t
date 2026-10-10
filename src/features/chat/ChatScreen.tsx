@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { Ink } from '../../ui/Ink'
 import { getDraft, setDraft } from '../../lib/drafts'
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation } from 'wouter'
@@ -122,7 +123,8 @@ function ChatView({ conv }: { conv: Conversation }) {
   const me = useMe()
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
   const [card, setCard] = useState(false)
-  const peerAura = useFlairFor(conv.peer.username)?.aura
+  const peerFl = useFlairFor(conv.peer.username)
+  const peerAura = peerFl?.aura
   const plate = !!peerAura && peerAura !== 'none'
 
   useEffect(() => {
@@ -162,7 +164,7 @@ function ChatView({ conv }: { conv: Conversation }) {
           {plate && <Aura id={peerAura} />}
           <GoofyFace name={peer.username} size={40} presence={conv.peer.show_status !== false && me?.show_status !== false && status.online ? (status.away ? 'away' : 'online') : null} />
           <div className="chat-peer-text">
-            <span className="chat-peer-name ellipsis">{peer.username}</span>
+            <span className="chat-peer-name ellipsis">{peer.username}{peerFl && <i className="vchk" aria-label="verified" />}</span>
             <AnimatePresence mode="wait" initial={false}>
               {statusLine && (
                 <motion.span key={String(status.typing) + String(status.online)} className={'chat-peer-status' + (status.typing ? ' is-typing' : '')} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.15 }}>
@@ -182,7 +184,7 @@ function ChatView({ conv }: { conv: Conversation }) {
       <ChatFooter conv={conv} meId={me?.id ?? null} now={now} onEgg={() => setEgg((n) => n + 1)} replyTo={replyTo} onClearReply={() => setReplyTo(null)} />
       <AnimatePresence>{egg > 0 && <EasterEgg key="egg" me={me?.username ?? ''} />}</AnimatePresence>
 
-      <ProfileCard name={peer.username} open={card} onClose={() => setCard(false)} />
+      <ProfileCard name={peer.username} id={peer.id} open={card} onClose={() => setCard(false)} />
       <Sheet open={settings} onClose={() => setSettings(false)} label="chat settings">
         <SettingsBody conv={conv} onPicked={() => setSettings(false)} />
       </Sheet>
@@ -535,7 +537,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
                 {p.text}
               </a>
             ) : (
-              <Fragment key={i}>{p.text}</Fragment>
+              <Ink key={i} text={p.text} />
             ),
           )}
         </motion.div>

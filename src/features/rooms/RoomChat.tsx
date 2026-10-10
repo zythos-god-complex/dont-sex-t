@@ -1,4 +1,6 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { peek } from '../profile/peek'
+import { Ink } from '../../ui/Ink'
 import { getDraft, setDraft } from '../../lib/drafts'
 import { useLocation } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
@@ -32,14 +34,14 @@ function Bubble({ m, mine, joinPrev, joinNext, mod, fresh }: { m: RoomMsg; mine:
   const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk ? 'b-sticker' : ''].join(' ')
   return (
     <>
-      {!mine && !joinPrev && <span className="b-who">{name}</span>}
+      {!mine && !joinPrev && <button type="button" className="b-who" onClick={() => peek(name, m.sender_id)}>{name}</button>}
       <motion.div
         className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '')}
         initial={fresh ? { opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 } : false}
         animate={{ opacity: m.state === 'sending' ? 0.7 : 1, x: 0, y: 0, scale: 1 }}
         transition={spring}
       >
-        {!mine && <span className="b-face">{!joinNext && <GoofyFace name={name} size={28} blink={false} />}</span>}
+        {!mine && <span className="b-face" onClick={() => peek(name, m.sender_id)}>{!joinNext && <GoofyFace name={name} size={28} blink={false} />}</span>}
         <div className={cls} onClick={mod && !m.state ? () => setArm((v) => !v) : undefined}>
           {stk ? (
             NSFW_STICKERS.includes(stk) ? <LockedSticker size={130} /> : <Sticker kind={stk} name={name} size={130} />
@@ -50,7 +52,7 @@ function Bubble({ m, mine, joinPrev, joinNext, mod, fresh }: { m: RoomMsg; mine:
                   {p.text}
                 </a>
               ) : (
-                <Fragment key={i}>{p.text}</Fragment>
+                <Ink key={i} text={p.text} />
               ),
             )
           )}

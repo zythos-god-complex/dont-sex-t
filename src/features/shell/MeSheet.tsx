@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMe } from '../../lib/hooks'
 import { useLocation } from 'wouter'
-import { forgetMe, logout, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
+import { useStore } from '../../lib/store'
+import { useShallow } from 'zustand/react/shallow'
+import { forgetMe, logout, setBlocked, useBlocks, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Sheet, Toggle } from '../../ui/kit'
@@ -175,6 +177,31 @@ function FlairEditor() {
 
 const VALID = /^[A-Za-z0-9_.]{3,20}$/
 
+function Blocked() {
+  const ids = useBlocks((b) => b.blocked)
+  const names = useStore(useShallow((s) => ids.map((id) => s.profiles[id]?.username ?? Object.values(s.conversations).find((c) => c.peer.id === id)?.peer.username ?? '')))
+  if (!ids.length) return null
+  return (
+    <>
+      <h3 className="settings-label">blocked</h3>
+      <div className="blk-list">
+        {ids.map((id, i) => (
+          <div key={id} className="blk">
+            <span className="blk-face">
+              <GoofyFace name={names[i] || id} size={44} blink={false} hat={null} />
+              <span className="blk-tape" aria-hidden="true" />
+            </span>
+            <span className="blk-name ellipsis">{names[i] || 'someone'}</span>
+            <button type="button" className="acc-btn" onClick={() => void setBlocked(id, false)}>
+              unblock
+            </button>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
 function MeBody({ onClose }: { onClose: () => void }) {
   const me = useMe()
   const [editing, setEditing] = useState(false)
@@ -211,7 +238,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
       await renameMe(name)
       setErr(null)
     } catch (e) {
-      setErr(isApiError(e) && e.code === 'username_taken' ? 'taken, try another' : 'something broke, try again')
+      setErr(isApiError(e, 'username_taken') ? 'taken, try another' : isApiError(e, 'rename_cooldown') ? 'one rename a week' : 'something broke, try again')
     }
     setBusy(false)
   }
@@ -286,6 +313,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
         <Toggle label="show seen" on={me.show_seen !== false} onChange={(v) => void savePrivacy(null, v)} />
       </div>
       <Account />
+      <Blocked />
       {me.admin && (
         <button type="button" className="me-admin" onClick={() => { onClose(); nav('/admin') }}>
           👑 control room

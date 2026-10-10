@@ -18,6 +18,7 @@ import { refreshBlocks } from './lib/engine'
 import { useBan } from './lib/ban'
 import { api } from './lib/api'
 import { GoofyFace } from './ui/GoofyFace'
+import { PeekHost } from './features/profile/ProfileCard'
 
 // screens most visits never open load on demand, then get warmed up when the phone is idle
 const loadOnboarding = () => import('./features/onboarding/Onboarding')
@@ -174,16 +175,63 @@ function DesktopApp() {
   )
 }
 
-function BanScreen({ until }: { until: string }) {
+const pad = (n: number) => String(n).padStart(2, '0')
+
+function Appeal() {
+  const { token, appealed } = useBan()
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  if (appealed) return <p className="ban-sub">appeal sent</p>
+  if (!open)
+    return (
+      <button className="ban-retry" onClick={() => setOpen(true)}>
+        appeal
+      </button>
+    )
+  const send = () => {
+    if (!token) return
+    setBusy(true)
+    api.appeal(token, text.trim()).then(() => useBan.setState({ appealed: true }), () => setBusy(false))
+  }
+  return (
+    <div className="ban-appeal">
+      <textarea className="fl-bio" maxLength={300} value={text} onChange={(e) => setText(e.target.value)} placeholder="what happened" autoFocus />
+      <button className="ban-retry is-ink" disabled={busy || text.trim().length < 3} onClick={send}>
+        send appeal
+      </button>
+    </div>
+  )
+}
+
+// goofy jail: your face behind ink bars, a live countdown, one appeal
+function Jail({ until }: { until: string }) {
+  const me = useMe()
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
   const ms = Date.parse(until)
-  const left = Number.isFinite(ms) ? Math.max(0, ms - Date.now()) : null
-  const when = left === null ? (until === 'soon' ? '' : 'for good') : left < 3600e3 ? `back in ${Math.max(1, Math.ceil(left / 60e3))}m` : left < 48 * 3600e3 ? `back in ${Math.ceil(left / 3600e3)}h` : `back in ${Math.ceil(left / 86400e3)}d`
+  const left = Number.isFinite(ms) ? Math.max(0, ms - now) : null
+  useEffect(() => {
+    if (left === 0) location.reload()
+  }, [left])
+  let clock = until === 'soon' ? '' : 'for good'
+  if (left !== null) {
+    const s = Math.floor(left / 1000)
+    const d = Math.floor(s / 86400)
+    clock = `${d ? d + 'd ' : ''}${pad(Math.floor(s / 3600) % 24)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`
+  }
   return (
     <div className="ban">
-      <GoofyFace name="timeout" size={120} mood="sleepy" hat={null} />
-      <h1 className="ban-title">timeout</h1>
-      {when && <p className="ban-sub">{when}</p>}
-      {left !== null && <button className="ban-retry" onClick={() => location.reload()}>check again</button>}
+      <div className="jail">
+        <GoofyFace name={me?.username ?? 'jail'} avatar={me?.avatar ?? undefined} size={128} mood="sleepy" hat={null} blink={false} />
+        <span className="jail-bars" aria-hidden="true" />
+      </div>
+      <h1 className="ban-title">goofy jail</h1>
+      {clock && <p className="ban-clock tnum">{clock}</p>}
+      {until !== 'soon' && <Appeal />}
     </div>
   )
 }
@@ -238,7 +286,7 @@ export default function App() {
   useEffect(() => {
     document.title = unread > 0 ? `(${unread}) GoofyAhhTalk` : 'GoofyAhhTalk'
   }, [unread])
-  if (ban) return <BanScreen until={ban} />
+  if (ban) return <Jail until={ban} />
   if (status === 'booting') return <div className="boot" />
   if (status === 'onboarding')
     return (
@@ -260,6 +308,8 @@ export default function App() {
       <ConnectionBanner />
       <Notice />
       {desktop ? <DesktopApp /> : <MobileApp />}
+      <PeekHost />
+      <UpdateBanner />
       <Toasts />
     </>
   )

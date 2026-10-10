@@ -1,8 +1,9 @@
 // Steam / Discord style profile card. Everyone gets the basic card; perk users get their card colours,
 // live banner and bio.
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useMe } from '../../lib/hooks'
-import { report } from '../../lib/engine'
+import { report, setBlocked, useBlocks } from '../../lib/engine'
+import { closePeek, usePeek } from './peek'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Aura, CARDS } from '../../ui/Aura'
@@ -48,8 +49,8 @@ function Report({ name }: { name: string }) {
     setState('busy')
     report(name, r).then(() => setState('done'), (e) => setState(isApiError(e, 'rate_limited') ? 'limit' : 'pick'))
   }
-  if (state === 'done') return <p className="rp-done">reported 🫡</p>
-  if (state === 'limit') return <p className="rp-done">easy there, try tomorrow</p>
+  if (state === 'done') return <span className="rp-done">reported 🫡</span>
+  if (state === 'limit') return <span className="rp-done">easy there, try tomorrow</span>
   if (state === 'idle')
     return (
       <button type="button" className="rp-open" onClick={() => setState('pick')}>
@@ -67,13 +68,44 @@ function Report({ name }: { name: string }) {
   )
 }
 
-export function ProfileCard({ name, sub, open, onClose }: { name: string; sub?: string | null; open: boolean; onClose: () => void }) {
+function BlockBtn({ id }: { id: string }) {
+  const blocked = useBlocks((b) => b.blocked.includes(id))
+  const [arm, setArm] = useState(false)
+  useEffect(() => setArm(false), [id])
+  const tap = () => {
+    if (blocked) void setBlocked(id, false)
+    else if (arm) {
+      setArm(false)
+      void setBlocked(id, true)
+    } else setArm(true)
+  }
+  return (
+    <button type="button" className={'rp-open' + (arm ? ' is-armed' : '')} onClick={tap}>
+      {blocked ? 'unblock' : arm ? 'block, sure?' : 'block'}
+    </button>
+  )
+}
+
+export function ProfileCard({ name, id, sub, open, onClose }: { name: string; id?: string | null; sub?: string | null; open: boolean; onClose: () => void }) {
   const me = useMe()
   const mine = me?.username.toLowerCase() === name.toLowerCase()
   return (
     <Sheet open={open} onClose={onClose} label={name + ' profile'}>
       <ProfileCardView name={name} sub={sub} />
-      {!mine && me && <Report name={name} />}
+      {!mine && me && (
+        <div className="pc-acts">
+          {id && <BlockBtn id={id} />}
+          <Report name={name} />
+        </div>
+      )}
     </Sheet>
   )
+}
+
+export function PeekHost() {
+  const { name, id } = usePeek()
+  const last = useRef(name)
+  if (name) last.current = name
+  if (!last.current) return null
+  return <ProfileCard name={last.current} id={id} open={!!name} onClose={closePeek} />
 }

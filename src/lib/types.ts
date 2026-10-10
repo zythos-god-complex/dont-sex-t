@@ -88,6 +88,7 @@ export type ErrorCode =
   | 'not_allowed'
   | 'age_required'
   | 'banned'
+  | 'rename_cooldown'
   | 'network' // fetch failed / offline / timeout
   | 'server' // anything else (5xx, PostgREST errors, missing RPC)
 

@@ -1082,8 +1082,8 @@ async function validate(t: string, fallback: string | null, attempt = 0): Promis
     }
     if (isApiError(e, 'banned')) {
       teardownSession()
-      useBan.setState({ until: 'soon' })
-      void api.banInfo(t).then((u) => useBan.setState({ until: u ?? 'soon' }), () => {})
+      useBan.setState({ until: 'soon', token: t })
+      void api.banState(t).then((b) => useBan.setState({ until: b?.until ?? 'soon', appealed: !!b?.appealed }), () => {})
       return
     }
     // offline / server hiccup: keep cached UI, retry

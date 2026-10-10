@@ -39,7 +39,8 @@ function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolea
   const typing = usePeerTyping(c.id)
   const unread = c.unread > 0
   const when = c.last_message?.created_at ?? c.last_message_at ?? c.created_at
-  const aura = useFlairFor(c.peer.username)?.aura
+  const fl = useFlairFor(c.peer.username)
+  const aura = fl?.aura
   const plate = !!aura && aura !== 'none'
   return (
     <motion.button
@@ -61,7 +62,7 @@ function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolea
       {plate && <Aura id={aura} />}
       <GoofyFace name={c.peer.username} size={50} presence={online ? 'online' : null} />
       <span className="row-main">
-        <span className="row-name ellipsis">{c.peer.username}</span>
+        <span className="row-name ellipsis">{c.peer.username}{fl && <i className="vchk" aria-label="verified" />}</span>
         <span className={'row-preview ellipsis' + (typing ? ' is-typing' : '')}>
           {typing ? (
             <>
