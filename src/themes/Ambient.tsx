@@ -3,11 +3,11 @@ import { ButterflyScene, MeteorScene, SakuraNightScene, TempleScene } from './sc
 import { MatrixRain } from './MatrixRain'
 import type { Ambient as AmbientKind } from './themes'
 import { useAmbientPrefs } from './ambientPrefs'
-import { BatmanScene, BffScene, LoveScene, LustScene, SpookyScene } from './scenes'
+import { BatmanScene, BffScene, LoveScene, LustScene } from './scenes'
 
 const COUNT: Partial<Record<AmbientKind, number>> = {
   petals: 14, stars: 26, bubbles: 12, leaves: 9, hearts: 10, sparkles: 16,
-  bats: 1, lovebeat: 9, party: 10, embers: 10, fog: 6, meteor: 8, rain: 170, sakuranight: 30, butterflies: 18,
+  bats: 1, lovebeat: 9, party: 10, embers: 10, meteor: 8, rain: 170, sakuranight: 30, butterflies: 18,
 }
 
 // deterministic pseudo random so layout is stable across renders
@@ -35,7 +35,6 @@ function AmbientImpl({ kind, spicy = false }: { kind: AmbientKind; spicy?: boole
   if (kind === 'sakuranight') return <div className="amb-wrap"><SakuraNightScene amount={amount} speed={speed} /></div>
   if (kind === 'butterflies') return <div className="amb-wrap"><ButterflyScene amount={amount} speed={speed} /></div>
   if (kind === 'matrix') return <div className="amb-wrap amb-matrix" aria-hidden="true"><MatrixRain /></div>
-  if (kind === 'fog') return <div style={spd} className="amb-wrap"><SpookyScene n={n} /></div>
   if (kind === 'embers') return <div style={spd} className="amb-wrap"><LustScene n={n} spicy={spicy} /></div>
   return (
     <div className={'amb amb-' + kind} aria-hidden="true" style={spd}>

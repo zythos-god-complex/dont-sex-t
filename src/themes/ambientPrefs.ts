@@ -25,7 +25,10 @@ export function setAmbientPrefs(p: Partial<Prefs>) {
   }
 }
 export const PARTICLE_AMBIENTS = ['petals', 'leaves', 'stars', 'bubbles', 'hearts', 'sparkles', 'lovebeat', 'party', 'embers'] as const
-export const AMBIENT_LABEL: Record<string, string> = { petals: 'petals', leaves: 'leaves', stars: 'stars', bubbles: 'bubbles', hearts: 'hearts', sparkles: 'sparkles', bats: 'bats', lovebeat: 'hearts', party: 'confetti', embers: 'floaties', fog: 'bats & fog', matrix: 'code rain', meteor: 'shooting stars', rain: 'rain', sakuranight: 'petals', butterflies: 'butterflies' }
+/** canvas scenes take the same sliders; butterflies keep a fixed few, so only their speed moves */
+export const SCENE_AMBIENTS = ['meteor', 'rain', 'sakuranight', 'butterflies'] as const
+export const SPEED_ONLY = ['butterflies'] as const
+export const AMBIENT_LABEL: Record<string, string> = { petals: 'petals', leaves: 'leaves', stars: 'stars', bubbles: 'bubbles', hearts: 'hearts', sparkles: 'sparkles', bats: 'bats', lovebeat: 'hearts', party: 'confetti', embers: 'floaties', matrix: 'code rain', meteor: 'shooting stars', rain: 'rain', sakuranight: 'petals', butterflies: 'butterflies' }
 
 export const landingFor = (convId: string): Landing => useAmbientPrefs.getState().landing[convId] ?? 'shake'
 export function setLanding(convId: string, l: Landing) {

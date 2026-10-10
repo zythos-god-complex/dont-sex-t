@@ -1,6 +1,5 @@
 import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { isPhoto } from './photoUrl'
-import { seasonOn } from '../lib/season'
 import { BLOBS, FACE_INK, TONGUE, applyAvatar, faceTraits, type AvatarConfig, type FaceTraits, type MouthKind } from './face'
 import { useAvatarFor, useHornsFor } from './avatars'
 import { useFlairFor } from './flair'
@@ -281,23 +280,6 @@ function Hat({ kind, x, y }: { kind: HatId; x: number; y: number }) {
           <circle cx={x} cy={y - 25} r={3.8} fill="#FFC83D" {...ink} strokeWidth={1.8} />
         </g>
       )
-    case 'pumpkin':
-      return (
-        <g>
-          <ellipse cx={x} cy={y - 7} rx={17} ry={11} fill="#FF8A1E" {...ink} />
-          <path d={`M${x - 6} ${y - 17} C${x - 9.5} ${y - 9} ${x - 9.5} ${y - 2} ${x - 6} ${y + 3.4} M${x + 6} ${y - 17} C${x + 9.5} ${y - 9} ${x + 9.5} ${y - 2} ${x + 6} ${y + 3.4}`} fill="none" {...ink} strokeWidth={1.5} />
-          <path d={`M${x - 11} ${y - 7} l3 -4.4 l3 4.4 Z M${x + 5} ${y - 7} l3 -4.4 l3 4.4 Z M${x - 6} ${y - 2} l2.4 1.8 l2.4 -1.8 l2.4 1.8 l2.4 -1.8 l2.4 1.8`} fill={FACE_INK} stroke={FACE_INK} strokeWidth={1.1} strokeLinejoin="round" />
-          <path d={`M${x} ${y - 17} C${x} ${y - 22} ${x + 3} ${y - 25} ${x + 7} ${y - 25.5}`} fill="none" stroke="#3E7A2E" strokeWidth={3.2} strokeLinecap="round" />
-        </g>
-      )
-    case 'witch':
-      return (
-        <g transform={`rotate(-12 ${x} ${y})`}>
-          <path d={`M${x - 13} ${y + 1} C${x - 8} ${y - 12} ${x - 2} ${y - 22} ${x + 4} ${y - 31} C${x + 6} ${y - 25} ${x + 9} ${y - 22} ${x + 15} ${y - 21} C${x + 9} ${y - 16} ${x + 11} ${y - 7} ${x + 13} ${y + 1} Z`} fill="#5B2A86" {...ink} />
-          <rect x={x - 12.4} y={y - 6} width={25} height={5} fill="#FF8A1E" stroke={FACE_INK} strokeWidth={1.6} />
-          <ellipse cx={x} cy={y + 3} rx={23} ry={4.4} fill="#5B2A86" {...ink} />
-        </g>
-      )
     case 'ghost':
       return (
         <g transform={`rotate(8 ${x} ${y})`}>
@@ -556,7 +538,6 @@ function GoofyFaceImpl({ name, avatar, horns, hat, size = 40, look, mood = 'neut
   const av = avatar !== undefined ? avatar : custom
   const t = applyAvatar(faceTraits(name), av)
   const flairHat = flair?.hat && flair.hat !== 'none' ? flair.hat : undefined
-  const seasonal = av?.hat && seasonOn('spooky') ? av.hat : undefined
   const reduce = usePrefersReducedMotion()
   const effMood = mood === 'wink' ? 'neutral' : mood
   const traits = mood === 'wink' ? { ...t, eyes: 'wink' as never } : mood === 'kiss' || mood === 'flirty' ? { ...t, blush: true } : t
@@ -565,7 +546,7 @@ function GoofyFaceImpl({ name, avatar, horns, hat, size = 40, look, mood = 'neut
       {isPhoto(av?.photo) ? (
         <img className="gf-photo" src={av.photo} alt="" loading="lazy" decoding="async" draggable={false} />
       ) : (
-        <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} hat={hat === undefined ? (av?.ghost ? 'ghost' : (flairHat ?? seasonal)) : hat} />
+        <FaceSvg t={traits} look={look ?? ZERO} mood={effMood} blink={blink && !reduce && size >= 28} horns={showHorns} hat={hat === undefined ? (av?.ghost ? 'ghost' : flairHat) : hat} />
       )}
       {presence && <span className={'gf-dot ' + (presence === 'away' ? 'is-away' : 'is-online')} style={{ '--s': `${Math.max(9, Math.round(size * 0.26))}px` } as CSSProperties} />}
     </span>

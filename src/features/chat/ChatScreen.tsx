@@ -4,7 +4,6 @@ import { FX_BY_THEME, fireFx } from '../../themes/fx'
 import { GameBubble, ToyBubble, ToyGrid, gameOf, toyOf } from '../toys/Toys'
 import { shareSticker } from '../stickers/share'
 import { Flame } from '../../ui/Flame'
-import { seasonOn } from '../../lib/season'
 import { Ink } from '../../ui/Ink'
 import { getDraft, setDraft, takeIce } from '../../lib/drafts'
 import { useGhost } from '../../lib/engine'
@@ -53,7 +52,7 @@ import { Aura } from '../../ui/Aura'
 import { useFlairFor } from '../../ui/flair'
 import { ProfileCard } from '../profile/ProfileCard'
 import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
-import { AMBIENT_LABEL, PARTICLE_AMBIENTS, landingFor, setAmbientPrefs, setLanding, useAmbientPrefs } from '../../themes/ambientPrefs'
+import { AMBIENT_LABEL, PARTICLE_AMBIENTS, SCENE_AMBIENTS, SPEED_ONLY, landingFor, setAmbientPrefs, setLanding, useAmbientPrefs } from '../../themes/ambientPrefs'
 
 export type ChatScreenProps = { username: string }
 
@@ -780,7 +779,7 @@ const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)
 
 function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversation; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; meId: string | null }) {
   const [tray, setTray] = useState(false)
-  const [trayTab, setTrayTab] = useState<'toys' | 'me' | 'us' | 'hate' | 'lust' | 'boo'>('me')
+  const [trayTab, setTrayTab] = useState<'toys' | 'me' | 'us' | 'hate' | 'lust'>('me')
   const [recording, setRecording] = useState(false)
   const myName = useMe()?.username ?? ''
   const spicyTray = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
@@ -939,7 +938,6 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
                     { id: 'me' as const, label: 'me' },
                     { id: 'us' as const, label: 'us two' },
                     { id: 'hate' as const, label: 'hate' },
-                    ...(seasonOn('spooky') ? [{ id: 'boo' as const, label: 'boo' }] : []),
                     ...(spicyTray ? [{ id: 'lust' as const, label: 'lust' }] : []),
                   ]}
                 />
@@ -1180,15 +1178,16 @@ function AmbientControls({ themeId }: { themeId: string }) {
   const kind = getTheme(themeId).ambient
   const amount = useAmbientPrefs((p) => p.amount)
   const speed = useAmbientPrefs((p) => p.speed)
-  if (!(PARTICLE_AMBIENTS as readonly string[]).includes(kind)) return null
+  if (![...PARTICLE_AMBIENTS, ...SCENE_AMBIENTS].includes(kind as never)) return null
   const label = AMBIENT_LABEL[kind]
+  const fixed = (SPEED_ONLY as readonly string[]).includes(kind)
   return (
     <div className="amb-ctl">
-      <label className="amb-row">
+      {!fixed && <label className="amb-row">
         <span>{label}</span>
         <input type="range" min={0.25} max={4} step={0.05} value={amount} onChange={(e) => setAmbientPrefs({ amount: +e.target.value })} aria-label={label + ' amount'} />
         <b className="tnum">{amount < 0.6 ? 'few' : amount > 2.2 ? 'loads' : amount > 1.3 ? 'more' : 'some'}</b>
-      </label>
+      </label>}
       <label className="amb-row">
         <span>speed</span>
         <input type="range" min={0.3} max={3} step={0.05} value={speed} onChange={(e) => setAmbientPrefs({ speed: +e.target.value })} aria-label={label + ' speed'} />

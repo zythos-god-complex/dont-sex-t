@@ -212,23 +212,3 @@ export function LustScene({ n, spicy }: { n: number; spicy: boolean }) {
     </div>
   )
 }
-
-const BAT = 'M12 3.4c-.6 0-1 .5-1.2 1.1l-.5-1.3-.4 1.6C8.6 3.6 5.6 2.6 2.6 3.6c1.5 1 1.6 2.6 1.1 3.7 1.6-.5 3.2 0 4.2 1 1-.7 2-.5 3 .6l1.1 1.6 1.1-1.6c1-1.1 2-1.3 3-.6 1-1 2.6-1.5 4.2-1-.5-1.1-.4-2.7 1.1-3.7-3-1-6 0-7.5 1.5l-.4-1.6-.5 1.3c-.2-.6-.6-1.1-1.2-1.1Z'
-
-/** spooky: a low moon, two fog banks rolling, a few bats flapping across */
-export function SpookyScene({ n }: { n: number }) {
-  return (
-    <div className="amb sc-spooky" aria-hidden="true">
-      <span className="sp-moon" />
-      <span className="sp-fog sp-fog-a" />
-      <span className="sp-fog sp-fog-b" />
-      {Array.from({ length: n }, (_, i) => (
-        <span key={i} className="sp-track" style={{ '--i': i, '--d': `${15 + (i % 3) * 6}s`, top: `${8 + ((i * 23) % 48)}%` } as CSSProperties}>
-          <svg className="sp-bat" viewBox="0 0 24 12" width={20 + (i % 3) * 7}>
-            <path d={BAT} />
-          </svg>
-        </span>
-      ))}
-    </div>
-  )
-}

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { SPOOKY_HATS, seasonOn } from '../../lib/season'
 import { motion } from 'motion/react'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, spring } from '../../ui/kit'
@@ -15,7 +14,7 @@ import {
   type AvatarConfig,
 } from '../../ui/face'
 
-type Tab = 'color' | 'shape' | 'eyes' | 'mouth' | 'extras' | 'boo'
+type Tab = 'color' | 'shape' | 'eyes' | 'mouth' | 'extras'
 
 function Tile({ on, onPick, children, label }: { on: boolean; onPick: () => void; children: React.ReactNode; label: string }) {
   return (
@@ -67,7 +66,6 @@ export function FaceBuilder({ name, value, onChange, onDone }: { name: string | 
           { id: 'eyes', label: 'eyes' },
           { id: 'mouth', label: 'mouth' },
           { id: 'extras', label: 'extras' },
-          ...(seasonOn('spooky') ? [{ id: 'boo' as const, label: 'boo' }] : []),
         ]}
       />
 
@@ -94,12 +92,6 @@ export function FaceBuilder({ name, value, onChange, onDone }: { name: string | 
           MOUTH_KINDS.map((m) => (
             <Tile key={m} label={m} on={value.mouth === m} onPick={() => set({ mouth: m })}>
               {face({ ...value, mouth: m })}
-            </Tile>
-          ))}
-        {tab === 'boo' &&
-          ([null, ...SPOOKY_HATS] as const).map((h) => (
-            <Tile key={'hat' + h} label={h ?? 'no hat'} on={(value.hat ?? null) === h} onPick={() => set({ hat: h })}>
-              {face({ ...value, hat: h })}
             </Tile>
           ))}
         {tab === 'extras' && (

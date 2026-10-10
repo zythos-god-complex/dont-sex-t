@@ -367,7 +367,6 @@ export function faceTilt(username: string | null | undefined, range = 1.5): numb
 export type TopKind = 'none' | 'antenna' | 'sprout'
 export type AvatarConfig = {
   v: 1
-  hat?: import('../lib/season').SeasonHat | null
   ghost?: boolean // ghost browse: wears a bedsheet
   photo?: string | null // approved profile photo (gat-pfp public url); null asks the server to drop it
   color: string

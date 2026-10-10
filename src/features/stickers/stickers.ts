@@ -1,15 +1,13 @@
-import type { HatId } from '../../lib/types'
 import type { FaceMood } from '../../ui/GoofyFace'
 
 export type StickerKind =
   | 'hey' | 'bye' | 'kiss' | 'love' | 'lol' | 'sad' | 'angry' | 'gn' | 'hype' | 'shy' | 'hugs' | 'dead'
   | 'hate' | 'nope' | 'ew' | 'talkhand' | 'trash' | 'clown' | 'blocked' | 'loser'
   | 'lust' | 'uup' | 'kissme' | 'thirsty' | 'spicy' | 'peach' | 'downbad' | 'naughty'
-  | 'boo' | 'trickortreat' | 'hexed' | 'ghosting' | 'candy' | 'spooked'
 
-export type StickerPack = 'me' | 'hate' | 'lust' | 'boo'
+export type StickerPack = 'me' | 'hate' | 'lust'
 
-export const STICKERS: { id: StickerKind; caption: string; mood: FaceMood; pack: StickerPack; hat?: HatId }[] = [
+export const STICKERS: { id: StickerKind; caption: string; mood: FaceMood; pack: StickerPack }[] = [
   { id: 'hey', caption: 'hey!', mood: 'happy', pack: 'me' },
   { id: 'kiss', caption: 'mwah', mood: 'wink', pack: 'me' },
   { id: 'love', caption: 'love ya', mood: 'happy', pack: 'me' },
@@ -40,13 +38,6 @@ export const STICKERS: { id: StickerKind; caption: string; mood: FaceMood; pack:
   { id: 'peach', caption: 'nice', mood: 'flirty', pack: 'lust' },
   { id: 'downbad', caption: 'down bad', mood: 'happy', pack: 'lust' },
   { id: 'naughty', caption: 'naughty', mood: 'flirty', pack: 'lust' },
-
-  { id: 'boo', caption: 'boo!', mood: 'shocked', pack: 'boo', hat: 'ghost' },
-  { id: 'trickortreat', caption: 'trick or treat', mood: 'happy', pack: 'boo', hat: 'pumpkin' },
-  { id: 'hexed', caption: 'hexed u', mood: 'wink', pack: 'boo', hat: 'witch' },
-  { id: 'ghosting', caption: 'ghosting u', mood: 'sleepy', pack: 'boo', hat: 'ghost' },
-  { id: 'candy', caption: 'gimme candy', mood: 'happy', pack: 'boo', hat: 'pumpkin' },
-  { id: 'spooked', caption: 'spooked', mood: 'shocked', pack: 'boo', hat: 'witch' },
 ]
 
 /** Stickers only shown when both people have nsfw on. */
