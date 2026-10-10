@@ -63,12 +63,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const body = readBody(req)
   const messageId = typeof body.message_id === 'string' ? body.message_id : ''
-  if (!UUID_RE.test(messageId)) return res.status(400).json({ error: 'message_id' })
+  // nudges: streak and melting reminders queued by the database
+  const nudgeId = typeof body.nudge_id === 'string' ? body.nudge_id : ''
+  if (!UUID_RE.test(messageId) && !UUID_RE.test(nudgeId)) return res.status(400).json({ error: 'message_id' })
   if (!VAPID_PRIVATE) return res.status(500).json({ error: 'vapid_not_configured' })
 
   let claim: Claim
   try {
-    claim = await rpc<Claim>('gat_push_claim', { p_secret: SECRET, p_message: messageId })
+    claim = UUID_RE.test(nudgeId)
+      ? await rpc<Claim>('gat_nudge_claim', { p_secret: SECRET, p_nudge: nudgeId })
+      : await rpc<Claim>('gat_push_claim', { p_secret: SECRET, p_message: messageId })
   } catch (e) {
     return res.status(502).json({ error: 'claim_failed', detail: e instanceof Error ? e.message : String(e) })
   }
