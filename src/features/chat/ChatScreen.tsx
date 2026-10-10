@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { GameBubble, ToyBubble, ToyGrid, gameOf, toyOf } from '../toys/Toys'
 import { shareSticker } from '../stickers/share'
 import { Flame } from '../../ui/Flame'
 import { seasonOn } from '../../lib/season'
@@ -406,6 +407,8 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
   const stk = stickerOf(m.body)
   const cpl = coupleOf(m.body)
   const voice = voiceOf(m.body)
+  const toy = toyOf(m.body)
+  const game = gameOf(m.body)
   const img = imageOf(m.body)
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, s.conversations[m.conversation_id]?.peer))
   const [viewer, setViewer] = useState(false)
@@ -422,7 +425,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
   }, [viewer])
   const emoji = stk || cpl || voice || img || gone ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
-  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', voice ? 'b-voice' : '', img ? 'b-img' : ''].join(' ')
+  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', toy || game ? 'b-toy' : '', voice ? 'b-voice' : '', img ? 'b-img' : ''].join(' ')
   const [picker, setPicker] = useState(false)
   const [burst, setBurst] = useState(0)
   const [more, setMore] = useState(false)
@@ -536,7 +539,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
               <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {img ? <ImageBubble img={img} open={viewer} blur={once} onClose={() => setViewer(false)} /> : gone ? <span className="once-gone"><IconImage size={16} /> opened</span> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : linkify(m.body).map((p, i) =>
+          {img ? <ImageBubble img={img} open={viewer} blur={once} onClose={() => setViewer(false)} /> : gone ? <span className="once-gone"><IconImage size={16} /> opened</span> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : toy ? <ToyBubble toy={toy} fresh={fresh} /> : game ? <GameBubble id={game} meId={meId} peerName={peerName} /> : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}
@@ -763,7 +766,7 @@ const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)
 
 function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversation; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; meId: string | null }) {
   const [tray, setTray] = useState(false)
-  const [trayTab, setTrayTab] = useState<'me' | 'us' | 'hate' | 'lust' | 'boo'>('me')
+  const [trayTab, setTrayTab] = useState<'toys' | 'me' | 'us' | 'hate' | 'lust' | 'boo'>('me')
   const [recording, setRecording] = useState(false)
   const myName = useMe()?.username ?? ''
   const spicyTray = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
@@ -891,6 +894,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
                   value={trayTab}
                   onChange={setTrayTab}
                   items={[
+                    { id: 'toys' as const, label: 'toys' },
                     { id: 'me' as const, label: 'me' },
                     { id: 'us' as const, label: 'us two' },
                     { id: 'hate' as const, label: 'hate' },
@@ -899,6 +903,16 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
                   ]}
                 />
               </div>
+              {trayTab === 'toys' ? (
+                <ToyGrid
+                  convId={conv.id}
+                  question={text}
+                  onUsed={(clear) => {
+                    if (clear) setText('')
+                    setTray(false)
+                  }}
+                />
+              ) : (
               <div className={'stk-grid' + (trayTab === 'us' ? ' is-couple' : '')} key={trayTab}>
                 {trayTab !== 'us'
                   ? STICKERS.filter((st) => st.pack === (trayTab === 'lust' && !spicyTray ? 'me' : trayTab)).map((st, i) => (
@@ -953,6 +967,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
                       </motion.button>
                     ))}
               </div>
+              )}
             </div>
           </motion.div>
         )}

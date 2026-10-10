@@ -126,7 +126,7 @@ export function messagePreview(m: Pick<Message, 'sender_id' | 'kind' | 'body'> |
   if (!m) return ''
   const mine = !!meId && m.sender_id === meId
   if (m.kind === 'theme') return mine ? 'you changed the theme' : 'changed the theme'
-  const body = /^\[\[voice:/.test(m.body) ? 'voice message' : /^\[\[img[:-]/.test(m.body) ? 'photo' : m.body === '[[unsent]]' ? 'message unsent' : /^\[\[sticker:[a-z_]+\]\]$/.test(m.body) ? 'sent a sticker' : m.body.replace(/\s+/g, ' ').trim()
+  const body = /^\[\[voice:/.test(m.body) ? 'voice message' : /^\[\[img[:-]/.test(m.body) ? 'photo' : m.body === '[[unsent]]' ? 'message unsent' : /^\[\[sticker:[a-z_]+\]\]$/.test(m.body) ? 'sent a sticker' : /^\[\[toy:dice/.test(m.body) ? '🎲 rolled the dice' : /^\[\[toy:coin/.test(m.body) ? '🪙 flipped a coin' : /^\[\[toy:8ball/.test(m.body) ? '🎱 asked the 8-ball' : /^\[\[toy:(truth|dare)/.test(m.body) ? '🤔 truth or dare' : /^\[\[game:/.test(m.body) ? '🎮 wants to play' : m.body.replace(/\s+/g, ' ').trim()
   return mine ? `you: ${body}` : body
 }
 

@@ -470,6 +470,10 @@ function ensureConvChannel(c: Conversation) {
   const entry: ConvChan = { ch, topic: c.topic, joinedOnce: false }
   const convId = c.id
   ch.on('broadcast', { event: 'typing' }, (e) => onPeerTyping(convId, unwrap(e)))
+  ch.on('broadcast', { event: 'game' }, (e) => {
+    const g = unwrap(e) as unknown as Game
+    if (g?.id) useGames.setState({ [g.id]: g })
+  })
   ch.on('broadcast', { event: 'confetti' }, (e) => {
     const p = unwrap(e) as { x?: unknown; y?: unknown; l?: unknown } | null
     const ok = (v: unknown): v is number => typeof v === 'number' && v >= 0 && v <= 1
@@ -1935,4 +1939,45 @@ export async function saveGhost(on: boolean): Promise<void> {
   else trackMe()
   const base = s.me.avatar ?? avatarFromTraits(faceTraits(s.me.username))
   await saveAvatar({ ...base, ghost: on || undefined })
+}
+
+// ---- toy box + 1:1 games: the server rolls and referees, we just show it ----------------------
+export type Game = { id: string; conversation_id: string; kind: 'rps' | 'ttt'; a: string; b: string; state: Record<string, unknown>; done: boolean }
+export const useGames = create<Record<string, Game>>(() => ({}))
+
+function takeServerMsg(r: Record<string, unknown>) {
+  onDbMsg(isMessage(r) ? { message: r } : r)
+}
+async function toyCall(f: (t: string) => Promise<Record<string, unknown>>): Promise<void> {
+  if (!token) return
+  try {
+    takeServerMsg(await f(token))
+  } catch (e) {
+    if (isApiError(e, 'rate_limited')) setChill()
+    throw e
+  }
+}
+export function sendToy(convId: string, kind: string, arg?: string): Promise<void> {
+  return toyCall((t) => api.toy(t, convId, uuid(), kind, arg?.trim() || null))
+}
+export function startGame(convId: string, kind: 'rps' | 'ttt'): Promise<void> {
+  return toyCall((t) => api.gameStart(t, convId, uuid(), kind))
+}
+export async function loadGame(id: string): Promise<void> {
+  if (!token) return
+  try {
+    const g = await api.game<Game>(token, id)
+    useGames.setState({ [id]: g })
+  } catch {
+    /* gone */
+  }
+}
+export async function gameMove(id: string, move: string): Promise<void> {
+  if (!token) return
+  try {
+    const g = await api.gameMove<Game>(token, id, move)
+    useGames.setState({ [id]: g })
+  } catch {
+    void loadGame(id)
+  }
 }
