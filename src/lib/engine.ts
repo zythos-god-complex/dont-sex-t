@@ -21,6 +21,7 @@ import {
   type State,
 } from './store'
 import { setChill } from './chill'
+import { useBan } from './ban'
 import { THEME_IDS, type Conversation, type Flair, type Gender, type Me, type Message, type Profile, type ResolveEntry, type Toast } from './types'
 
 const set = useStore.setState
@@ -440,6 +441,9 @@ function ensureInbox(me: Me) {
   ch.on('broadcast', { event: 'wipe' }, (e) => {
     const p = unwrap(e) as { conversation_id?: string; at?: string }
     if (p.conversation_id && p.at) applyWipe(p.conversation_id, p.at)
+  })
+  ch.on('broadcast', { event: 'kick' }, () => {
+    if (token) void validate(token, null)
   })
   ch.on('broadcast', { event: 'room' }, (e) => {
     const p = unwrap(e)
@@ -1074,6 +1078,12 @@ async function validate(t: string, fallback: string | null, attempt = 0): Promis
     if (isApiError(e, 'unauthorized')) {
       if (fallback && fallback !== t) return validate(fallback, null)
       hardReset()
+      return
+    }
+    if (isApiError(e, 'banned')) {
+      teardownSession()
+      useBan.setState({ until: 'soon' })
+      void api.banInfo(t).then((u) => useBan.setState({ until: u ?? 'soon' }), () => {})
       return
     }
     // offline / server hiccup: keep cached UI, retry
@@ -1842,4 +1852,18 @@ export function react(convId: string, msgId: string, emoji: string | null): void
   applyReaction(convId, msgId, me.id, next)
   broadcast(convId, 'react', { message_id: msgId, user_id: me.id, emoji: next })
   api.react(token, msgId, next).catch(() => applyReaction(convId, msgId, me.id, cur))
+}
+
+/** Report a user to the admins (reason: spam | creepy | underage | nasty | other). */
+export async function report(name: string, reason: string): Promise<void> {
+  const t = getToken()
+  if (!t) throw new ApiError('unauthorized')
+  await api.report(t, name, reason)
+}
+
+/** Admin console call (server checks is_admin). */
+export function adminCall<T = unknown>(op: string, a: Record<string, unknown> = {}): Promise<T> {
+  const t = getToken()
+  if (!t) return Promise.reject(new ApiError('unauthorized'))
+  return api.admin<T>(t, op, a)
 }

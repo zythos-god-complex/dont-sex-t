@@ -762,3 +762,24 @@
 [data-lite] .chat-head, [data-lite] .stk-locked-in, [data-lite] .aura { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 [data-lite] .aura i { display: none; }
 [data-lite] .b-row { box-shadow: none; }
+
+/* timeout screen */
+.ban { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; background: var(--bg); color: var(--ink); text-align: center; }
+.ban-title { font: 800 40px/1 var(--font-display); letter-spacing: -0.03em; margin-top: 8px; }
+.ban-sub { font: 600 16px/1.3 var(--font-display); color: var(--ink-2); }
+.ban-retry { margin-top: 14px; height: 44px; padding: 0 20px; border-radius: 999px; border: 0; background: var(--bg-2); color: var(--ink); font: 700 15px/1 var(--font-display); }
+
+/* admin megaphone line */
+.notice { position: fixed; z-index: 55; left: 50%; top: calc(64px + var(--safe-t, 0px)); translate: -50% 0; width: min(560px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 18px; border: 0; background: var(--ink); color: var(--bg); box-shadow: var(--shadow-lift); text-align: left; font: 600 14px/1.35 var(--font-text); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.notice-ico { flex: none; font-size: 18px; }
+.notice-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.notice-x { flex: none; opacity: .55; font-size: 13px; }
+
+/* report from a profile card */
+.rp-open { display: block; margin: 14px auto 2px; border: 0; background: none; color: var(--muted); font: 650 13px/1 var(--font-display); padding: 8px 12px; cursor: pointer; }
+.rp-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 14px; }
+.rp-chip { height: 36px; padding: 0 14px; border-radius: 999px; border: 0; background: color-mix(in srgb, var(--danger) 10%, var(--bg-2)); color: var(--danger); font: 700 13px/1 var(--font-display); cursor: pointer; }
+.rp-chip:disabled { opacity: .5; }
+.rp-done { text-align: center; margin-top: 14px; color: var(--ink-2); font: 650 14px/1 var(--font-display); }
+
+.me-admin { display: block; width: 100%; margin-top: 18px; height: 48px; border-radius: 999px; border: 0; background: linear-gradient(110deg, #3A2500, #8A5A00 55%, #C9962E); color: #FFF3C4; font: 760 15px/1 var(--font-display); cursor: pointer; }

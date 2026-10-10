@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMe } from '../../lib/hooks'
+import { useLocation } from 'wouter'
 import { forgetMe, logout, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
@@ -182,6 +183,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState(me?.username ?? '')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [, nav] = useLocation()
   useEffect(() => setName(me?.username ?? ''), [me?.username])
   if (!me) return null
   const temp = !!me.temp
@@ -284,6 +286,11 @@ function MeBody({ onClose }: { onClose: () => void }) {
         <Toggle label="show seen" on={me.show_seen !== false} onChange={(v) => void savePrivacy(null, v)} />
       </div>
       <Account />
+      {me.admin && (
+        <button type="button" className="me-admin" onClick={() => { onClose(); nav('/admin') }}>
+          👑 control room
+        </button>
+      )}
       <button type="button" className="fb-done" style={{ marginTop: 18 }} onClick={onClose}>
         done
       </button>

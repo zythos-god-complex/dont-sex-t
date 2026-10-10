@@ -1,7 +1,7 @@
 import './styles/index.css'
 import { Analytics } from '@vercel/analytics/react'
 import UpdateBanner from './features/update/UpdateBanner'
-import { lazy, Suspense, useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Route, Switch, useLocation, useRoute } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
 import { useConnection, useMe, useStatus, useUnreadTotal } from './lib/hooks'
@@ -15,11 +15,15 @@ import { IconLive, IconRooms } from './ui/icons'
 import { bindVisualViewport, trackNav } from './features/shell/nav'
 import { MeButton } from './features/shell/MeSheet'
 import { refreshBlocks } from './lib/engine'
+import { useBan } from './lib/ban'
+import { api } from './lib/api'
+import { GoofyFace } from './ui/GoofyFace'
 
 // screens most visits never open load on demand, then get warmed up when the phone is idle
 const loadOnboarding = () => import('./features/onboarding/Onboarding')
 const loadRooms = () => import('./features/rooms/RoomsScreen')
 const loadRoomChat = () => import('./features/rooms/RoomChat')
+const loadAdmin = () => import('./features/admin/Admin')
 // a lazy file can vanish (deploy while a tab is open) or drop on bad signal: retry once, then one hard reload
 function lazyRetry<T>(load: () => Promise<{ default: T }>) {
   const ok = (m: { default: T }) => {
@@ -44,6 +48,7 @@ function lazyRetry<T>(load: () => Promise<{ default: T }>) {
 const Onboarding = lazy(lazyRetry(loadOnboarding))
 const RoomsScreen = lazy(lazyRetry(loadRooms))
 const RoomChat = lazy(lazyRetry(loadRoomChat))
+const Admin = lazy(lazyRetry(loadAdmin))
 if (typeof window !== 'undefined') {
   const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 4000 }) : setTimeout(cb, 2500))
   window.addEventListener('load', () => idle(() => void loadRooms().then(loadRoomChat).catch(() => {})), { once: true })
@@ -169,11 +174,49 @@ function DesktopApp() {
   )
 }
 
+function BanScreen({ until }: { until: string }) {
+  const ms = Date.parse(until)
+  const left = Number.isFinite(ms) ? Math.max(0, ms - Date.now()) : null
+  const when = left === null ? (until === 'soon' ? '' : 'for good') : left < 3600e3 ? `back in ${Math.max(1, Math.ceil(left / 60e3))}m` : left < 48 * 3600e3 ? `back in ${Math.ceil(left / 3600e3)}h` : `back in ${Math.ceil(left / 86400e3)}d`
+  return (
+    <div className="ban">
+      <GoofyFace name="timeout" size={120} mood="sleepy" hat={null} />
+      <h1 className="ban-title">timeout</h1>
+      {when && <p className="ban-sub">{when}</p>}
+      {left !== null && <button className="ban-retry" onClick={() => location.reload()}>check again</button>}
+    </div>
+  )
+}
+
+// one line from the admin for everyone, tap to hide until the next one
+function Notice() {
+  const [n, setN] = useState<{ text: string; at: string } | null>(null)
+  useEffect(() => {
+    let seen = ''
+    try { seen = localStorage.getItem('gat.notice') ?? '' } catch { /* blocked */ }
+    void api.notice().then((v) => { if (v?.text && v.at !== seen) setN(v) }, () => {})
+  }, [])
+  if (!n) return null
+  const hide = () => {
+    try { localStorage.setItem('gat.notice', n.at) } catch { /* blocked */ }
+    setN(null)
+  }
+  return (
+    <motion.button className="notice" onClick={hide} initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} aria-label="hide notice">
+      <span className="notice-ico" aria-hidden="true">📣</span>
+      <span className="notice-text">{n.text}</span>
+      <span className="notice-x" aria-hidden="true">✕</span>
+    </motion.button>
+  )
+}
+
 export default function App() {
   const status = useStatus()
   const desktop = useIsDesktop()
   const unread = useUnreadTotal()
   const [loc] = useLocation()
+  const me = useMe()
+  const ban = useBan((s) => s.until)
   useEffect(() => trackNav(loc), [loc])
   useEffect(() => bindVisualViewport(), [])
   useEffect(() => {
@@ -185,6 +228,7 @@ export default function App() {
   useEffect(() => {
     document.title = unread > 0 ? `(${unread}) GoofyAhhTalk` : 'GoofyAhhTalk'
   }, [unread])
+  if (ban) return <BanScreen until={ban} />
   if (status === 'booting') return <div className="boot" />
   if (status === 'onboarding')
     return (
@@ -192,13 +236,19 @@ export default function App() {
         <Suspense fallback={null}><Onboarding /></Suspense>
         <UpdateBanner />
         <Analytics />
-      <UpdateBanner />
       </>
+    )
+  if (loc === '/admin' && me?.admin)
+    return (
+      <Suspense fallback={<div className="boot" />}>
+        <Admin />
+      </Suspense>
     )
   return (
     <>
       <Analytics />
       <ConnectionBanner />
+      <Notice />
       {desktop ? <DesktopApp /> : <MobileApp />}
       <Toasts />
     </>
