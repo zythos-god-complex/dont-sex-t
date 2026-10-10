@@ -8,7 +8,8 @@ export type CardId = 'ink' | 'gold' | 'rose' | 'grape' | 'mint' | 'sky'
 export type AuraId = 'matrix' | 'none' | 'gold' | 'sunset' | 'galaxy' | 'sakura' | 'aurora' | 'hearts'
 /** Perk-only extras (server-validated). */
 export type Flair = { hat?: HatId; bio?: string; card?: CardId; aura?: AuraId }
-export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean; nsfw?: boolean; vip?: boolean; flair?: Flair | null; admin?: boolean; place?: string | null; age?: number | null; show_age?: boolean; now_playing?: { t: string; by: string; img: string; url: string } | null }
+export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean; nsfw?: boolean; vip?: boolean; flair?: Flair | null; admin?: boolean; place?: string | null; age?: number | null; show_age?: boolean; now_playing?: { t: string; by: string; img: string; url: string } | null; song?: Song | null }
+export type Song = { id: string; t: string; by: string; img: string }
 
 export type Me = Profile & { inbox: string; age_set?: boolean; adult?: boolean; has_key?: boolean }
 

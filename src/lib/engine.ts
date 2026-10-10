@@ -24,7 +24,7 @@ import {
 } from './store'
 import { setChill } from './chill'
 import { useBan } from './ban'
-import { THEME_IDS, type Conversation, type Flair, type Gender, type Me, type Message, type Profile, type ResolveEntry, type Toast } from './types'
+import { THEME_IDS, type Conversation, type Flair, type Gender, type Me, type Message, type Profile, type ResolveEntry, type Song, type Toast } from './types'
 
 const set = useStore.setState
 const get = useStore.getState
@@ -2011,6 +2011,17 @@ export async function removeChat(convId: string): Promise<void> {
 }
 
 /** Optional place and whether to show the passport age. */
+export async function saveSong(song: Song | null): Promise<void> {
+  if (!token) return
+  updateMe(await api.setSong(token, song))
+}
+
+/** iTunes catalog search through our own route (no key, India storefront) */
+export async function searchSongs(q: string): Promise<Song[]> {
+  const r = await fetch('/api/song?q=' + encodeURIComponent(q))
+  return r.ok ? ((await r.json()) as Song[]) : []
+}
+
 export async function saveAbout(place: string, showAge: boolean): Promise<void> {
   if (!token) return
   updateMe(await api.setAbout(token, place, showAge))

@@ -26,3 +26,26 @@ export function NowPlaying({ track, compact }: { track: Track; compact?: boolean
     </a>
   )
 }
+
+type SongT = { id: string; t: string; by: string; img: string }
+
+/** the profile song: opens a song.link page (every app), with a quick jiosaavn search on the side */
+export function SongCard({ song }: { song: SongT }) {
+  const saavn = 'https://www.jiosaavn.com/search/song/' + encodeURIComponent(`${song.t} ${song.by}`.slice(0, 80))
+  return (
+    <div className="np np-song">
+      <a className="np-main" href={`https://song.link/i/${song.id}`} target="_blank" rel="noopener noreferrer" onPointerDown={(e) => e.stopPropagation()}>
+        <span className="np-art">
+          <img src={song.img} alt="" loading="lazy" decoding="async" />
+        </span>
+        <span className="np-text">
+          <b className="ellipsis">{song.t}</b>
+          <small className="ellipsis">{song.by}</small>
+        </span>
+      </a>
+      <a className="np-saavn" href={saavn} target="_blank" rel="noopener noreferrer" onPointerDown={(e) => e.stopPropagation()}>
+        saavn
+      </a>
+    </div>
+  )
+}

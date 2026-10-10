@@ -1,7 +1,7 @@
 // Steam / Discord style profile card. Everyone gets the basic card; perk users get their card colours,
 // live banner and bio.
 import { IconHi } from '../../ui/icons'
-import { NowPlaying } from '../music/NowPlaying'
+import { NowPlaying, SongCard } from '../music/NowPlaying'
 import { useStore } from '../../lib/store'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useMe } from '../../lib/hooks'
@@ -48,7 +48,7 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
         {sub && <span className="pc-sub">{sub}</span>}
         {about && <span className="pc-about">{about}</span>}
         {flair?.bio && <p className="pc-bio">{flair.bio}</p>}
-        {np && <NowPlaying track={np} />}
+        {np ? <NowPlaying track={np} /> : prof?.song && <SongCard song={prof.song} />}
       </div>
     </div>
   )

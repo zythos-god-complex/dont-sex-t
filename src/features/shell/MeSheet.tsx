@@ -6,9 +6,10 @@ import { useMe } from '../../lib/hooks'
 import { useLocation } from 'wouter'
 import { useStore } from '../../lib/store'
 import { useShallow } from 'zustand/react/shallow'
-import { pendingPhoto, saveAbout, saveGhost, saveMood, submitPhoto, useGhost, useMood } from '../../lib/engine'
+import { pendingPhoto, saveAbout, saveGhost, saveMood, saveSong, searchSongs, submitPhoto, useGhost, useMood } from '../../lib/engine'
+import type { Song } from '../../lib/types'
 import { connectSpotify, disconnectSpotify, spotifyEnabled, useSpotify } from '../../lib/spotify'
-import { NowPlaying } from '../music/NowPlaying'
+import { NowPlaying, SongCard } from '../music/NowPlaying'
 import type { FaceMood } from '../../ui/GoofyFace'
 import { forgetMe, logout, setBlocked, useBlocks, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
@@ -285,6 +286,73 @@ function PhotoButton({ current }: { current: AvatarConfig }) {
   )
 }
 
+function SongRow() {
+  const song = useMe()?.song ?? null
+  const [picking, setPicking] = useState(false)
+  const [q, setQ] = useState('')
+  const [res, setRes] = useState<Song[]>([])
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (!picking || q.trim().length < 2) return setRes([])
+    let on = true
+    const t = setTimeout(() => searchSongs(q.trim()).then((r) => on && setRes(r), () => {}), 300)
+    return () => {
+      on = false
+      clearTimeout(t)
+    }
+  }, [q, picking])
+  const pick = (s: Song | null) => {
+    setBusy(true)
+    saveSong(s)
+      .then(() => {
+        setPicking(false)
+        setQ('')
+      })
+      .catch(() => {})
+      .finally(() => setBusy(false))
+  }
+  return (
+    <>
+      <h3 className="settings-label">song</h3>
+      {picking ? (
+        <div className="song-pick">
+          <input className="song-q" value={q} placeholder="search a song" autoFocus onChange={(e) => setQ(e.target.value)} />
+          <div className="song-res">
+            {res.map((s) => (
+              <button key={s.id} type="button" className="song-row" disabled={busy} onClick={() => pick(s)}>
+                <img src={s.img.replace('/600x600bb.', '/100x100bb.')} alt="" loading="lazy" />
+                <span className="np-text">
+                  <b className="ellipsis">{s.t}</b>
+                  <small className="ellipsis">{s.by}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="acc-btn" onClick={() => setPicking(false)}>
+            cancel
+          </button>
+        </div>
+      ) : song ? (
+        <>
+          <SongCard song={song} />
+          <div className="song-acts">
+            <button type="button" className="acc-btn" onClick={() => setPicking(true)}>
+              change
+            </button>
+            <button type="button" className="acc-btn" disabled={busy} onClick={() => pick(null)}>
+              remove
+            </button>
+          </div>
+        </>
+      ) : (
+        <button type="button" className="acc-btn" onClick={() => setPicking(true)}>
+          add a song
+        </button>
+      )}
+    </>
+  )
+}
+
 function Music() {
   const connected = useSpotify((s) => s.connected)
   const track = useSpotify((s) => s.track)
@@ -471,6 +539,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
       </div>
       <MoodRow name={me.username} spicy={me.nsfw === true && me.adult === true} />
       {!temp && <About />}
+      {!temp && <SongRow />}
       {spotifyEnabled() && <Music />}
       <h3 className="settings-label">privacy</h3>
       <GhostRow />
