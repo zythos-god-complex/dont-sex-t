@@ -1107,3 +1107,37 @@ html[data-lite='1'] .song-bg { filter: none; opacity: .3; }
 .chat.theme-meteor .msgs, .chat.theme-temple .msgs, .chat.theme-sakuranight .msgs, .chat.theme-butterfly .msgs { background: linear-gradient(180deg, rgba(4,6,14,.08), rgba(4,6,14,.26)); }
 @media (prefers-reduced-motion: reduce) { .b-row.b-hint .b, .game-load { animation: none; } }
 .card-bio { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 4px; font: 600 12.5px/1.3 var(--font-text); color: var(--muted); text-align: center; }
+
+/* ================================================================ buttons: one system
+   shape: every action button is a pill with the same type, press and disabled state
+   looks: main (ink, or the chat theme accent inside a chat), soft, danger (soft red, solid red when armed)
+   sizes: regular 48px, small 36px for inline actions. Special moments (wish, sign up start, spotify, control room) keep their own skin. */
+.fb-done, .me-save, .pc-hi, .empty-act, .temp-btn, .rec-link, .req-yes, .req-no, .block-btn, .del-opt, .del-cancel, .acc-btn, .acc-out, .acc-forget, .tot-next, .game-btn, .rs-leave, .say-hi, .friend-pill {
+  border: 0; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-display); font-weight: 740; line-height: 1; letter-spacing: -0.01em; text-decoration: none;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .12s var(--ease-out), background .15s, color .15s, opacity .15s;
+}
+.fb-done:active, .me-save:active, .pc-hi:active, .empty-act:active, .temp-btn:active, .rec-link:active, .req-yes:active, .req-no:active, .block-btn:active, .del-opt:active, .acc-btn:active, .acc-out:active, .acc-forget:active, .tot-next:active, .game-btn:active, .rs-leave:active, .say-hi:active {
+  transform: scale(.96); box-shadow: none;
+}
+.fb-done:disabled, .me-save:disabled, .pc-hi:disabled, .empty-act:disabled, .req-yes:disabled, .req-no:disabled, .block-btn:disabled, .del-opt:disabled, .acc-btn:disabled, .tot-next:disabled, .game-btn:disabled { opacity: .45; cursor: default; transform: none; }
+
+/* regular size */
+.fb-done, .me-save, .pc-hi, .empty-act, .temp-btn, .rec-link, .req-yes, .req-no, .block-btn, .del-opt, .acc-out, .acc-forget, .rs-leave, .say-hi { min-height: 48px; padding: 0 20px; font-size: 15.5px; }
+/* small size */
+.acc-btn, .tot-next, .game-btn, .del-cancel { min-height: 36px; padding: 0 14px; font-size: 13.5px; }
+.friend-pill { min-height: 36px; padding: 0 12px; font-size: 13px; }
+
+/* main */
+.fb-done, .me-save, .pc-hi, .empty-act.is-ink { background: var(--ink); color: var(--bg); box-shadow: none; }
+/* main inside a chat follows the chat theme */
+.req-yes, .say-hi, .friend-pill { background: var(--theme-accent); color: var(--theme-accent-ink); }
+/* soft */
+.empty-act, .temp-btn, .rec-link, .acc-btn, .tot-next, .acc-out, .block-btn.is-on, .friend-pill.is-sent { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+.req-no { background: color-mix(in srgb, var(--theme-composer-ink, var(--ink)) 9%, transparent); color: var(--theme-composer-ink, var(--ink)); }
+.del-cancel { background: transparent; color: var(--muted); }
+.game-btn { background: #17131F; color: #fff; }
+/* danger: soft until it means it */
+.block-btn, .del-opt, .acc-forget, .rs-leave { background: color-mix(in srgb, var(--danger) 11%, transparent); color: var(--danger); box-shadow: none; }
+.del-opt.is-both, .rs-leave.is-armed, .acc-forget.is-armed, .acc-out.is-armed { background: var(--danger); color: #fff; }
+.acc-btn.sp-connect { background: #1DB954; color: #06230f; }
