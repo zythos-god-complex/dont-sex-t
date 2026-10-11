@@ -759,7 +759,8 @@ function pushToast(convId: string, m: Message) {
   })
   toastTimers.set(
     toast.id,
-    setTimeout(() => dismissToast(toast.id), TOAST_MS),
+    // a request waits on you, so it stays up a little longer
+    setTimeout(() => dismissToast(toast.id), c.status === 'pending' && c.requester !== s.me?.id ? 8000 : TOAST_MS),
   )
 }
 

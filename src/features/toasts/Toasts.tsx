@@ -5,18 +5,24 @@ import { dismissToast } from '../../lib/engine'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { spring } from '../../ui/kit'
 import { displayBody } from '../stickers/stickers'
+import { useStore } from '../../lib/store'
 
 export default function Toasts() {
   const toasts = useToasts()
   const [, nav] = useLocation()
+  const convs = useStore((s) => s.conversations)
+  const meId = useStore((s) => s.me?.id)
   return (
     <div className="toasts" aria-live="polite">
       <AnimatePresence initial={false}>
-        {toasts.slice(-2).map((t) => (
+        {toasts.slice(-2).map((t) => {
+          const c = convs[t.convId]
+          const ask = c?.status === 'pending' && c.requester !== meId
+          return (
           <motion.button
             key={t.id}
             layout
-            className="toast"
+            className={'toast' + (ask ? ' is-ask' : '')}
             initial={{ y: -80, opacity: 0, scale: 0.96 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: -60, opacity: 0, transition: { duration: 0.18 } }}
@@ -34,11 +40,15 @@ export default function Toasts() {
           >
             <GoofyFace name={t.username} size={38} />
             <span className="toast-main">
-              <span className="toast-name ellipsis">{t.username}</span>
-              <span className="toast-body ellipsis">{t.kind === 'theme' ? 'changed the theme' : displayBody(t.body)}</span>
+              <span className="toast-name">
+                <span className="ellipsis">{t.username}</span>
+                {ask && <i className="toast-tag">new chat</i>}
+              </span>
+              <span className="toast-body ellipsis">{displayBody(t.body)}</span>
             </span>
           </motion.button>
-        ))}
+          )
+        })}
       </AnimatePresence>
     </div>
   )

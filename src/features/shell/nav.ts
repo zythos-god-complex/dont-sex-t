@@ -1,5 +1,23 @@
 // Tracks in-app navigation so "back" uses history only when there is an in-app page to return to.
-const stack: string[] = [typeof location !== 'undefined' ? location.pathname : '/']
+type Nav = (to: string, opts?: { replace?: boolean }) => void
+
+// opened straight onto a tab or a chat (a push, a shared link): slip home in underneath so back lands there, not outside the app
+function seedHome(): string[] {
+  if (typeof location === 'undefined') return ['/']
+  const p = location.pathname
+  if (!p.startsWith('/dm') && !p.startsWith('/rooms')) return [p]
+  try {
+    const kind = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type
+    if (kind && kind !== 'navigate') return [p] // reload or back/forward: history already has what it needs
+    const here = p + location.search + location.hash
+    history.replaceState(history.state, '', '/')
+    history.pushState(history.state, '', here)
+    return ['/', p]
+  } catch {
+    return [p]
+  }
+}
+const stack: string[] = seedHome()
 
 export function trackNav(path: string): void {
   if (stack[stack.length - 1] === path) return
@@ -7,16 +25,30 @@ export function trackNav(path: string): void {
   else stack.push(path)
 }
 
-export function goBack(nav: (to: string) => void): void {
-  if (stack.length > 1) history.back()
-  else nav('/')
+/** Swap the current entry without growing history. */
+function swap(nav: Nav, to: string): void {
+  stack[stack.length - 1] = to
+  nav(to, { replace: true })
 }
 
-/** Straight to the lobby: step back if the lobby is the previous page, otherwise swap this entry for it. */
-export function goHome(nav: (to: string, opts?: { replace?: boolean }) => void): void {
-  if (stack.length > 1 && stack[stack.length - 2] === '/') return history.back()
-  stack[stack.length - 1] = '/'
-  nav('/', { replace: true })
+/** Step back when there is an in-app page behind this one, otherwise swap this entry for home. */
+export function goBack(nav: Nav): void {
+  if (stack.length > 1) history.back()
+  else swap(nav, '/')
+}
+
+/** Leaving a chat: same as back (the tab it came from), home when the chat was the first page. */
+export const goHome = goBack
+
+/** Bottom tabs: home stays under chats and rooms, so back from a tab lands home and back from home leaves the app. */
+export function goTab(nav: Nav, to: string): void {
+  const cur = stack[stack.length - 1]
+  if (cur === to) return
+  if (to === '/') {
+    if (stack.length > 1 && stack[stack.length - 2] === '/') history.back()
+    else swap(nav, '/')
+  } else if (cur === '/') nav(to)
+  else swap(nav, to)
 }
 
 /** Pin the app to the visual viewport so the composer rides on top of the mobile keyboard. */

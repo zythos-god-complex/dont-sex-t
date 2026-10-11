@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { Link, useLocation } from 'wouter'
+import { useLocation } from 'wouter'
 import { motion } from 'motion/react'
 import { useMe, useNow } from '../../lib/hooks'
 import { relTime } from '../../lib/format'
@@ -7,7 +7,8 @@ import type { Profile } from '../../lib/types'
 import { getTheme } from '../../themes/themes'
 import { useThemeMode } from '../../themes/mode'
 import { Badge, Sheet, spring, useIsDesktop } from '../../ui/kit'
-import { IconBack, IconPlus } from '../../ui/icons'
+import { IconPlus } from '../../ui/icons'
+import { MeButton } from '../shell/MeSheet'
 import { displayBody } from '../stickers/stickers'
 import { Crew } from './Crew'
 import { PeoplePicker } from './PeoplePicker'
@@ -119,17 +120,13 @@ export default function RoomsScreen() {
   return (
     <div className="rooms">
       <header className="m-head">
-        {!desktop ? (
-          <Link href="/" className="icon-btn" aria-label="back">
-            <IconBack size={26} />
-          </Link>
-        ) : (
-          <span className="icon-btn-spacer" />
-        )}
-        <h1 className="m-title">rooms</h1>
-        <button type="button" className="icon-btn" aria-label="new room" onClick={() => setCreate(true)}>
-          <IconPlus size={26} />
-        </button>
+        <h1 className="m-title is-left">rooms</h1>
+        <div className="m-head-actions">
+          <button type="button" className="icon-btn" aria-label="new room" onClick={() => setCreate(true)}>
+            <IconPlus size={26} />
+          </button>
+          {!desktop && <MeButton />}
+        </div>
       </header>
       <div className="rooms-scroll scroll-y">
         <h3 className="rooms-label">public</h3>

@@ -11,7 +11,8 @@ import { Aura } from '../../ui/Aura'
 import { useFlairFor } from '../../ui/flair'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Badge, Segmented, TypingDots, spring } from '../../ui/kit'
-import { IconBack, IconPin } from '../../ui/icons'
+import { IconPin } from '../../ui/icons'
+import { MeButton } from '../shell/MeSheet'
 import { useRef, useState } from 'react'
 import { togglePin, usePins } from './pins'
 
@@ -164,11 +165,10 @@ export default function Inbox({ variant }: InboxProps) {
     <div className={'inbox inbox-' + variant}>
       {variant === 'screen' && (
         <header className="m-head">
-          <Link href="/" className="icon-btn" aria-label="back">
-            <IconBack size={26} />
-          </Link>
-          <h1 className="m-title">chats</h1>
-          <span className="icon-btn-spacer" />
+          <h1 className="m-title is-left">chats</h1>
+          <div className="m-head-actions">
+            <MeButton />
+          </div>
         </header>
       )}
       <div className="inbox-tabs">

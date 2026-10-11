@@ -7,13 +7,15 @@ import { Route, Switch, useLocation, useRoute } from 'wouter'
 import { AnimatePresence, motion } from 'motion/react'
 import { useConnection, useMe, useStatus, useUnreadTotal } from './lib/hooks'
 import Lobby from './features/lobby/Lobby'
+import Onboarding from './features/onboarding/Onboarding'
 import Inbox from './features/inbox/Inbox'
 import ChatScreen from './features/chat/ChatScreen'
 import { useRoomsUnread } from './features/rooms/rooms'
 import Toasts from './features/toasts/Toasts'
 import { Badge, Wordmark, useIsDesktop } from './ui/kit'
-import { IconClose, IconLive, IconMegaphone, IconRooms } from './ui/icons'
-import { bindEdgeBack, bindVisualViewport, goBack, goHome, trackNav } from './features/shell/nav'
+import { IconLive, IconRooms } from './ui/icons'
+import { bindEdgeBack, bindVisualViewport, goBack, goTab, trackNav } from './features/shell/nav'
+import TabBar, { tabOf } from './features/shell/TabBar'
 import { MeButton } from './features/shell/MeSheet'
 import { refreshBlocks } from './lib/engine'
 import { useBan } from './lib/ban'
@@ -22,8 +24,8 @@ import { GoofyFace } from './ui/GoofyFace'
 import { PeekHost } from './features/profile/ProfileCard'
 import { DailyReward } from './features/rewards/Reward'
 
-// screens most visits never open load on demand, then get warmed up when the phone is idle
-const loadOnboarding = () => import('./features/onboarding/Onboarding')
+// screens most visits never open load on demand, then get warmed up when the phone is idle.
+// onboarding is tiny and is the first thing new people see, so it ships in the main bundle.
 const loadRooms = () => import('./features/rooms/RoomsScreen')
 const loadRoomChat = () => import('./features/rooms/RoomChat')
 const loadAdmin = () => import('./features/admin/Admin')
@@ -48,7 +50,6 @@ function lazyRetry<T>(load: () => Promise<{ default: T }>) {
       ),
     )
 }
-const Onboarding = lazy(lazyRetry(loadOnboarding))
 const RoomsScreen = lazy(lazyRetry(loadRooms))
 const RoomChat = lazy(lazyRetry(loadRoomChat))
 const Admin = lazy(lazyRetry(loadAdmin))
@@ -57,18 +58,26 @@ if (typeof window !== 'undefined') {
   window.addEventListener('load', () => idle(() => void loadRooms().then(loadRoomChat).catch(() => {})), { once: true })
 }
 
-function depthOf(path: string): number {
-  if (path.startsWith('/dm/') || path.startsWith('/rooms/')) return 2
-  if (path === '/dm' || path === '/rooms') return 1
-  return 0
-}
+// tabs sit side by side (crossfade), chats and rooms push over them (slide)
+const depthOf = (path: string): number => (tabOf(path) ? 0 : 1)
+const slide = { type: 'spring' as const, stiffness: 420, damping: 42 }
+const fade = { duration: 0.12 }
 
+// chat and room headers show their own state, so this only floats over the tabs, under the header; short blips never show
 function ConnectionBanner() {
   const c = useConnection()
   const status = useStatus()
+  const [loc] = useLocation()
+  const [late, setLate] = useState(false)
+  const off = c === 'offline' && status === 'ready'
+  useEffect(() => {
+    if (!off) return setLate(false)
+    const t = setTimeout(() => setLate(true), 1500)
+    return () => clearTimeout(t)
+  }, [off])
   return (
     <AnimatePresence>
-      {c === 'offline' && status === 'ready' && (
+      {off && late && !!tabOf(loc) && (
         <motion.div className="conn-banner" initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -40, opacity: 0 }}>
           reconnecting...
         </motion.div>
@@ -81,26 +90,27 @@ function MobileApp() {
   const [loc] = useLocation()
   const depth = depthOf(loc)
   const prev = useRef(depth)
-  const dir = depth >= prev.current ? 1 : -1
+  // 0: tab to tab, 1: push, -1: pop
+  const dir = depth > prev.current ? 1 : depth < prev.current ? -1 : depth === 0 ? 0 : 1
   useEffect(() => {
     prev.current = depth
   }, [depth])
   return (
     <div className="m-stack">
+      <TabBar path={loc} />
       <AnimatePresence initial={false} custom={dir}>
         <motion.div
           key={loc.startsWith('/dm/') ? 'chat:' + loc : loc.startsWith('/rooms/') ? 'room:' + loc : loc}
-          className="m-screen"
+          className={'m-screen' + (depth === 0 ? ' is-tab' : '')}
           custom={dir}
           variants={{
-            enter: (d: number) => ({ x: d > 0 ? '100%' : '-28%', opacity: d > 0 ? 1 : 0.7 }),
-            center: { x: 0, opacity: 1 },
-            exit: (d: number) => ({ x: d > 0 ? '-28%' : '100%', opacity: d > 0 ? 0.7 : 1 }),
+            enter: (d: number) => (d === 0 ? { x: 0, opacity: 0 } : { x: d > 0 ? '100%' : '-28%', opacity: d > 0 ? 1 : 0.7 }),
+            center: (d: number) => ({ x: 0, opacity: 1, transition: d === 0 ? fade : slide }),
+            exit: (d: number) => (d === 0 ? { opacity: 0, transition: fade } : { x: d > 0 ? '-28%' : '100%', opacity: d > 0 ? 0.7 : 1, transition: slide }),
           }}
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ type: 'spring', stiffness: 420, damping: 42 }}
         >
           <Switch location={loc}>
             <Route path="/dm/:username">{(p) => <ChatScreen username={decodeURIComponent(p.username)} />}</Route>
@@ -143,7 +153,7 @@ function DesktopApp() {
               </div>
             )}
           </div>
-          <button className={'d-live' + (!inChat && !inRoom && !inRooms ? ' is-on' : '')} onClick={() => nav('/')}>
+          <button className={'d-live is-home' + (!inChat && !inRoom && !inRooms ? ' is-on' : '')} onClick={() => nav('/')}>
             <IconLive size={20} />
             <span>home</span>
           </button>
@@ -173,6 +183,16 @@ function DesktopApp() {
           </AnimatePresence>
         </main>
       </div>
+    </div>
+  )
+}
+
+// returning without a cache: the wordmark and a blinking face instead of a blank screen
+function Boot() {
+  return (
+    <div className="boot">
+      <GoofyFace name="goofy.boot" size={88} />
+      <Wordmark size={26} />
     </div>
   )
 }
@@ -238,28 +258,6 @@ function Jail({ until }: { until: string }) {
   )
 }
 
-// one line from the admin for everyone, tap to hide until the next one
-function Notice() {
-  const [n, setN] = useState<{ text: string; at: string } | null>(null)
-  useEffect(() => {
-    let seen = ''
-    try { seen = localStorage.getItem('gat.notice') ?? '' } catch { /* blocked */ }
-    void api.notice().then((v) => { if (v?.text && v.at !== seen) setN(v) }, () => {})
-  }, [])
-  if (!n) return null
-  const hide = () => {
-    try { localStorage.setItem('gat.notice', n.at) } catch { /* blocked */ }
-    setN(null)
-  }
-  return (
-    <motion.button className="notice" onClick={hide} initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} aria-label="hide notice">
-      <IconMegaphone className="notice-ico" size={20} />
-      <span className="notice-text">{n.text}</span>
-      <IconClose className="notice-x" size={16} />
-    </motion.button>
-  )
-}
-
 export default function App() {
   const status = useStatus()
   const desktop = useIsDesktop()
@@ -275,7 +273,7 @@ export default function App() {
       bindEdgeBack(() => {
         const p = location.pathname
         if (p === '/' || document.querySelector('.sheet')) return
-        if (p.startsWith('/dm/') || p === '/admin') goHome(nav)
+        if (p === '/dm' || p === '/rooms') goTab(nav, '/')
         else goBack(nav)
       }),
     [nav],
@@ -290,18 +288,18 @@ export default function App() {
     document.title = unread > 0 ? `(${unread}) GoofyAhhTalk` : 'GoofyAhhTalk'
   }, [unread])
   if (ban) return <Jail until={ban} />
-  if (status === 'booting') return <div className="boot" />
+  if (status === 'booting') return <Boot />
   if (status === 'onboarding')
     return (
       <>
-        <Suspense fallback={null}><Onboarding /></Suspense>
+        <Onboarding />
         <UpdateBanner />
         <Analytics />
       </>
     )
   if (loc === '/admin' && me?.admin)
     return (
-      <Suspense fallback={<div className="boot" />}>
+      <Suspense fallback={<Boot />}>
         <Admin />
       </Suspense>
     )
@@ -309,7 +307,6 @@ export default function App() {
     <>
       <Analytics />
       <ConnectionBanner />
-      <Notice />
       <DailyReward />
       {desktop ? <DesktopApp /> : <MobileApp />}
       <PeekHost />

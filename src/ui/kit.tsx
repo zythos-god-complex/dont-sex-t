@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useDragControls, type PanInfo } from 'motion/react'
 import { badgeCount } from '../lib/format'
+import { IconClose } from './icons'
 
 export const spring = { type: 'spring' as const, stiffness: 520, damping: 34, mass: 0.8 }
 export const softSpring = { type: 'spring' as const, stiffness: 380, damping: 36 }
@@ -79,6 +81,18 @@ export function useIsDesktop(): boolean {
   return v
 }
 
+// one top-level layer for every sheet: nothing in the page can paint over it, and it rides the visual viewport like .m-stack
+function layerHost(): HTMLElement {
+  let el = document.getElementById('layer')
+  if (!el) {
+    el = document.createElement('div')
+    el.id = 'layer'
+    el.className = 'layer'
+    document.body.appendChild(el)
+  }
+  return el
+}
+
 export function Sheet({ open, onClose, children, label }: { open: boolean; onClose: () => void; children: ReactNode; label: string }) {
   const desktop = useIsDesktop()
   const drag = useDragControls()
@@ -91,13 +105,16 @@ export function Sheet({ open, onClose, children, label }: { open: boolean; onClo
   const onDragEnd = (_: unknown, info: PanInfo) => {
     if (info.offset.y > 110 || info.velocity.y > 600) onClose()
   }
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
           <motion.div className="sheet-scrim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           {desktop ? (
             <motion.aside className="panel" role="dialog" aria-label={label} initial={{ x: '104%' }} animate={{ x: 0 }} exit={{ x: '104%' }} transition={softSpring}>
+              <button type="button" className="icon-btn panel-x" aria-label="close" onClick={onClose}>
+                <IconClose size={22} />
+              </button>
               {children}
             </motion.aside>
           ) : (
@@ -124,6 +141,7 @@ export function Sheet({ open, onClose, children, label }: { open: boolean; onClo
           )}
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    layerHost(),
   )
 }
