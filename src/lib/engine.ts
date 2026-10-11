@@ -289,7 +289,7 @@ function updateBadge() {
   if (s.status === 'ready') for (const id of Object.keys(s.conversations)) n += s.conversations[id].unread || 0
   if (n === lastBadge) return
   lastBadge = n
-  if (hasDoc) document.title = n > 0 ? `(${n}) GoofyAhhTalk` : 'GoofyAhhTalk'
+  if (hasDoc) document.title = n > 0 ? `(${n}) GoofyAhhChat` : 'GoofyAhhChat'
   const nav = (typeof navigator !== 'undefined' ? navigator : null) as
     | (Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> })
     | null

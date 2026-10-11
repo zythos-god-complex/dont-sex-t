@@ -1,4 +1,5 @@
 import { StrictMode } from 'react'
+import { MotionConfig } from 'motion/react'
 import { createRoot } from 'react-dom/client'
 import './themes/mode'
 import { boot } from './lib/engine'
@@ -18,7 +19,10 @@ boot()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {/* people who ask their phone for less motion get fades instead of slides, springs and bounces */}
+    <MotionConfig reducedMotion="user">
+      <App />
+    </MotionConfig>
   </StrictMode>,
 )
 

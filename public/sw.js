@@ -1,4 +1,4 @@
-/* GoofyAhhTalk service worker: push + notification click. No offline caching. */
+/* GoofyAhhChat service worker: push + notification click. No offline caching. */
 self.addEventListener('install', () => {
   self.skipWaiting()
 })
@@ -14,7 +14,7 @@ self.addEventListener('push', (event) => {
   } catch (e) {
     data = { body: event.data ? event.data.text() : '' }
   }
-  const title = data.title || 'GoofyAhhTalk'
+  const title = data.title || 'GoofyAhhChat'
   const url = data.url || '/'
   event.waitUntil(
     (async () => {

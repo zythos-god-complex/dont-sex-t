@@ -29,6 +29,7 @@ import { DailyReward } from './features/rewards/Reward'
 const loadRooms = () => import('./features/rooms/RoomsScreen')
 const loadRoomChat = () => import('./features/rooms/RoomChat')
 const loadAdmin = () => import('./features/admin/Admin')
+const loadLegal = () => import('./features/legal/Legal')
 // a lazy file can vanish (deploy while a tab is open) or drop on bad signal: retry once, then one hard reload
 function lazyRetry<T>(load: () => Promise<{ default: T }>) {
   const ok = (m: { default: T }) => {
@@ -53,6 +54,7 @@ function lazyRetry<T>(load: () => Promise<{ default: T }>) {
 const RoomsScreen = lazy(lazyRetry(loadRooms))
 const RoomChat = lazy(lazyRetry(loadRoomChat))
 const Admin = lazy(lazyRetry(loadAdmin))
+const Legal = lazy(lazyRetry(loadLegal))
 if (typeof window !== 'undefined') {
   const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 4000 }) : setTimeout(cb, 2500))
   window.addEventListener('load', () => idle(() => void loadRooms().then(loadRoomChat).catch(() => {})), { once: true })
@@ -285,8 +287,15 @@ export default function App() {
     return () => clearInterval(t)
   }, [status])
   useEffect(() => {
-    document.title = unread > 0 ? `(${unread}) GoofyAhhTalk` : 'GoofyAhhTalk'
+    document.title = unread > 0 ? `(${unread}) GoofyAhhChat` : 'GoofyAhhChat'
   }, [unread])
+  // the policies open for everyone: signed out, in jail, mid sign up
+  if (loc === '/privacy' || loc === '/terms')
+    return (
+      <Suspense fallback={<Boot />}>
+        <Legal page={loc === '/privacy' ? 'privacy' : 'terms'} />
+      </Suspense>
+    )
   if (ban) return <Jail until={ban} />
   if (status === 'booting') return <Boot />
   if (status === 'onboarding')

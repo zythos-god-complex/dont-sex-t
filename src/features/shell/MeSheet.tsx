@@ -741,6 +741,10 @@ function MeBody({ onClose }: { onClose: () => void }) {
       </div>
       <Account onWords={setWords} />
       <Blocked />
+      <div className="me-legal">
+        <a href="/privacy" onClick={(e) => (e.preventDefault(), onClose(), nav('/privacy'))}>privacy</a>
+        <a href="/terms" onClick={(e) => (e.preventDefault(), onClose(), nav('/terms'))}>terms</a>
+      </div>
       {me.admin && (
         <button type="button" className="me-admin" onClick={() => { onClose(); nav('/admin') }}>
           <IconCrown size={18} /> control room

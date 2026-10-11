@@ -216,6 +216,9 @@ export default function Onboarding() {
             </motion.button>
           ))}
         </motion.div>
+        <p className="ob-legal">
+          joining means you're cool with our <a href="/terms">terms</a> and <a href="/privacy">privacy</a>
+        </p>
       </motion.form>
 
       <Sheet open={building} onClose={() => setBuilding(false)} label="build your face">

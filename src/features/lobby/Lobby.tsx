@@ -219,7 +219,7 @@ export default function Lobby() {
   }, [fresh.length > 0])
   const share = () => {
     const url = location.origin
-    if (navigator.share) void navigator.share({ title: 'GoofyAhhTalk', url }).catch(() => {})
+    if (navigator.share) void navigator.share({ title: 'GoofyAhhChat', url }).catch(() => {})
     else void navigator.clipboard?.writeText(url).then(() => setCopied(true), () => {})
   }
 
