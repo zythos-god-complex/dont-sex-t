@@ -1521,3 +1521,5 @@ button.me-face { position: relative; margin: 0; flex: none; border: 0; padding: 
 .call-start:disabled { opacity: .4; }
 .pc-admin { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 14px; border-radius: 18px; background: linear-gradient(110deg, #3A2500, #8A5A00 55%, #C9962E); color: #FFF3C4; font: 720 15px/1 var(--font-display); }
 .pc-admin .grow { flex: 1; }
+.ban-mail { margin-top: 18px; color: var(--ink-2); font: 650 13.5px/1 var(--font-display); text-decoration: underline; text-underline-offset: 3px; }
+.legal-contact a { color: var(--accent); font-weight: 700; }

@@ -4,10 +4,9 @@ import { useLocation } from 'wouter'
 import { IconBack } from '../../ui/icons'
 import { Wordmark } from '../../ui/kit'
 import { goBack } from '../shell/nav'
+import { CONTACT_EMAIL, mailto } from '../../lib/contact'
 
 const UPDATED = '11 october 2026'
-// set this to a real inbox to show it on both pages; until then people reach us through the app
-const CONTACT_EMAIL = ''
 
 type Sec = { h: string; p: (string | string[])[] }
 
@@ -210,6 +209,13 @@ function Doc({ title, secs }: { title: string; secs: Sec[] }) {
           )}
         </section>
       ))}
+      <section className="legal-sec legal-contact">
+        <h2>contact</h2>
+        <p>
+          questions, data requests, complaints, appeals, legal or copyright notices:{' '}
+          <a href={mailto('strangers cafe')}>{CONTACT_EMAIL}</a>
+        </p>
+      </section>
     </>
   )
 }

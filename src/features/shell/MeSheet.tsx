@@ -27,6 +27,7 @@ import type { HatId } from '../../lib/types'
 import { peek } from '../profile/peek'
 import { closeMeSheet, openMeSheet, useMeSheet, type MeTab } from './meSheet'
 import { replayTour } from '../guide/Tour'
+import { mailto } from '../../lib/contact'
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
@@ -758,6 +759,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
       <div className="me-legal">
         <a href="/privacy" onClick={(e) => (e.preventDefault(), onClose(), nav('/privacy'))}>privacy</a>
         <a href="/terms" onClick={(e) => (e.preventDefault(), onClose(), nav('/terms'))}>terms</a>
+        <a href={mailto('hi from ' + me.username)}>contact</a>
       </div>
       {me.admin && (
         <button type="button" className="me-admin" onClick={() => { onClose(); nav('/admin') }}>

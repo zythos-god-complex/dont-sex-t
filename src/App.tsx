@@ -23,6 +23,7 @@ import { api } from './lib/api'
 import { GoofyFace } from './ui/GoofyFace'
 import { PeekHost } from './features/profile/ProfileCard'
 import { DailyReward } from './features/rewards/Reward'
+import { CONTACT_EMAIL, mailto } from './lib/contact'
 import { TourHost } from './features/guide/Tour'
 import { CallHost } from './features/call/CallUI'
 
@@ -258,6 +259,9 @@ function Jail({ until }: { until: string }) {
       <h1 className="ban-title">goofy jail</h1>
       {clock && <p className="ban-clock tnum">{clock}</p>}
       {until !== 'soon' && <Appeal />}
+      <a className="ban-mail" href={mailto('appeal: ' + (me?.username ?? ''))}>
+        {CONTACT_EMAIL}
+      </a>
     </div>
   )
 }
