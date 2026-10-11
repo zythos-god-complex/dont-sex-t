@@ -7,7 +7,6 @@ import { useStore } from '../../lib/store'
 import { clearChat, nameHistory, report, setBlocked, setFriend, setImages, setMuted, setTheme, setVoice } from '../../lib/engine'
 import { enable } from '../../lib/push'
 import { usePushBusy, usePushState } from '../../lib/hooks'
-import { relTime } from '../../lib/format'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Toggle, spring } from '../../ui/kit'
 import { IconAddFriend, IconArrowRight, IconBack, IconBan, IconBell, IconCheck, IconFlag, IconFriend, IconImage, IconLock, IconMic, IconPin, IconPlus, IconShare, IconSparkle } from '../../ui/icons'
@@ -40,9 +39,7 @@ function NameHistory({ peerId }: { peerId: string }) {
   }, [peerId])
   if (!list.length) return null
   return (
-    <span className="ci-aka ellipsis">
-      was {list.map((h) => h.username).join(', ')} <small>{relTime(list[0].changed_at)}</small>
-    </span>
+    <span className="ci-aka ellipsis">was {list.map((h) => h.username).join(', ')}</span>
   )
 }
 

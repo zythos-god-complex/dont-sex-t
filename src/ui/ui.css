@@ -1414,3 +1414,4 @@ button.me-face { position: relative; margin: 0; flex: none; border: 0; padding: 
 .rp-open.is-armed { background: var(--danger); color: #fff; }
 .rp-chip.is-quiet { background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink); }
 .acc-btn { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+.theme-tabs .seg { width: min(260px, 100%); }
