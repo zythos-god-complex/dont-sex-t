@@ -17,6 +17,8 @@ export type RoomMsg = {
   kind?: string // 'removed' = admin took it down; kept as a tombstone so device archives overwrite the original
   state?: 'sending' | 'failed'
   err?: 'fast' | 'blocked'
+  reactions?: Record<string, string> // user id -> emoji
+  reply?: { id: string; sender_id: string; body: string } | null
 }
 export type Room = {
   id: string
@@ -237,6 +239,10 @@ export function enterRoom(room: Room): () => void {
   const ch = channel(`gat:r:${room.topic}`, { presence: { key: self?.id ?? '' } })
   ch.on('broadcast', { event: 'rmsg' }, (e) => onIncoming(id, ((e as { payload?: RoomMsg }).payload ?? e) as RoomMsg))
   ch.on('broadcast', { event: 'rdel' }, (e) => applyRemoved(((e as { payload?: RoomMsg }).payload ?? e) as RoomMsg))
+  ch.on('broadcast', { event: 'rreact' }, (e) => {
+    const p = ((e as { payload?: unknown }).payload ?? e) as { id?: string; reactions?: Record<string, string> }
+    if (p.id) setReactions(id, p.id, p.reactions ?? {})
+  })
   ch.on('broadcast', { event: 'typing' }, (e) => {
     const p = ((e as { payload?: unknown }).payload ?? {}) as { id?: string; name?: string; on?: boolean }
     if (!p.id || p.id === self?.id) return
@@ -285,7 +291,27 @@ export function roomTyping(id: string, on: boolean) {
   ch.send({ type: 'broadcast', event: 'typing', payload: { id: self.id, name: self.username, on } }).catch(() => {})
 }
 
-export async function sendRoom(id: string, body: string): Promise<void> {
+function setReactions(roomId: string, msgId: string, reactions: Record<string, string>) {
+  set((s) => (s.msgs[roomId] ? { msgs: { ...s.msgs, [roomId]: s.msgs[roomId].map((x) => (x.id === msgId ? { ...x, reactions } : x)) } } : s))
+}
+
+/** one reaction per person; the same emoji again takes it back */
+export async function reactRoom(m: RoomMsg, emoji: string): Promise<void> {
+  const self = me()
+  if (!self || m.state) return
+  const before = m.reactions ?? {}
+  const next = { ...before }
+  if (next[self.id] === emoji) delete next[self.id]
+  else next[self.id] = emoji
+  setReactions(m.room_id, m.id, next)
+  try {
+    setReactions(m.room_id, m.id, await rpc<Record<string, string>>('gat_room_react', { p_token: tok(), p_msg: m.id, p_emoji: emoji }))
+  } catch {
+    setReactions(m.room_id, m.id, before)
+  }
+}
+
+export async function sendRoom(id: string, body: string, reply: RoomMsg['reply'] = null): Promise<void> {
   const self = me()
   if (!self) return
   const tmp: RoomMsg = {
@@ -296,11 +322,14 @@ export async function sendRoom(id: string, body: string): Promise<void> {
     created_at: new Date(Date.now() + 5000).toISOString(),
     sender: self as unknown as Profile,
     state: 'sending',
+    reply,
   }
   set((s) => ({ msgs: { ...s.msgs, [id]: [...(s.msgs[id] ?? []), tmp] } }))
   roomTyping(id, false)
   try {
-    const m = await rpc<RoomMsg>('gat_room_send', { p_token: tok(), p_room: id, p_body: body })
+    const m = reply
+      ? await rpc<RoomMsg>('gat_room_send2', { p_token: tok(), p_room: id, p_body: body, p_reply: reply.id })
+      : await rpc<RoomMsg>('gat_room_send', { p_token: tok(), p_room: id, p_body: body })
     set((s) => {
       const list = (s.msgs[id] ?? []).filter((x) => x.id !== tmp.id)
       return { msgs: { ...s.msgs, [id]: mergeMsgs(list, [m]) } }
@@ -318,7 +347,7 @@ export function retryRoom(id: string, msgId: string) {
   const m = get().msgs[id]?.find((x) => x.id === msgId)
   if (!m) return
   set((s) => ({ msgs: { ...s.msgs, [id]: (s.msgs[id] ?? []).filter((x) => x.id !== msgId) } }))
-  void sendRoom(id, m.body)
+  void sendRoom(id, m.body, m.reply ?? null)
 }
 
 export async function createRoom(name: string, people: string[]): Promise<Room> {

@@ -1,9 +1,10 @@
 // Doodle: draw something quick and it goes out as a photo.
 import { useEffect, useRef, useState } from 'react'
 import { Sheet } from '../../ui/kit'
+import { IconEraser } from '../../ui/icons'
 
 const PAPER = '#FFFDF8'
-const INKS = ['#17131F', '#FF5C7A', '#FFC83D', '#3DD6B5', '#5BB5FF', '#8A6BFF', PAPER]
+const INKS = ['#17131F', '#FF5C7A', '#FFC83D', '#3DD6B5', '#5BB5FF', '#8A6BFF']
 type Stroke = { c: string; w: number; pts: [number, number][] }
 
 export function DoodleSheet({ open, onClose, onSend }: { open: boolean; onClose: () => void; onSend: (f: File) => void }) {
@@ -12,6 +13,7 @@ export function DoodleSheet({ open, onClose, onSend }: { open: boolean; onClose:
   const cur = useRef<Stroke | null>(null)
   const [ink, setInk] = useState(INKS[0])
   const [thick, setThick] = useState(false)
+  const [erase, setErase] = useState(false)
   const [n, setN] = useState(0)
   const size = typeof window !== 'undefined' ? Math.min(340, window.innerWidth - 48) : 320
 
@@ -33,10 +35,10 @@ export function DoodleSheet({ open, onClose, onSend }: { open: boolean; onClose:
       g.stroke()
     }
   }
+  // closing the sheet keeps the drawing; only send or clear wipes it
   useEffect(() => {
     if (!open) return
-    strokes.current = []
-    setN(0)
+    setN(strokes.current.length)
     requestAnimationFrame(paint)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -47,7 +49,7 @@ export function DoodleSheet({ open, onClose, onSend }: { open: boolean; onClose:
   }
   const down = (e: React.PointerEvent) => {
     cv.current?.setPointerCapture(e.pointerId)
-    cur.current = { c: ink, w: thick ? 10 : 4, pts: [at(e)] }
+    cur.current = { c: erase ? PAPER : ink, w: erase ? (thick ? 22 : 12) : thick ? 10 : 4, pts: [at(e)] }
     strokes.current.push(cur.current)
     paint()
   }
@@ -60,7 +62,13 @@ export function DoodleSheet({ open, onClose, onSend }: { open: boolean; onClose:
     if (cur.current) setN(strokes.current.length)
     cur.current = null
   }
-  const send = () => cv.current?.toBlob((b) => b && onSend(new File([b], 'doodle.png', { type: 'image/png' })), 'image/png')
+  const send = () =>
+    cv.current?.toBlob((b) => {
+      if (!b) return
+      onSend(new File([b], 'doodle.png', { type: 'image/png' }))
+      strokes.current = []
+      setN(0)
+    }, 'image/png')
 
   return (
     <Sheet open={open} onClose={onClose} label="doodle">
@@ -68,11 +76,18 @@ export function DoodleSheet({ open, onClose, onSend }: { open: boolean; onClose:
         <canvas ref={cv} width={size * 2} height={size * 2} style={{ width: size, height: size }} className="doodle-cv" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
         <div className="doodle-inks">
           {INKS.map((c) => (
-            <button key={c} type="button" className={'doodle-ink' + (ink === c ? ' is-on' : '') + (c === PAPER ? ' is-eraser' : '')} style={{ background: c }} aria-label={c === PAPER ? 'eraser' : c} onClick={() => setInk(c)} />
+            <button key={c} type="button" className={'doodle-ink' + (!erase && ink === c ? ' is-on' : '')} style={{ background: c }} aria-label={c} onClick={() => (setInk(c), setErase(false))} />
           ))}
-          <button type="button" className={'doodle-ink is-size' + (thick ? ' is-on' : '')} aria-label="brush size" onClick={() => setThick((v) => !v)}>
-            <i style={{ width: thick ? 12 : 6, height: thick ? 12 : 6 }} />
+        </div>
+        <div className="doodle-inks">
+          <button type="button" className={'doodle-tool' + (erase ? ' is-on' : '')} aria-label="eraser" aria-pressed={erase} onClick={() => setErase((v) => !v)}>
+            <IconEraser size={20} />
           </button>
+          {[false, true].map((t) => (
+            <button key={String(t)} type="button" className={'doodle-tool' + (thick === t ? ' is-on' : '')} aria-label={t ? 'thick' : 'thin'} aria-pressed={thick === t} onClick={() => setThick(t)}>
+              <i style={{ width: t ? 12 : 5, height: t ? 12 : 5 }} />
+            </button>
+          ))}
         </div>
         <div className="doodle-acts">
           <button type="button" className="acc-btn" disabled={!n} onClick={() => (strokes.current.pop(), setN(strokes.current.length), paint())}>

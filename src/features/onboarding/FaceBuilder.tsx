@@ -14,7 +14,7 @@ import {
   type AvatarConfig,
 } from '../../ui/face'
 
-type Tab = 'color' | 'shape' | 'eyes' | 'mouth' | 'extras'
+type Tab = 'color' | 'shape' | 'eyes' | 'mouth' | 'top' | 'brows'
 
 function Tile({ on, onPick, children, label }: { on: boolean; onPick: () => void; children: React.ReactNode; label: string }) {
   return (
@@ -34,6 +34,8 @@ export function FaceBuilder({ name, value, onChange, onDone }: { name: string | 
   const [spin, setSpin] = useState(0)
   const set = (patch: Partial<AvatarConfig>) => onChange({ ...value, ...patch })
   const face = (a: AvatarConfig, size = 58) => <GoofyFace name={name} avatar={a} size={size} blink={false} />
+  // tops and brows are small: a bigger face cropped to its upper half so the difference shows
+  const zoom = (a: AvatarConfig) => <span className="fb-zoom">{face(a, 104)}</span>
 
   return (
     <div className="fb">
@@ -65,7 +67,8 @@ export function FaceBuilder({ name, value, onChange, onDone }: { name: string | 
           { id: 'shape', label: 'shape' },
           { id: 'eyes', label: 'eyes' },
           { id: 'mouth', label: 'mouth' },
-          { id: 'extras', label: 'extras' },
+          { id: 'top', label: 'top' },
+          { id: 'brows', label: 'brows' },
         ]}
       />
 
@@ -94,16 +97,17 @@ export function FaceBuilder({ name, value, onChange, onDone }: { name: string | 
               {face({ ...value, mouth: m })}
             </Tile>
           ))}
-        {tab === 'extras' && (
+        {tab === 'top' &&
+          TOP_KINDS.map((t) => (
+            <Tile key={'top' + t} label={t} on={value.top === t} onPick={() => set({ top: t })}>
+              {zoom({ ...value, top: t })}
+            </Tile>
+          ))}
+        {tab === 'brows' && (
           <>
-            {TOP_KINDS.map((t) => (
-              <Tile key={'top' + t} label={t} on={value.top === t} onPick={() => set({ top: t })}>
-                {face({ ...value, top: t })}
-              </Tile>
-            ))}
             {BROW_KINDS.map((b) => (
               <Tile key={'brow' + b} label={b ?? 'no brows'} on={value.brows === b} onPick={() => set({ brows: b })}>
-                {face({ ...value, brows: b, eyes: value.eyes === 'three' && b ? 'pair' : value.eyes })}
+                {zoom({ ...value, brows: b, eyes: value.eyes === 'three' && b ? 'pair' : value.eyes })}
               </Tile>
             ))}
             <Tile label="blush" on={value.blush} onPick={() => set({ blush: !value.blush })}>

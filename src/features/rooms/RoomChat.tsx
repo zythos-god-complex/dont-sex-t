@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { peek } from '../profile/peek'
 import { Ink } from '../../ui/Ink'
 import { getDraft, setDraft } from '../../lib/drafts'
@@ -12,16 +12,18 @@ import { Badge, Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
 import { useBlocks } from '../../lib/engine'
 import { useChatScroll } from '../chat/ChatScreen'
 import { StickerTray } from '../chat/Tray'
-import { IconAlert, IconArrowDown, IconBack, IconPlus, IconSend, IconUsers } from '../../ui/icons'
+import { IconAlert, IconArrowDown, IconBack, IconClose, IconCopy, IconPlus, IconReply, IconSend, IconTrash, IconUsers } from '../../ui/icons'
+import { MessageMenu, type MenuAction } from '../chat/MessageMenu'
+import { EMOJI_GROUPS } from '../chat/emojis'
 import { getTheme, themeVars } from '../../themes/themes'
 import { useThemeMode } from '../../themes/mode'
 import { Ambient } from '../../themes/Ambient'
 import { goBack } from '../shell/nav'
 import { LockedSticker, Sticker } from '../stickers/Sticker'
-import { NSFW_STICKERS, stickerOf } from '../stickers/stickers'
+import { NSFW_STICKERS, displayBody, stickerOf } from '../stickers/stickers'
 import { Crew, Faces } from './Crew'
 import { PeoplePicker } from './PeoplePicker'
-import { addPeople, enterRoom, fetchRoom, leaveRoom, loadOlderRoom, removeRoomMsg, retryRoom, roomPeople, roomTyping, sendRoom, useRooms, type Room, type RoomMsg } from './rooms'
+import { addPeople, enterRoom, fetchRoom, leaveRoom, loadOlderRoom, reactRoom, removeRoomMsg, retryRoom, roomPeople, roomTyping, sendRoom, useRooms, type Room, type RoomMsg } from './rooms'
 
 const EMPTY: RoomMsg[] = []
 const EMPTY_P: Profile[] = []
@@ -29,44 +31,159 @@ const EMPTY_H: { id: string; name: string }[] = []
 const group = (a: RoomMsg | undefined, b: RoomMsg | undefined) =>
   !!a && !!b && a.sender_id === b.sender_id && Math.abs(Date.parse(b.created_at) - Date.parse(a.created_at)) < 180000 && !needsSeparator(a, b)
 
-function Bubble({ m, mine, joinPrev, joinNext, mod, fresh }: { m: RoomMsg; mine: boolean; joinPrev: boolean; joinNext: boolean; mod?: boolean; fresh?: boolean }) {
-  const [arm, setArm] = useState(false)
+function Bubble({ m, mine, joinPrev, joinNext, mod, fresh, meId, onReply }: { m: RoomMsg; mine: boolean; joinPrev: boolean; joinNext: boolean; mod?: boolean; fresh?: boolean; meId: string | null; onReply: (m: RoomMsg) => void }) {
   const name = m.sender?.username ?? ''
   const stk = stickerOf(m.body)
   const emoji = stk ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
   const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk ? 'b-sticker' : ''].join(' ')
+  const bubble = useRef<HTMLDivElement>(null)
+  const [menu, setMenu] = useState<DOMRect | null>(null)
+  const [more, setMore] = useState(false)
+  const press = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
+  const tapT = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const lastTap = useRef(0)
+  const moved = useRef(false)
+  const reactions = m.reactions ?? {}
+  const mineR = meId ? reactions[meId] : undefined
+  const counts = new Map<string, number>()
+  for (const e of Object.values(reactions)) counts.set(e, (counts.get(e) ?? 0) + 1)
+  const chips = [...counts.entries()]
+  const live = !m.state
+  const replyName = useRoomName(m.room_id, m.reply?.sender_id ?? '')
+  // same as 1:1 chats: tap or hold for the menu, double tap for a heart
+  const openMenu = () => {
+    press.current = null
+    const r = bubble.current?.getBoundingClientRect()
+    if (!r || !live) return
+    navigator.vibrate?.(10)
+    setMenu(r)
+  }
+  const closeMenu = useCallback(() => setMenu(null), [])
+  const cancel = () => {
+    if (press.current) clearTimeout(press.current.t)
+    press.current = null
+  }
+  const onDown = (e: React.PointerEvent) => {
+    moved.current = false
+    if ((e.target as HTMLElement).closest('a, button')) return
+    press.current = { t: setTimeout(openMenu, 380), x: e.clientX, y: e.clientY }
+  }
+  const onMove = (e: React.PointerEvent) => {
+    const p = press.current
+    if (p && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 8) {
+      moved.current = true
+      cancel()
+    }
+  }
+  const onUp = (e: React.PointerEvent) => {
+    const wasPress = !press.current
+    cancel()
+    if (moved.current || wasPress || menu || (e.target as HTMLElement).closest('a, button')) return
+    const now = Date.now()
+    clearTimeout(tapT.current)
+    if (now - lastTap.current < 280) {
+      lastTap.current = 0
+      void reactRoom(m, '❤️')
+    } else {
+      lastTap.current = now
+      tapT.current = setTimeout(openMenu, 290)
+    }
+  }
+  const pick = (e: string) => {
+    setMenu(null)
+    void reactRoom(m, e)
+  }
+  const actions: MenuAction[] = [
+    { id: 'reply', label: 'reply', ico: <IconReply size={19} />, go: () => (setMenu(null), onReply(m)) },
+    ...(!stk ? [{ id: 'copy', label: 'copy', ico: <IconCopy size={19} />, go: () => (setMenu(null), void navigator.clipboard?.writeText(m.body).catch(() => {})) }] : []),
+    ...(mod ? [{ id: 'remove', label: 'remove', ico: <IconTrash size={19} />, danger: true, go: () => (setMenu(null), void removeRoomMsg(m)) }] : []),
+  ]
   return (
     <>
       {!mine && !joinPrev && <button type="button" className="b-who" onClick={() => peek(name, m.sender_id)}>{name}</button>}
       <motion.div
-        className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '')}
+        data-mid={m.id}
+        className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '') + (chips.length ? ' has-reacts' : '') + (menu ? ' is-menu' : '')}
         initial={fresh ? { opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 } : false}
         animate={{ opacity: m.state === 'sending' ? 0.7 : 1, x: 0, y: 0, scale: 1 }}
         transition={spring}
       >
         {!mine && <span className="b-face" onClick={() => peek(name, m.sender_id)}>{!joinNext && <GoofyFace name={name} size={28} blink={false} />}</span>}
-        <div className={cls} onClick={mod && !m.state ? () => setArm((v) => !v) : undefined}>
-          {stk ? (
-            NSFW_STICKERS.includes(stk) ? <LockedSticker size={130} /> : <Sticker kind={stk} name={name} size={130} />
-          ) : (
-            linkify(m.body).map((p, i) =>
-              p.href ? (
-                <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
-                  {p.text}
-                </a>
-              ) : (
-                <Ink key={i} text={p.text} />
-              ),
-            )
+        <div className="b-wrap">
+          <div
+            ref={bubble}
+            className={cls}
+            onPointerDown={onDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={cancel}
+            onPointerLeave={cancel}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              openMenu()
+            }}
+          >
+            {m.reply && (
+              <button
+                type="button"
+                className="b-quote"
+                onClick={() => {
+                  const el = document.querySelector(`[data-mid="${m.reply!.id}"]`)
+                  el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+                  el?.classList.add('flash')
+                  setTimeout(() => el?.classList.remove('flash'), 1200)
+                }}
+              >
+                <b>{m.reply.sender_id === meId ? 'you' : replyName}</b>
+                <span>{displayBody(m.reply.body)}</span>
+              </button>
+            )}
+            {stk ? (
+              NSFW_STICKERS.includes(stk) ? <LockedSticker size={130} /> : <Sticker kind={stk} name={name} size={130} />
+            ) : (
+              linkify(m.body).map((p, i) =>
+                p.href ? (
+                  <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
+                    {p.text}
+                  </a>
+                ) : (
+                  <Ink key={i} text={p.text} />
+                ),
+              )
+            )}
+          </div>
+          {chips.length > 0 && (
+            <button type="button" className="b-reacts" onClick={openMenu}>
+              {chips.map(([e, n]) => (
+                <span key={e} className={e === mineR ? 'is-mine' : ''}>
+                  {e}
+                  {n > 1 && <small>{n}</small>}
+                </span>
+              ))}
+            </button>
           )}
         </div>
       </motion.div>
-      {arm && (
-        <button className={'rm-del' + (mine ? ' mine' : '')} onClick={() => void removeRoomMsg(m)}>
-          remove
-        </button>
-      )}
+      <AnimatePresence>
+        {menu && <MessageMenu anchor={menu} mine={mine} current={mineR} onReact={pick} onMore={() => (setMenu(null), setMore(true))} actions={actions} onClose={closeMenu} />}
+      </AnimatePresence>
+      <Sheet open={more} onClose={() => setMore(false)} label="pick an emoji">
+        <div className="emoji-sheet">
+          {EMOJI_GROUPS.map((g) => (
+            <div key={g.name}>
+              <h3 className="settings-label">{g.name}</h3>
+              <div className="emoji-grid">
+                {g.list.map((e, i) => (
+                  <button key={e + i} type="button" className={'emoji-cell' + (e === mineR ? ' is-on' : '')} onClick={() => (setMore(false), pick(e))}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Sheet>
       {m.state === 'failed' &&
         (m.err === 'blocked' ? (
           <span className="mine-status is-failed">
@@ -85,7 +202,12 @@ function Bubble({ m, mine, joinPrev, joinNext, mod, fresh }: { m: RoomMsg; mine:
   )
 }
 
-function List({ room, onPeople }: { room: Room; onPeople: () => void }) {
+/** a name for whoever wrote the quoted message, from what this room already loaded */
+function useRoomName(roomId: string, userId: string): string {
+  return useRooms((s) => s.msgs[roomId]?.find((x) => x.sender_id === userId)?.sender?.username ?? s.people[roomId]?.find((p) => p.id === userId)?.username ?? 'someone')
+}
+
+function List({ room, onPeople, onReply }: { room: Room; onPeople: () => void; onReply: (m: RoomMsg) => void }) {
   const me = useMe()
   const now = useNow(60000)
   const all = useRooms((s) => s.msgs[room.id]) ?? EMPTY
@@ -158,7 +280,7 @@ function List({ room, onPeople }: { room: Room; onPeople: () => void }) {
     const m = msgs[i]
     if (needsSeparator(msgs[i - 1], m)) items.push(<div key={'sep' + m.id} className="sep">{daySeparator(m.created_at, now)}</div>)
     if (m.id === newFrom) items.push(<div key="new" className="sep is-new">new</div>)
-    items.push(<Bubble key={m.id} m={m} mine={m.sender_id === me?.id} joinPrev={group(msgs[i - 1], m) && m.id !== newFrom} joinNext={group(m, msgs[i + 1]) && msgs[i + 1]?.id !== newFrom} mod={mod} fresh={Date.parse(m.created_at) > openedAt.current - 5000} />)
+    items.push(<Bubble key={m.id} meId={me?.id ?? null} onReply={onReply} m={m} mine={m.sender_id === me?.id} joinPrev={group(msgs[i - 1], m) && m.id !== newFrom} joinNext={group(m, msgs[i + 1]) && msgs[i + 1]?.id !== newFrom} mod={mod} fresh={Date.parse(m.created_at) > openedAt.current - 5000} />)
   }
   const priv = room.kind === 'private'
   const faces = priv ? (people ?? []).map((p) => p.username) : (herePeople ?? []).filter((p) => !gone(p.id)).map((p) => p.name)
@@ -227,7 +349,7 @@ function List({ room, onPeople }: { room: Room; onPeople: () => void }) {
   )
 }
 
-function Composer({ room }: { room: Room }) {
+function Composer({ room, replyTo, onClearReply }: { room: Room; replyTo: RoomMsg | null; onClearReply: () => void }) {
   const me = useMe()
   const [text, setText] = useState(() => getDraft('r:' + room.id))
   useEffect(() => setDraft('r:' + room.id, text), [room.id, text])
@@ -244,13 +366,30 @@ function Composer({ room }: { room: Room }) {
   const send = () => {
     const body = text.trim()
     if (!body) return
-    void sendRoom(room.id, body)
+    void sendRoom(room.id, body, replyTo ? { id: replyTo.id, sender_id: replyTo.sender_id, body: replyTo.body } : null)
+    onClearReply()
     setText('')
     ta.current?.focus()
   }
   const has = text.trim().length > 0
   return (
     <div className="composer-wrap">
+      <AnimatePresence>
+        {replyTo && (
+          <motion.div className="reply-bar" initial={{ opacity: 0, y: 12, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: 8, height: 0 }} transition={spring}>
+            <div className="reply-bar-in">
+              <IconReply size={18} />
+              <div className="reply-bar-text">
+                <b>replying to {replyTo.sender_id === me?.id ? 'yourself' : replyTo.sender?.username ?? 'someone'}</b>
+                <span>{displayBody(replyTo.body)}</span>
+              </div>
+              <button type="button" aria-label="cancel reply" onClick={onClearReply}>
+                <IconClose size={18} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence initial={false}>
         {tray && (
           <motion.div className="stk-tray" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={spring}>
@@ -419,6 +558,8 @@ function Live({ room }: { room: Room }) {
   const [, nav] = useLocation()
   const desktop = useIsDesktop()
   const [sheet, setSheet] = useState(false)
+  const [replyTo, setReplyTo] = useState<RoomMsg | null>(null)
+  useEffect(() => setReplyTo(null), [room.id])
   const here = useRooms((s) => s.here[room.id] ?? 0)
   const typers = useRooms((s) => s.typing[room.id])
   const blocked = useBlocks((b) => b.blocked)
@@ -470,8 +611,8 @@ function Live({ room }: { room: Room }) {
           <IconUsers size={24} />
         </button>
       </header>
-      <List room={room} onPeople={() => setSheet(true)} />
-      <Composer room={room} />
+      <List room={room} onPeople={() => setSheet(true)} onReply={setReplyTo} />
+      <Composer room={room} replyTo={replyTo} onClearReply={() => setReplyTo(null)} />
       <PeopleSheet room={room} open={sheet} onClose={() => setSheet(false)} />
     </div>
   )

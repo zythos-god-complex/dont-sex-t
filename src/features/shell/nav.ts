@@ -61,6 +61,8 @@ export function bindVisualViewport(): () => void {
     raf = 0
     root.style.setProperty('--vvh', `${vv.height}px`)
     root.style.setProperty('--vvo', `${vv.offsetTop}px`)
+    // how much of the layout viewport the keyboard covers (iOS); 0 where the page itself resizes (Android)
+    root.style.setProperty('--kb', `${Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))}px`)
   }
   const on = () => {
     if (!raf) raf = requestAnimationFrame(apply)

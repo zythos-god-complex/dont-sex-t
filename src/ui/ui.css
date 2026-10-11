@@ -60,7 +60,7 @@
 .seg-item {
   position: relative; flex: 1; height: 38px; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 6px;
   font: 650 15px/1 var(--font-display); color: var(--ink-2); transition: color var(--dur-2);
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent; padding: 0 16px; white-space: nowrap;
 }
 .seg-item.is-on { color: var(--bg); }
 .seg-pill { position: absolute; inset: 0; border-radius: 999px; background: var(--ink); z-index: 0; }
@@ -1142,10 +1142,11 @@ html[data-lite='1'] .song-bg { filter: none; opacity: .3; }
 /* ============================================================ ux rework: shell */
 
 /* every sheet lives here: above the whole page, riding the visual viewport like .m-stack */
-.layer { position: fixed; left: 0; right: 0; top: 0; height: var(--vvh, 100dvh); transform: translateY(var(--vvo, 0px)); z-index: 60; pointer-events: none; }
+.layer { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+.layer .sheet { bottom: var(--kb, 0px); }
 .layer > * { pointer-events: auto; }
 .layer .sheet-scrim, .layer .sheet, .layer .panel { position: absolute; }
-.layer .sheet { max-height: 86%; }
+.layer .sheet { max-height: calc(86% - var(--kb, 0px)); }
 .panel-x { position: absolute; top: 12px; right: 12px; z-index: 3; }
 
 .boot { display: grid; place-content: center; justify-items: center; gap: 16px; }
@@ -1338,7 +1339,7 @@ button.ob-face { border: 0; background: none; padding: 0; cursor: pointer; -webk
 .ci-del { display: block; margin: 22px auto 4px; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: none; color: var(--danger); font: 700 14.5px/1 var(--font-display); cursor: pointer; }
 .acc-btn.is-main { background: var(--ink); color: var(--bg); }
 .acc-btn.is-quiet { background: none; }
-.ci-swatches { display: flex; overflow-x: auto; gap: 10px; padding: 4px 2px 8px; scroll-snap-type: x proximity; scrollbar-width: none; }
+.ci-swatches { display: flex; overflow-x: auto; gap: 10px; padding: 7px 7px 8px; margin: 0 -7px; scroll-padding: 0 7px; scroll-snap-type: x proximity; scrollbar-width: none; }
 .ci-swatches::-webkit-scrollbar { display: none; }
 .ci-swatches .swatch { flex: 0 0 92px; scroll-snap-align: start; }
 .swatch.is-locked .swatch-prev { filter: none; opacity: .85; }
@@ -1415,3 +1416,14 @@ button.me-face { position: relative; margin: 0; flex: none; border: 0; padding: 
 .rp-chip.is-quiet { background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink); }
 .acc-btn { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
 .theme-tabs .seg { width: min(260px, 100%); }
+.fb .seg-item { padding: 0 4px; }
+.fb-zoom { display: block; width: 104px; height: 104px; margin-top: 22px; flex: none; }
+.fb-tile:has(.fb-zoom) { overflow: hidden; }
+@media (min-width: 960px) {
+  .msgs-inner, .chat-empty, .composer-wrap > * { width: 100%; max-width: 760px; margin-inline: auto; }
+}
+.doodle-inks { flex-wrap: wrap; justify-content: center; }
+.doodle-tool { width: 40px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--bg-2); color: var(--ink); cursor: pointer; }
+.doodle-tool.is-on { background: var(--ink); color: var(--bg); }
+.doodle-tool i { display: block; border-radius: 50%; background: currentColor; }
+.lobby-filter .seg-item, .inbox-tabs .seg-item { padding: 0 6px; }
