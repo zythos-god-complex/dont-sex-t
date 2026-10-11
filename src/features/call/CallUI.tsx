@@ -6,7 +6,8 @@ import { useStore } from '../../lib/store'
 import { useMe, useNow } from '../../lib/hooks'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { IconChevronDown, IconMic, IconMicOff, IconPhone, IconSpeaker } from '../../ui/icons'
-import { acceptCall, declineCall, hangUp, isCallPair, listenCalls, toggleMute, toggleSpeaker, useCall } from './call'
+import { acceptCall, declineCall, hangUp, isCallPair, syncCallChats, toggleMute, toggleSpeaker, useCall } from './call'
+import { useShallow } from 'zustand/react/shallow'
 
 const NOTE: Record<string, string> = { ended: 'call ended', 'no answer': 'no answer', busy: 'they hung up', missed: 'missed call', lost: 'call dropped', mic: 'mic blocked' }
 const mmss = (ms: number) => {
@@ -22,8 +23,9 @@ function Clock({ since }: { since: number }) {
 
 export function CallHost() {
   const me = useMe()
-  const conv = useStore((s) => (s.me ? Object.values(s.conversations).find((c) => isCallPair(s.me, c.peer)) ?? null : null))
-  useEffect(() => listenCalls(conv), [conv?.id, conv?.topic])
+  // every chat that can call keeps a quiet listener so a ring gets through from any screen
+  const callable = useStore(useShallow((s) => (s.me ? Object.values(s.conversations).filter((c) => isCallPair(s.me, c.peer, c)) : [])))
+  useEffect(() => syncCallChats(callable), [callable])
   const st = useCall()
   const [mini, setMini] = useState(false)
   useEffect(() => {

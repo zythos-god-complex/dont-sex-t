@@ -1519,3 +1519,5 @@ button.me-face { position: relative; margin: 0; flex: none; border: 0; padding: 
 @keyframes call-blink { 50% { opacity: .3; } }
 .sys.is-call { display: inline-flex; align-items: center; gap: 6px; }
 .call-start:disabled { opacity: .4; }
+.pc-admin { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 14px; border-radius: 18px; background: linear-gradient(110deg, #3A2500, #8A5A00 55%, #C9962E); color: #FFF3C4; font: 720 15px/1 var(--font-display); }
+.pc-admin .grow { flex: 1; }

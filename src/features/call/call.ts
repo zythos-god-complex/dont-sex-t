@@ -13,11 +13,15 @@ export const useCall = create<S>(() => ({ state: 'idle', convId: null, peer: '',
 const set = useCall.setState
 const get = useCall.getState
 
-/** the only two accounts that can call each other */
-export function isCallPair(me: Pick<Profile, 'username' | 'admin'> | null | undefined, peer: Pick<Profile, 'username' | 'admin'> | null | undefined): boolean {
+type Who = Pick<Profile, 'username' | 'admin' | 'can_call'>
+const ember = (p: Who) => p.username.toLowerCase() === 'ember'
+const caller = (p: Who) => !!p.admin || ember(p) || !!p.can_call
+
+/** the admin and Ember can always call each other; anyone the admin lets call can call friends who can call too */
+export function isCallPair(me: Who | null | undefined, peer: Who | null | undefined, conv?: Pick<Conversation, 'my_friend' | 'peer_friend' | 'blocked'> | null): boolean {
   if (!me || !peer) return false
-  const ember = (p: Pick<Profile, 'username'>) => p.username.toLowerCase() === 'ember'
-  return (!!me.admin && ember(peer)) || (ember(me) && !!peer.admin)
+  if ((!!me.admin && ember(peer)) || (ember(me) && !!peer.admin)) return true
+  return caller(me) && caller(peer) && !!conv && !!conv.my_friend && !!conv.peer_friend && !conv.blocked
 }
 
 // STUN finds a direct path; a TURN relay (set in env) rescues networks that block it
@@ -25,8 +29,9 @@ const ICE: RTCIceServer[] = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun
 const turn = import.meta.env.VITE_TURN_URL as string | undefined
 if (turn) ICE.push({ urls: turn.split(','), username: import.meta.env.VITE_TURN_USER as string, credential: import.meta.env.VITE_TURN_PASS as string })
 
+// one channel per chat you can call in; `ch` is the one the current call runs on
+const chans = new Map<string, RealtimeChannel>()
 let ch: RealtimeChannel | null = null
-let chTopic = ''
 let pc: RTCPeerConnection | null = null
 let mic: MediaStream | null = null
 let audio: HTMLAudioElement | null = null
@@ -41,54 +46,55 @@ const send = (event: string, payload: Record<string, unknown> = {}) => {
   if (ch && canPush(ch)) void ch.send({ type: 'broadcast', event, payload: { ...payload, from: myId(), id: callId } }).catch(() => {})
 }
 
-/** listen on the pair's chat for calls; App keeps this pointed at the right conversation */
-export function listenCalls(conv: Conversation | null): () => void {
-  if (!conv) return () => {}
-  const topic = `gat:call:${conv.topic}`
-  if (ch && chTopic === topic) return () => {}
-  void removeChannel(ch)
-  chTopic = topic
+/** keep a call listener on every chat that can call; App passes the current list */
+export function syncCallChats(convs: Conversation[]) {
+  const want = new Map(convs.map((c) => [`gat:call:${c.topic}`, c]))
+  for (const [topic, c] of chans) {
+    if (want.has(topic) || c === ch) continue
+    void removeChannel(c)
+    chans.delete(topic)
+  }
+  for (const [topic, conv] of want) if (!chans.has(topic)) chans.set(topic, listen(topic, conv))
+}
+
+function listen(topic: string, conv: Conversation): RealtimeChannel {
   const c = channel(topic)
   const on = (event: string, fn: (p: Record<string, unknown>) => void) =>
     c.on('broadcast', { event }, (e) => {
       const p = ((e as { payload?: Record<string, unknown> }).payload ?? {}) as Record<string, unknown>
       if (p.from && p.from !== myId()) fn(p)
     })
+  const mine = () => ch === c
   on('ring', (p) => {
     const s = get().state
     if (s === 'idle' || s === 'ended') {
       callId = String(p.id)
+      ch = c
       set({ state: 'incoming', convId: conv.id, peer: conv.peer.username, muted: false, speaker: false, note: '' })
       tone?.stop()
       tone = ringtone('in')
       navigator.vibrate?.([300, 200, 300, 200, 300])
       clearTimeout(giveUp)
-      // the caller stops ringing after 40s; drop the screen if no ring arrives for a while
+      // the caller rings every 2s for up to 40s; no ring for a while means they gave up
       giveUp = setTimeout(() => get().state === 'incoming' && end('missed'), 8000)
-    } else if (s === 'incoming' && p.id === callId) {
+    } else if (s === 'incoming' && mine() && p.id === callId) {
       clearTimeout(giveUp)
       giveUp = setTimeout(() => get().state === 'incoming' && end('missed'), 8000)
     }
   })
   on('accept', (p) => {
-    if (get().state !== 'outgoing' || p.id !== callId) return
+    if (!mine() || get().state !== 'outgoing' || p.id !== callId) return
     clearInterval(ringT)
     tone?.stop()
     set({ state: 'connecting' })
     void makeOffer()
   })
-  on('decline', (p) => p.id === callId && get().state === 'outgoing' && end('busy'))
-  on('hangup', (p) => p.id === callId && get().state !== 'idle' && end(get().state === 'incoming' ? 'missed' : 'ended'))
-  on('sdp', (p) => p.id === callId && void onSdp(p.desc as RTCSessionDescriptionInit))
-  on('ice', (p) => p.id === callId && void onIce(p.cand as RTCIceCandidateInit))
+  on('decline', (p) => mine() && p.id === callId && get().state === 'outgoing' && end('busy'))
+  on('hangup', (p) => mine() && p.id === callId && get().state !== 'idle' && end(get().state === 'incoming' ? 'missed' : 'ended'))
+  on('sdp', (p) => mine() && p.id === callId && void onSdp(p.desc as RTCSessionDescriptionInit))
+  on('ice', (p) => mine() && p.id === callId && void onIce(p.cand as RTCIceCandidateInit))
   c.subscribe()
-  ch = c
-  return () => {
-    if (chTopic !== topic) return
-    void removeChannel(c)
-    ch = null
-    chTopic = ''
-  }
+  return c
 }
 
 async function getMic(): Promise<MediaStream> {
@@ -153,7 +159,9 @@ async function onIce(c: RTCIceCandidateInit) {
 
 export async function startCall(conv: Conversation) {
   if (get().state !== 'idle' && get().state !== 'ended') return
-  listenCalls(conv)
+  const topic = `gat:call:${conv.topic}`
+  if (!chans.has(topic)) chans.set(topic, listen(topic, conv))
+  ch = chans.get(topic)!
   callId = Math.random().toString(36).slice(2, 10)
   set({ state: 'outgoing', convId: conv.id, peer: conv.peer.username, muted: false, speaker: false, note: '' })
   try {

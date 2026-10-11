@@ -233,7 +233,7 @@ function ChatView({ conv }: { conv: Conversation }) {
             </AnimatePresence>
           </div>
         </button>
-        {isCallPair(me, peer) && !conv.blocked && (
+        {isCallPair(me, peer, conv) && !conv.blocked && (
           <button className="icon-btn call-start" onClick={() => void startCall(conv)} aria-label={'call ' + peer.username} disabled={calling}>
             <IconPhone size={23} />
           </button>

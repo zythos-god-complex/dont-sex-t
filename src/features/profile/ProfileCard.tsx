@@ -1,13 +1,13 @@
 // Steam / Discord style profile card. Everyone gets the basic card; perk users get their card colours,
 // live banner and bio.
-import { IconAddFriend, IconBrush, IconDm, IconFlame, IconFriend, IconGhost, IconHi, IconMoon, IconUsers } from '../../ui/icons'
+import { IconAddFriend, IconBrush, IconDm, IconFlame, IconFriend, IconGhost, IconHi, IconMoon, IconPhone, IconUsers } from '../../ui/icons'
 import { Flame } from '../../ui/Flame'
 import { openMeSheet } from '../shell/meSheet'
 import { NowPlaying, SongCard } from '../music/NowPlaying'
 import { useStore } from '../../lib/store'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useMe } from '../../lib/hooks'
-import { report, saveGhost, setBlocked, setFriend, useBlocks, useGhost } from '../../lib/engine'
+import { adminCall, report, saveGhost, setBlocked, setFriend, useBlocks, useGhost } from '../../lib/engine'
 import { closePeek, usePeek } from './peek'
 import { icebreaker, setIce } from '../../lib/drafts'
 import { useLocation } from 'wouter'
@@ -17,7 +17,7 @@ import { Aura, CARDS } from '../../ui/Aura'
 import { useAvatarFor } from '../../ui/avatars'
 import { applyAvatar, faceTraits } from '../../ui/face'
 import { useFlairFor } from '../../ui/flair'
-import { Sheet } from '../../ui/kit'
+import { Sheet, Toggle } from '../../ui/kit'
 import type { Flair } from '../../lib/types'
 
 // earned on the server (hourly), shown under the bio
@@ -156,6 +156,36 @@ function BlockBtn({ id }: { id: string }) {
   return <Armed key={id} label="block" onGo={() => void setBlocked(id, true)} />
 }
 
+/** admin only: let this person make voice calls (to friends who can call too) */
+function CallsSwitch({ id }: { id: string }) {
+  const on = useStore((s) => !!(s.profiles[id]?.can_call ?? s.conversations[s.convByPeer[id]]?.peer.can_call))
+  const [busy, setBusy] = useState(false)
+  const flip = (v: boolean) => {
+    setBusy(true)
+    adminCall('calls', { id, on: v })
+      .then(() =>
+        useStore.setState((s) => {
+          const prof = s.profiles[id]
+          const cid = s.convByPeer[id]
+          const conv = cid ? s.conversations[cid] : undefined
+          return {
+            profiles: prof ? { ...s.profiles, [id]: { ...prof, can_call: v } } : s.profiles,
+            conversations: conv ? { ...s.conversations, [cid]: { ...conv, peer: { ...conv.peer, can_call: v } } } : s.conversations,
+          }
+        }),
+      )
+      .catch(() => {})
+      .finally(() => setBusy(false))
+  }
+  return (
+    <div className="pc-admin">
+      <IconPhone size={18} />
+      <span className="grow">calls</span>
+      <Toggle label="allow calls" on={on} disabled={busy} onChange={flip} />
+    </div>
+  )
+}
+
 // the relationship lives here: say hi, message, add friend, add back, friends, unfriend
 export function ProfileCard({ name, id, sub, open, onClose }: { name: string; id?: string | null; sub?: string | null; open: boolean; onClose: () => void; chat?: boolean }) {
   const me = useMe()
@@ -223,6 +253,7 @@ export function ProfileCard({ name, id, sub, open, onClose }: { name: string; id
           )}
         </div>
       )}
+      {!mine && me?.admin && id && <CallsSwitch id={id} />}
       {!mine && me && (
         <div className="pc-acts">
           {live && myF && theirF && <Armed key={'uf' + conv.id} label="unfriend" onGo={() => void setFriend(conv.id, false)} />}
