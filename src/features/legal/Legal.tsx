@@ -24,7 +24,7 @@ const PRIVACY: Sec[] = [
   },
   {
     h: 'who we are',
-    p: [`GoofyAhhChat ("we", "us") runs the app at goofyahhtalk.vercel.app and decides how your data is used, which makes us the data controller (or data fiduciary under india's DPDP Act). to reach us or our grievance officer, ${contact}`],
+    p: [`GoofyAhhChat ("we", "us") runs the app at strangers.cafe and decides how your data is used, which makes us the data controller (or data fiduciary under india's DPDP Act). to reach us or our grievance officer, ${contact}`],
   },
   {
     h: 'what we collect',
