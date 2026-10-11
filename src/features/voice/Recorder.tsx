@@ -12,6 +12,7 @@ export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: 
   const [review, setReview] = useState<{ blob: Blob; url: string; dur: number; peaks: number[] } | null>(null)
   const [playing, setPlaying] = useState(false)
   const [pos, setPos] = useState(0)
+  const [err, setErr] = useState(false)
   const player = useRef<HTMLAudioElement | null>(null)
   const raf = useRef(0)
   const rec = useRef<MediaRecorder | null>(null)
@@ -78,8 +79,8 @@ export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: 
           if (t >= MAX) stop('review')
         }, 90)
       } catch {
+        // stays up until closed, so the reason doesn't flash past
         setState('blocked')
-        setTimeout(onClose, 1600)
       }
     })()
     return () => {
@@ -95,14 +96,18 @@ export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: 
 
   const upload = async (blob: Blob, dur: number, peaks: number[]) => {
     setState('sending')
+    setErr(false)
     player.current?.pause()
     try {
       const url = await uploadVoice(blob, userId)
       onSend(voiceBody(url, dur, peaks))
+      onClose()
     } catch {
-      /* dropped */
+      // keep the recording: back to review, send taps retry the same clip
+      setReview((r) => r ?? { blob, url: URL.createObjectURL(blob), dur, peaks })
+      setErr(true)
+      setState('review')
     }
-    onClose()
   }
 
   const stop = (mode: 'no' | 'send' | 'review') => {
@@ -167,7 +172,7 @@ export function Recorder({ userId, onSend, onClose }: { userId: string; onSend: 
               <i key={i} className={i / review.peaks.length < prog ? 'on' : ''} style={{ transform: `scaleY(${0.15 + p * 0.85})` }} />
             ))}
           </div>
-          <span className="rec-time tnum">{fmtDur(playing || pos ? review.dur - pos : review.dur)}</span>
+          {err ? <span className="rec-msg is-err">couldn't send</span> : <span className="rec-time tnum">{fmtDur(playing || pos ? review.dur - pos : review.dur)}</span>}
         </>
       ) : (
         <>

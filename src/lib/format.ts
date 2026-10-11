@@ -126,7 +126,22 @@ export function messagePreview(m: Pick<Message, 'sender_id' | 'kind' | 'body'> |
   if (!m) return ''
   const mine = !!meId && m.sender_id === meId
   if (m.kind === 'theme') return mine ? 'you changed the theme' : 'changed the theme'
-  const body = /^\[\[voice:/.test(m.body) ? 'voice message' : /^\[\[img[:-]/.test(m.body) ? 'photo' : m.body === '[[unsent]]' ? 'message unsent' : /^\[\[sticker:[a-z_]+\]\]$/.test(m.body) ? 'sent a sticker' : /^\[\[toy:dice/.test(m.body) ? 'rolled the dice' : /^\[\[toy:coin/.test(m.body) ? 'flipped a coin' : /^\[\[toy:8ball/.test(m.body) ? 'asked the 8-ball' : /^\[\[toy:(truth|dare)/.test(m.body) ? 'truth or dare' : /^\[\[game:/.test(m.body) ? 'wants to play' : m.body === '[[friends]]' ? "you're friends now" : /^\[\[tot:/.test(m.body) ? 'this or that' : /^\[\[totre:/.test(m.body) ? 'picked one' : /^\[\[wish:/.test(m.body) ? 'made a wish' : /^\[\[wishre:/.test(m.body) ? 'answered a wish' : m.body.replace(/\s+/g, ' ').trim()
+  const b = m.body
+  if (b === '[[friends]]') return 'friends now'
+  // system-ish lines read as actions, from whoever did them; only real content gets 'you: '
+  const act: [RegExp, string, string][] = [
+    [/^\[\[toy:dice/, 'you rolled the dice', 'rolled the dice'],
+    [/^\[\[toy:coin/, 'you flipped a coin', 'flipped a coin'],
+    [/^\[\[toy:8ball/, 'you asked the 8 ball', 'asked the 8 ball'],
+    [/^\[\[toy:(truth|dare)/, 'you sent truth or dare', 'truth or dare'],
+    [/^\[\[game:/, 'you started a game', 'wants to play'],
+    [/^\[\[tot:/, 'you sent this or that', 'this or that'],
+    [/^\[\[totre:/, 'you picked one', 'picked one'],
+    [/^\[\[wish:/, 'you made a wish', 'made a wish'],
+    [/^\[\[wishre:/, 'you answered a wish', 'answered a wish'],
+  ]
+  for (const [re, me, them] of act) if (re.test(b)) return mine ? me : them
+  const body = /^\[\[voice:/.test(b) ? 'voice message' : /^\[\[img[:-]/.test(b) ? 'photo' : b === '[[unsent]]' ? 'message unsent' : /^\[\[sticker:[a-z_]+\]\]$/.test(b) ? 'sent a sticker' : b.replace(/\s+/g, ' ').trim()
   return mine ? `you: ${body}` : body
 }
 

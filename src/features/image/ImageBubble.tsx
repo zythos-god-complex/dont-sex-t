@@ -36,6 +36,7 @@ export function ImageBubble({ img, open, onClose, blur }: { img: ImageMsg; open:
               exit={{ opacity: 0 }}
               onClick={onClose}
             >
+              {blur && <i className="img-timer" />}
               <motion.img
                 src={src}
                 alt=""

@@ -30,8 +30,7 @@ export function VoiceBubble({ note }: { note: VoiceNote }) {
     if (!a.paused) raf.current = requestAnimationFrame(tick)
   }
 
-  const toggle = (e: React.MouseEvent) => {
-    e.stopPropagation()
+  const ensure = (): HTMLAudioElement => {
     let a = audio.current
     if (!a) {
       a = new Audio(src)
@@ -47,21 +46,31 @@ export function VoiceBubble({ note }: { note: VoiceNote }) {
       }
       audio.current = a
     }
-    if (a.paused) {
-      if (current && current !== a) current.pause()
-      current = a
-      a.playbackRate = speed
-      void a.play().catch(() => setPlaying(false))
-    } else a.pause()
+    return a
+  }
+  const play = (a: HTMLAudioElement) => {
+    if (current && current !== a) current.pause()
+    current = a
+    a.playbackRate = speed
+    void a.play().catch(() => setPlaying(false))
+  }
+
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const a = ensure()
+    if (a.paused) play(a)
+    else a.pause()
   }
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation()
     const r = e.currentTarget.getBoundingClientRect()
     const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
-    if (!audio.current) return
-    audio.current.currentTime = f * dur
+    // tapping the wave before the first play starts it from there
+    const a = ensure()
+    a.currentTime = f * dur
     setPos(f * dur)
+    if (a.paused) play(a)
   }
 
   const cycle = (e: React.MouseEvent) => {

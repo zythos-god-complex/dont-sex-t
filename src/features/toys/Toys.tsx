@@ -1,9 +1,8 @@
 // Toy box + 1:1 games. Results come from the server (gat_toy / gat_game_*); this only draws them.
-import { IconDice, IconCoin, IconEightBall, IconTruth, IconFlame, IconRock, IconPaper, IconScissors, IconTicTacToe, IconTrophy, IconScales, IconPen } from '../../ui/icons'
-import { sendTot } from './Tot'
+import { IconRock, IconPaper, IconScissors, IconTrophy } from '../../ui/icons'
 import { useEffect, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { gameMove, loadGame, sendToy, startGame, useGames, type Game } from '../../lib/engine'
+import { gameMove, loadGame, startGame, useGames, type Game } from '../../lib/engine'
 
 export type Toy = { kind: 'dice' | 'coin' | '8ball' | 'truth' | 'dare'; a: string; b: string }
 const TOY_RE = /^\[\[toy:(dice|coin|8ball|truth|dare)\|([^|\]]*)(?:\|([^\]]*))?\]\]$/
@@ -40,7 +39,7 @@ function Die({ n, fresh, i }: { n: number; fresh?: boolean; i: number }) {
   )
 }
 
-export function ToyBubble({ toy, fresh }: { toy: Toy; fresh?: boolean }) {
+export function ToyBubble({ toy, fresh, forName }: { toy: Toy; fresh?: boolean; forName?: string }) {
   if (toy.kind === 'dice') {
     const a = Number(toy.a)
     const b = Number(toy.b)
@@ -76,7 +75,10 @@ export function ToyBubble({ toy, fresh }: { toy: Toy; fresh?: boolean }) {
     )
   return (
     <motion.div className={'toy toy-tod is-' + toy.kind} initial={fresh ? { rotateX: 90 } : false} animate={{ rotateX: 0 }} transition={{ type: 'spring', stiffness: 220, damping: 18 }}>
-      <span className="toy-tod-k">{toy.kind}</span>
+      <span className="toy-tod-k">
+        {toy.kind}
+        {forName && <i className="toy-tod-for ellipsis">for {forName}</i>}
+      </span>
       <span className="toy-tod-p">{toy.a}</span>
     </motion.div>
   )
@@ -182,44 +184,6 @@ function Ttt({ g, side, peerName, busy, move, again }: GP) {
       ) : (
         <span className="game-sub">{myTurn ? 'your move' : `${peerName}'s move`}</span>
       )}
-    </div>
-  )
-}
-
-/** The toys tab in the sticker tray. The 8-ball takes whatever you typed as the question. */
-export function ToyGrid({ convId, question, onUsed, onDoodle }: { convId: string; question: string; onUsed: (clearText: boolean) => void; onDoodle: () => void }) {
-  const items: { id: string; label: string; ico: ReactNode; go: () => Promise<void>; clear?: boolean }[] = [
-    { id: 'tot', label: 'this or that', ico: <IconScales size={28} />, go: async () => { sendTot(convId) } },
-    { id: 'doodle', label: 'doodle', ico: <IconPen size={28} />, go: async () => onDoodle() },
-    { id: 'dice', label: 'dice', ico: <IconDice size={28} />, go: () => sendToy(convId, 'dice') },
-    { id: 'coin', label: 'coin', ico: <IconCoin size={28} />, go: () => sendToy(convId, 'coin') },
-    { id: '8ball', label: '8-ball', ico: <IconEightBall size={28} />, go: () => sendToy(convId, '8ball', question), clear: true },
-    { id: 'truth', label: 'truth', ico: <IconTruth size={28} />, go: () => sendToy(convId, 'truth') },
-    { id: 'dare', label: 'dare', ico: <IconFlame size={28} />, go: () => sendToy(convId, 'dare') },
-    { id: 'rps', label: 'rock paper scissors', ico: <IconScissors size={28} />, go: () => startGame(convId, 'rps') },
-    { id: 'ttt', label: 'tic tac toe', ico: <IconTicTacToe size={28} />, go: () => startGame(convId, 'ttt') },
-  ]
-  return (
-    <div className="toy-grid">
-      {items.map((t, i) => (
-        <motion.button
-          key={t.id}
-          type="button"
-          className="toy-pick"
-          initial={{ scale: 0.5, opacity: 0, y: 12 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ delay: 0.03 * i, type: 'spring', stiffness: 520, damping: 22 }}
-          whileTap={{ scale: 0.85 }}
-          onClick={() => {
-            navigator.vibrate?.(8)
-            void t.go().catch(() => {})
-            onUsed(!!t.clear)
-          }}
-        >
-          <span className="toy-ico">{t.ico}</span>
-          <span className="toy-lbl">{t.label}</span>
-        </motion.button>
-      ))}
     </div>
   )
 }

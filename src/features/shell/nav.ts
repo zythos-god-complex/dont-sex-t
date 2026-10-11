@@ -101,3 +101,14 @@ export function bindEdgeBack(back: () => void): () => void {
     window.removeEventListener('touchmove', move)
   }
 }
+
+// 'roll another' from a chat: home rolls once as soon as it shows up
+let rollQueued = false
+export function queueRoll(): void {
+  rollQueued = true
+}
+export function takeRoll(): boolean {
+  const v = rollQueued
+  rollQueued = false
+  return v
+}

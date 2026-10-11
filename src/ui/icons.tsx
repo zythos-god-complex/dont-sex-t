@@ -335,3 +335,31 @@ export const IconShare = (p: P) => (
     <path d="M12 3.5v11M8 7.5l4-4 4 4M6.5 11H5.8A1.8 1.8 0 0 0 4 12.8v6.4C4 20.2 4.8 21 5.8 21h12.4c1 0 1.8-.8 1.8-1.8v-6.4c0-1-.8-1.8-1.8-1.8h-.7" />
   </Svg>
 )
+export const IconCopy = (p: P) => (
+  <Svg {...p}>
+    <rect x="8.5" y="8.5" width="11" height="11" rx="3" />
+    <path d="M15.5 5.5c-.3-1.2-1.3-2-2.6-2H7.2c-2 0-3.7 1.7-3.7 3.7v5.7c0 1.3.8 2.3 2 2.6" />
+  </Svg>
+)
+export const IconTrash = (p: P) => (
+  <Svg {...p}>
+    <path d="M4.5 6.5h15M9.5 6.5V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v1.5M6.5 6.5l.8 12.1A2 2 0 0 0 9.3 20.5h5.4a2 2 0 0 0 2-1.9l.8-12.1" />
+  </Svg>
+)
+export const IconBan = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M6 6l12 12" />
+  </Svg>
+)
+export const IconOnce = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" strokeDasharray="3 2.6" />
+    <path d="M10.6 9.4l1.9-1.4v8" />
+  </Svg>
+)
+export const IconWave = (p: P) => (
+  <Svg {...p}>
+    <path d="M3.5 12h2M7.5 8.5v7M11.5 5.5v13M15.5 8.5v7M19.5 11v2" />
+  </Svg>
+)

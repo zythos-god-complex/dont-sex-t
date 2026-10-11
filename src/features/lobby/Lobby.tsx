@@ -11,6 +11,7 @@ import { GenderIcon, IconClose, IconDice, IconDm, IconGhost, IconMegaphone } fro
 import { loadRooms, useRoomList, useRooms } from '../rooms/rooms'
 import { Crew } from '../rooms/Crew'
 import { MeButton } from '../shell/MeSheet'
+import { takeRoll } from '../shell/nav'
 import { saveGhost, setLooking, useBlocks, useGhost, useMood } from '../../lib/engine'
 import { api } from '../../lib/api'
 import { icebreaker, setIce } from '../../lib/drafts'
@@ -212,14 +213,10 @@ export default function Lobby() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mateUser])
   // 'roll another' from a chat lands here with a roll queued up
-  const queued = useRef(false)
   useEffect(() => {
-    if (queued.current || !(history.state as { roll?: boolean } | null)?.roll || fresh.length === 0) return
-    queued.current = true
-    try { history.replaceState({ ...history.state, roll: false }, '') } catch { /* blocked */ }
-    roll()
+    if (fresh.length && takeRoll()) roll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fresh.length])
+  }, [fresh.length > 0])
   const share = () => {
     const url = location.origin
     if (navigator.share) void navigator.share({ title: 'GoofyAhhTalk', url }).catch(() => {})

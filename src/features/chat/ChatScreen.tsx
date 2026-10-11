@@ -1,41 +1,29 @@
-import { createPortal } from 'react-dom'
+import { MessageMenu, type MenuAction } from './MessageMenu'
+import { ChatInfo } from './ChatInfo'
+import { PlayTray, StickerTray, TrayTabs, lastTrayTab, type Media, type TrayTab } from './Tray'
 import { WishCard, WishSheet, isWishReply, wishOf } from '../toys/Wish'
-import { TotCard, isTotReply, totOf } from '../toys/Tot'
+import { TotCard, isTotReply, sendTot, totOf } from '../toys/Tot'
 import { DoodleSheet } from '../toys/Doodle'
 import { FX_BY_THEME, fireFx, fxSource } from '../../themes/fx'
-import { GameBubble, ToyBubble, ToyGrid, gameOf, toyOf } from '../toys/Toys'
+import { GameBubble, ToyBubble, gameOf, toyOf } from '../toys/Toys'
 import { shareSticker } from '../stickers/share'
-import { Flame } from '../../ui/Flame'
+import { Flame, Melt } from '../../ui/Flame'
 import { Ink } from '../../ui/Ink'
-import { getDraft, setDraft, takeIce } from '../../lib/drafts'
-import { useGhost } from '../../lib/engine'
+import { getDraft, icebreaker, setDraft, takeIce } from '../../lib/drafts'
+import { sendToy, startGame, useGames, useGhost } from '../../lib/engine'
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation } from 'wouter'
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'motion/react'
-import {
-  useHasMore,
-  useLoadingOlder,
-  useMe,
-  useMessages,
-  useMyLastStatus,
-  useNow,
-  usePeerStatus,
-  usePeerTyping,
-  usePushBusy,
-  usePushState,
-  useResolveChat,
-} from '../../lib/hooks'
-import { setFriend, setMuted, report, clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti, openOnce, unsend } from '../../lib/engine'
-import { togglePush } from '../../lib/push'
-import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
+import { useConnection, useHasMore, useLoadingOlder, useMe, useMessages, useMyLastStatus, useNow, usePeerStatus, usePeerTyping, useResolveChat } from '../../lib/hooks'
+import { setFriend, loadOlder, react, respondRequest, retry, sendMessage, setActiveConv, setTyping, setBlocked, setVoice, setImages, sendConfetti, onPeerConfetti, openOnce, unsend } from '../../lib/engine'
+import { activeAgo, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
-import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight, IconGhost, IconHi, IconAddFriend, IconFriend, IconLock, IconClock, IconPlus, IconShare } from '../../ui/icons'
-import { EMBER_THEMES, getTheme, themeList, themeLocked, themeVars } from '../../themes/themes'
-import { flipModeFrom, useThemeMode } from '../../themes/mode'
-import { flushSync } from 'react-dom'
-import { goHome } from '../shell/nav'
+import { Badge, Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
+import { GenderIcon, IconImage, IconMic, IconClose, IconReply, IconAlert, IconArrowDown, IconBack, IconGear, IconSend, IconGhost, IconHi, IconAddFriend, IconFriend, IconLock, IconClock, IconPlus, IconShare, IconCopy, IconTrash, IconBan, IconDice, IconEightBall, IconTicTacToe, IconScissors } from '../../ui/icons'
+import { getTheme, themeVars } from '../../themes/themes'
+import { useThemeMode } from '../../themes/mode'
+import { goBack, queueRoll } from '../shell/nav'
 import { EasterEgg } from './EasterEgg'
 import { Recorder } from '../voice/Recorder'
 import { VoiceBubble } from '../voice/VoiceBubble'
@@ -46,15 +34,13 @@ import { ImageBubble } from '../image/ImageBubble'
 import { Confetti, type ConfettiHandle } from './Confetti'
 import { LockedSticker, Sticker } from '../stickers/Sticker'
 import { useStore } from '../../lib/store'
-import { MAX_PINS, togglePin, usePins } from '../inbox/pins'
-import { COUPLES, NSFW_STICKERS, STICKERS, coupleOf, displayBody, stickerBody, stickerOf } from '../stickers/stickers'
+import { NSFW_STICKERS, STICKERS, coupleOf, displayBody, stickerOf } from '../stickers/stickers'
 import { CoupleSticker } from '../stickers/CoupleSticker'
 import { EMOJI_GROUPS } from './emojis'
 import { Aura } from '../../ui/Aura'
 import { useFlairFor } from '../../ui/flair'
-import { ProfileCard } from '../profile/ProfileCard'
-import { ThemeBackground, setThemeOrigin } from './ThemeReveal'
-import { AMBIENT_LABEL, PARTICLE_AMBIENTS, SCENE_AMBIENTS, SPEED_ONLY, landingFor, setAmbientPrefs, setLanding, useAmbientPrefs } from '../../themes/ambientPrefs'
+import { ThemeBackground } from './ThemeReveal'
+import { landingFor } from '../../themes/ambientPrefs'
 
 export type ChatScreenProps = { username: string }
 
@@ -68,21 +54,49 @@ function ChatPlaceholder({ username, status }: { username: string; status: strin
   const [, nav] = useLocation()
   const desktop = useIsDesktop()
   const t = getTheme('goofy')
+  const dead = status === 'not_found' || status === 'self'
+  // the real chat chrome right away, so nothing jumps when the chat arrives
   return (
     <div className="chat" style={themeVars(t)}>
       <div className="chat-bg" style={{ background: t.bg }} />
       <header className="chat-head">
         {!desktop && (
-          <button className="icon-btn" onClick={() => goHome(nav)} aria-label="back">
+          <button className="icon-btn" onClick={() => goBack(nav)} aria-label="back">
             <IconBack size={26} />
           </button>
         )}
+        {!dead && (
+          <span className="chat-peer">
+            <GoofyFace name={username} size={40} />
+            <span className="chat-peer-text">
+              <span className="chat-peer-name">
+                <span className="ellipsis">{username}</span>
+              </span>
+            </span>
+          </span>
+        )}
       </header>
       <div className="chat-center">
-        <GoofyFace name={username} size={120} mood={status === 'not_found' ? 'shocked' : 'neutral'} />
-        <p className="chat-center-name">{status === 'not_found' ? 'nobody by that name' : status === 'self' ? "that's you" : username}</p>
-        {status === 'loading' && <TypingDots />}
+        <GoofyFace name={dead ? 'nobody.here' : username} size={120} mood={dead ? 'shocked' : 'neutral'} />
+        {dead ? (
+          <>
+            <p className="chat-center-name">{status === 'self' ? "that's you" : 'nobody by that name'}</p>
+            <button type="button" className="empty-act is-ink" onClick={() => goBack(nav)}>
+              {status === 'self' ? 'go home' : 'find someone'}
+            </button>
+          </>
+        ) : (
+          <TypingDots />
+        )}
       </div>
+      {!dead && (
+        <div className="composer-wrap">
+          <div className="composer is-skeleton" aria-hidden="true">
+            <span className="stk-toggle"><IconPlus size={24} /></span>
+            <span className="composer-ghost" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -94,17 +108,32 @@ function ChatView({ conv }: { conv: Conversation }) {
   const theme = getTheme(conv.theme, mode)
   const peer = conv.peer
   const status = usePeerStatus(peer.id)
+  const conn = useConnection()
   const now = useNow(30000)
-  const [settings, setSettings] = useState(false)
+  const [info, setInfo] = useState(false)
   const [egg, setEgg] = useState(0)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [wishOpen, setWishOpen] = useState(false)
+  // a line picked on the way in (roll, say hi): the first chip on an empty chat, otherwise prefilled
+  const [ice] = useState(() => takeIce(peer.username))
   const confetti = useRef<ConfettiHandle>(null)
   const taps = useRef<{ n: number; t: number; x: number; y: number }>({ n: 0, t: 0, x: 0, y: 0 })
   const themeId = useRef(conv.theme)
   themeId.current = conv.theme
+  // 4 quick taps, or the confetti tile: the theme's own effect when it has one, confetti otherwise
+  const pop = (x: number, y: number) => {
+    const landing = landingFor(conv.id)
+    const fx = FX_BY_THEME[conv.theme ?? '']
+    if (fx) {
+      fireFx(fx)
+      if (fx === 'thunder') navigator.vibrate?.([30, 50, 80])
+      if (fx === 'wish') setTimeout(() => setWishOpen(true), 1500)
+      if (fx === 'bloom') confetti.current?.shower(fxSource(), landing)
+    } else confetti.current?.burst(x, y, landing)
+    sendConfetti(conv.id, { x: Math.min(1, Math.max(0, x / window.innerWidth)), y: Math.min(1, Math.max(0, y / window.innerHeight)) }, landing)
+  }
   const onChatTap = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('button, a, input, textarea, .sheet, .panel, .r-picker')) return
+    if ((e.target as HTMLElement).closest('button, a, input, textarea, .sheet, .panel, .mm')) return
     const k = taps.current
     const now = performance.now()
     if (now - k.t < 360 && Math.hypot(e.clientX - k.x, e.clientY - k.y) < 60) k.n++
@@ -114,15 +143,7 @@ function ChatView({ conv }: { conv: Conversation }) {
     k.y = e.clientY
     if (k.n >= 4) {
       k.n = 0
-      const landing = landingFor(conv.id)
-      const fx = FX_BY_THEME[conv.theme ?? '']
-      if (fx) {
-        fireFx(fx)
-        if (fx === 'thunder') navigator.vibrate?.([30, 50, 80])
-        if (fx === 'wish') setTimeout(() => setWishOpen(true), 1500)
-        if (fx === 'bloom') confetti.current?.shower(fxSource(), landing)
-      } else confetti.current?.burst(k.x, k.y, landing)
-      sendConfetti(conv.id, { x: Math.min(1, Math.max(0, k.x / window.innerWidth)), y: Math.min(1, Math.max(0, k.y / window.innerHeight)) }, landing)
+      pop(k.x, k.y)
     }
   }
   useEffect(
@@ -145,7 +166,6 @@ function ChatView({ conv }: { conv: Conversation }) {
   const [themeBump, setThemeBump] = useState(false)
   const me = useMe()
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
-  const [card, setCard] = useState(false)
   const peerFl = useFlairFor(conv.peer.username)
   const peerAura = peerFl?.aura
   const plate = !!peerAura && peerAura !== 'none'
@@ -161,8 +181,15 @@ function ChatView({ conv }: { conv: Conversation }) {
     return () => setActiveConv(null)
   }, [conv.id])
 
+  const offline = conn === 'offline'
   let statusLine: React.ReactNode = null
-  if (status.typing)
+  if (offline)
+    statusLine = (
+      <span className="st-typing">
+        connecting<TypingDots />
+      </span>
+    )
+  else if (status.typing)
     statusLine = (
       <span className="st-typing">
         typing<TypingDots />
@@ -179,90 +206,74 @@ function ChatView({ conv }: { conv: Conversation }) {
 
       <header className="chat-head">
         {!desktop && (
-          <button className="icon-btn" onClick={() => goHome(nav)} aria-label="back">
+          <button className="icon-btn" onClick={() => goBack(nav)} aria-label="back">
             <IconBack size={26} />
           </button>
         )}
-        <button type="button" className={'chat-peer' + (plate ? ' has-aura' : '')} onClick={() => setCard(true)} aria-label={peer.username + ' profile'}>
+        <button type="button" className={'chat-peer' + (plate ? ' has-aura' : '')} onClick={() => setInfo(true)} aria-label={peer.username + ', chat info'}>
           {plate && <Aura id={peerAura} />}
-          <GoofyFace name={peer.username} size={40} presence={conv.peer.show_status !== false && me?.show_status !== false && status.online ? (status.away ? 'away' : 'online') : null} />
+          <GoofyFace name={peer.username} size={40} presence={!offline && conv.peer.show_status !== false && me?.show_status !== false && status.online ? (status.away ? 'away' : 'online') : null} />
           <div className="chat-peer-text">
-            <span className="chat-peer-name ellipsis">{peer.username}{peerFl && <i className="vchk" aria-label="verified" />}<Flame convId={conv.id} /></span>
+            <span className="chat-peer-name">
+              <span className="ellipsis">{peer.username}</span>
+              {peerFl && <i className="vchk" aria-label="verified" />}
+              <Flame convId={conv.id} />
+              <Melt convId={conv.id} />
+            </span>
             <AnimatePresence mode="wait" initial={false}>
               {statusLine && (
-                <motion.span key={String(status.typing) + String(status.online)} className={'chat-peer-status' + (status.typing ? ' is-typing' : '')} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.15 }}>
+                <motion.span key={String(offline) + String(status.typing) + String(status.online)} className={'chat-peer-status' + (status.typing || offline ? ' is-typing' : '')} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.15 }}>
                   {statusLine}
                 </motion.span>
               )}
             </AnimatePresence>
           </div>
         </button>
-        <FriendButton conv={conv} />
-        <button className="icon-btn" onClick={() => setSettings(true)} aria-label="chat settings">
+        <button className="icon-btn" onClick={() => setInfo(true)} aria-label="chat info">
           <IconGear size={24} />
         </button>
       </header>
 
-      <MessageList conv={conv} now={now} sinceOnline={status.since} online={status.online} onReply={setReplyTo} />
-      <ChatFooter conv={conv} meId={me?.id ?? null} now={now} onEgg={() => setEgg((n) => n + 1)} replyTo={replyTo} onClearReply={() => setReplyTo(null)} />
+      <MessageList conv={conv} now={now} sinceOnline={status.since} online={status.online} onReply={setReplyTo} ice={ice && !ice.auto && !conv.last_message ? ice.text : null} />
+      <ChatFooter
+        conv={conv}
+        meId={me?.id ?? null}
+        now={now}
+        onEgg={() => setEgg((n) => n + 1)}
+        replyTo={replyTo}
+        onClearReply={() => setReplyTo(null)}
+        ice={ice && (ice.auto || conv.last_message) ? ice : null}
+        onWish={() => setWishOpen(true)}
+        onConfetti={() => pop(window.innerWidth / 2, window.innerHeight / 2)}
+      />
       <AnimatePresence>{egg > 0 && <EasterEgg key="egg" me={me?.username ?? ''} />}</AnimatePresence>
 
-      <ProfileCard name={peer.username} id={peer.id} open={card} onClose={() => setCard(false)} />
       <WishSheet convId={conv.id} open={wishOpen} onClose={() => setWishOpen(false)} />
-      <Sheet open={settings} onClose={() => setSettings(false)} label="chat settings">
-        <SettingsBody conv={conv} onPicked={() => setSettings(false)} />
+      <Sheet open={info} onClose={() => setInfo(false)} label="chat info">
+        <ChatInfo conv={conv} onClose={() => setInfo(false)} />
       </Sheet>
     </div>
   )
 }
 
-/** Strangers become friends when both add each other; then the chat moves to the friends tab. */
-function FriendButton({ conv }: { conv: Conversation }) {
-  const mine = !!conv.my_friend
-  const theirs = !!conv.peer_friend
-  if (mine && theirs) return null
-  return (
-    <button type="button" className={'friend-pill' + (mine ? ' is-sent' : theirs ? ' is-back' : '')} onClick={() => void setFriend(conv.id, !mine)} aria-pressed={mine}>
-      {mine ? <IconFriend size={16} /> : <IconAddFriend size={16} />}
-      {mine ? 'added' : theirs ? 'add back' : 'add friend'}
-    </button>
-  )
-}
-
-/** Sun / moon switch in the top bar. Personal: only changes this device. */
-export function ModeButton() {
-  const mode = useThemeMode()
-  const dark = mode === 'dark'
-  return (
-    <button
-      type="button"
-      className="icon-btn mode-btn"
-      aria-label={dark ? 'switch to light mode' : 'switch to dark mode'}
-      onClick={(e) => {
-        const r = e.currentTarget.getBoundingClientRect()
-        navigator.vibrate?.(8)
-        flipModeFrom(r.left + r.width / 2, r.top + r.height / 2, (fn) => flushSync(fn))
-      }}
-    >
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.span
-          key={mode}
-          className="mode-ico"
-          initial={{ rotate: -90, scale: 0.4, opacity: 0 }}
-          animate={{ rotate: 0, scale: 1, opacity: 1 }}
-          exit={{ rotate: 90, scale: 0.4, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 520, damping: 26 }}
-        >
-          {dark ? <IconMoon size={23} /> : <IconSun size={24} />}
-        </motion.span>
-      </AnimatePresence>
-    </button>
-  )
-}
-
 /* ------------------------------------------------------------------ messages */
 
-function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conversation; now: number; sinceOnline: string | null; online: boolean; onReply: (m: Message) => void }) {
+/** Remembers where unread starts when a chat opens, and keeps the newest messages in view while things around the list resize. */
+export function useChatScroll(scroller: React.RefObject<HTMLDivElement | null>, inner: React.RefObject<HTMLDivElement | null>, atBottom: React.RefObject<boolean>) {
+  useEffect(() => {
+    const el = scroller.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    // the tray, the reply bar, the recorder, the keyboard and late loading cards all change sizes; stick to the bottom if we were there
+    const ro = new ResizeObserver(() => {
+      if (atBottom.current) el.scrollTop = el.scrollHeight
+    })
+    ro.observe(el)
+    if (inner.current) ro.observe(inner.current)
+    return () => ro.disconnect()
+  }, [scroller, inner, atBottom])
+}
+
+function MessageList({ conv, now, sinceOnline, online, onReply, ice }: { conv: Conversation; now: number; sinceOnline: string | null; online: boolean; onReply: (m: Message) => void; ice: string | null }) {
   const me = useMe()
   const allMsgs = useMessages(conv.id)
   // only messages that arrive while the chat is open animate in; opening a chat paints instantly
@@ -279,20 +290,29 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
     }
   })
   const msgs = useMemo(() => allMsgs.filter((x) => x.body !== '[[unsent]]' && !isWishReply(x.body) && !isTotReply(x.body)), [allMsgs])
+  // where 'new' starts, fixed at open so it doesn't jump around while you read
+  const [newFrom] = useState<string | null>(() => {
+    if (!conv.unread) return null
+    const at = Date.parse(conv.my_last_read_at || '') || 0
+    return msgs.find((x) => x.sender_id !== me?.id && Date.parse(x.created_at) > at)?.id ?? null
+  })
   const typing = usePeerTyping(conv.id)
   const mine = useMyLastStatus(conv.id)
   const hasMore = useHasMore(conv.id)
   const loadingOlder = useLoadingOlder(conv.id)
   const scroller = useRef<HTMLDivElement>(null)
+  const inner = useRef<HTMLDivElement>(null)
   const topSentinel = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
-  const [jump, setJump] = useState(false)
+  const [far, setFar] = useState(false)
+  const [missed, setMissed] = useState(0)
   const firstId = msgs[0]?.id
   const lastId = msgs[msgs.length - 1]?.id
   const prevFirst = useRef(firstId)
   const prevLast = useRef(lastId)
   const prevHeight = useRef(0)
   const mounted = useRef(false)
+  useChatScroll(scroller, inner, atBottom)
 
   const toBottom = useCallback((smooth: boolean) => {
     const el = scroller.current
@@ -305,16 +325,19 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
     if (!el) return
     if (!mounted.current) {
       mounted.current = true
-      el.scrollTop = el.scrollHeight
+      const sep = newFrom ? el.querySelector<HTMLElement>('.sep.is-new') : null
+      // lots unread: start at the 'new' line; a few: just the bottom
+      if (sep && el.scrollHeight - sep.offsetTop > el.clientHeight) {
+        el.scrollTop = Math.max(0, sep.offsetTop - 70)
+        atBottom.current = false
+      } else el.scrollTop = el.scrollHeight
     } else if (firstId !== prevFirst.current && lastId === prevLast.current) {
       // older page prepended: keep the visual position
       el.scrollTop += el.scrollHeight - prevHeight.current
     } else if (lastId !== prevLast.current) {
       const last = msgs[msgs.length - 1]
-      if (atBottom.current || (last && last.sender_id === me?.id)) {
-        toBottom(true)
-        setJump(false)
-      } else setJump(true)
+      if (atBottom.current || (last && last.sender_id === me?.id)) toBottom(true)
+      else if (last) setMissed((n) => n + 1)
     }
     prevFirst.current = firstId
     prevLast.current = lastId
@@ -344,8 +367,11 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
   const onScroll = () => {
     const el = scroller.current
     if (!el) return
-    atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 90
-    if (atBottom.current && jump) setJump(false)
+    const gap = el.scrollHeight - el.scrollTop - el.clientHeight
+    atBottom.current = gap < 90
+    if (atBottom.current && missed) setMissed(0)
+    const f = gap > el.clientHeight * 0.8
+    if (f !== far) setFar(f)
   }
 
   const peer = conv.peer
@@ -355,6 +381,7 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
     const prev = msgs[i - 1]
     const next = msgs[i + 1]
     if (needsSeparator(prev, m)) items.push(<div key={'sep' + m.id} className="sep">{daySeparator(m.created_at, now)}</div>)
+    if (m.id === newFrom) items.push(<div key="new" className="sep is-new">new</div>)
     if (m.body === '[[friends]]') {
       items.push(
         <motion.div key={m.id} className="sys is-friends" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
@@ -364,17 +391,21 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
       continue
     }
     if (m.kind === 'theme') {
+      // trying a few themes in a row leaves one line, the last pick
+      if (next?.kind === 'theme') continue
       const who = m.sender_id === me?.id ? 'you' : peer.username
+      const t = getTheme(m.body)
       items.push(
-        <motion.div key={m.id} className="sys" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
-          {who} changed the theme to {getTheme(m.body).name}
+        <motion.div key={m.id} className="sys is-theme" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
+          <i className="sys-dot" style={{ background: t.bg }} />
+          <b className="ellipsis">{who}</b>&nbsp;picked {t.name}
         </motion.div>,
       )
       continue
     }
     const isMine = m.sender_id === me?.id
-    const joinPrev = sameGroup(prev, m) && !needsSeparator(prev, m)
-    const joinNext = !!next && sameGroup(m, next) && !needsSeparator(m, next)
+    const joinPrev = sameGroup(prev, m) && !needsSeparator(prev, m) && m.id !== newFrom
+    const joinNext = !!next && sameGroup(m, next) && !needsSeparator(m, next) && next.id !== newFrom
     items.push(
       <Fragment key={m.id}>
         <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} meId={me?.id ?? null} onReply={onReply} fresh={Date.parse(m.created_at) > openedAt.current - 5000} hint={m.id === hintId} />
@@ -388,9 +419,9 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
       <div className="msgs scroll-y" ref={scroller} onScroll={onScroll}>
         <div ref={topSentinel} className="msgs-top">{loadingOlder && <TypingDots />}</div>
         {msgs.length === 0 ? (
-          <EmptyChat conv={conv} now={now} sinceOnline={sinceOnline} online={online} />
+          <EmptyChat conv={conv} now={now} sinceOnline={sinceOnline} online={online} ice={ice} />
         ) : (
-          <div className="msgs-inner">{items}</div>
+          <div className="msgs-inner" ref={inner}>{items}</div>
         )}
         <AnimatePresence>
           {typing && (
@@ -406,9 +437,21 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
         </AnimatePresence>
       </div>
       <AnimatePresence>
-        {jump && (
-          <motion.button className="jump" onClick={() => toBottom(true)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
-            new message <IconArrowDown size={15} />
+        {(far || missed > 0) && (
+          <motion.button
+            className="jump"
+            aria-label="latest messages"
+            onClick={() => {
+              toBottom(true)
+              setMissed(0)
+            }}
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.6 }}
+            transition={spring}
+          >
+            <IconArrowDown size={20} />
+            <Badge n={missed} className="jump-badge" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -440,20 +483,13 @@ function peerNsfw(s: ReturnType<typeof useStore.getState>, peer: Conversation['p
   return (typeof prof === 'boolean' ? prof : peer.nsfw) === true
 }
 
-const REACTIONS = ['❤️', '😂', '💀', '😮', '😢', '👍']
-
 function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, hint }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null; onReply: (m: Message) => void; fresh?: boolean; hint?: boolean }) {
-  const [actions, setActions] = useState(false)
   const moved = useRef(false)
   const tapTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const bubble = useRef<HTMLDivElement>(null)
   const dx = useMotionValue(0)
   const replyHint = useTransform(dx, [0, 60], [0, 1])
   const replyHintScale = useTransform(dx, [0, 60], [0.4, 1])
-  useEffect(() => {
-    if (!actions) return
-    const t = setTimeout(() => setActions(false), 3500)
-    return () => clearTimeout(t)
-  }, [actions])
   const myName = useMe()?.username ?? ''
   const stk = stickerOf(m.body)
   const cpl = coupleOf(m.body)
@@ -478,8 +514,10 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
   }, [viewer])
   const emoji = stk || cpl || voice || img || gone ? 0 : emojiOnlyCount(m.body)
   const big = emoji > 0 && emoji <= 3
-  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', toy || game || wish ? 'b-toy' : '', voice ? 'b-voice' : '', img ? 'b-img' : ''].join(' ')
-  const [picker, setPicker] = useState(false)
+  const card = !!(toy || game || wish || tot !== null)
+  const plain = !stk && !cpl && !voice && !img && !gone && !card
+  const cls = ['b', mine ? 'mine' : 'theirs', joinPrev ? 'jp' : '', joinNext ? 'jn' : '', big ? 'b-emoji' : '', stk || cpl ? 'b-sticker' : '', card ? 'b-toy' : '', voice ? 'b-voice' : '', img ? 'b-img' : ''].join(' ')
+  const [menu, setMenu] = useState<DOMRect | null>(null)
   const [burst, setBurst] = useState(0)
   const [more, setMore] = useState(false)
   const press = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
@@ -490,14 +528,18 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
   for (const e of Object.values(reactions)) counts.set(e, (counts.get(e) ?? 0) + 1)
   const chips = [...counts.entries()]
 
-  const open = () => {
+  const openMenu = () => {
     press.current = null
-    navigator.vibrate?.(12)
-    setPicker(true)
+    const r = bubble.current?.getBoundingClientRect()
+    if (!r) return
+    navigator.vibrate?.(10)
+    setMenu(r)
   }
+  const closeMenu = useCallback(() => setMenu(null), [])
   const onDown = (e: React.PointerEvent) => {
     moved.current = false
-    press.current = { t: setTimeout(open, 380), x: e.clientX, y: e.clientY }
+    if ((e.target as HTMLElement).closest('a, button, input')) return
+    press.current = { t: setTimeout(openMenu, 380), x: e.clientX, y: e.clientY }
   }
   const cancel = () => {
     if (press.current) clearTimeout(press.current.t)
@@ -510,10 +552,10 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
       cancel()
     }
   }
-  const onUp = () => {
+  const onUp = (e: React.PointerEvent) => {
     const wasPress = !press.current
     cancel()
-    if (moved.current || wasPress || picker) return
+    if (moved.current || wasPress || menu || (e.target as HTMLElement).closest('a, button, input')) return
     const now = Date.now()
     if (now - lastTap.current < 280) {
       clearTimeout(tapTimer.current)
@@ -523,19 +565,25 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
     } else {
       lastTap.current = now
       clearTimeout(tapTimer.current)
-      tapTimer.current = setTimeout(() => (img && !(once && mine) ? setViewer(true) : setActions((a) => !a)), 290)
+      tapTimer.current = setTimeout(() => (img && !(once && mine) ? setViewer(true) : openMenu()), 290)
     }
   }
   const pick = (e: string) => {
-    setPicker(false)
+    setMenu(null)
     if (e !== mineR) setBurst((b) => b + 1)
     react(m.conversation_id, m.id, e)
   }
+  const actions: MenuAction[] = [
+    { id: 'reply', label: 'reply', ico: <IconReply size={19} />, go: () => (setMenu(null), onReply(m)) },
+    ...(plain ? [{ id: 'copy', label: 'copy', ico: <IconCopy size={19} />, go: () => (setMenu(null), void navigator.clipboard?.writeText(m.body).catch(() => {})) }] : []),
+    ...(stk ? [{ id: 'share', label: 'share sticker', ico: <IconShare size={19} />, go: () => (setMenu(null), void shareSticker(document.querySelector(`[data-mid="${m.id}"] .stk`), STICKERS.find((x) => x.id === stk)?.caption ?? 'sticker')) }] : []),
+    ...(mine ? [{ id: 'unsend', label: 'unsend', ico: <IconTrash size={19} />, danger: true, go: () => (setMenu(null), void unsend(m)) }] : []),
+  ]
 
   return (
     <motion.div
       data-mid={m.id}
-      className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '') + (chips.length ? ' has-reacts' : '') + (hint ? ' b-hint' : '')}
+      className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '') + (chips.length ? ' has-reacts' : '') + (hint ? ' b-hint' : '') + (menu ? ' is-menu' : '')}
       initial={fresh ? { opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 } : false}
       animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
       transition={spring}
@@ -546,6 +594,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
           <IconReply size={18} />
         </motion.span>
         <motion.div
+          ref={bubble}
           className={cls}
           drag="x"
           dragDirectionLock
@@ -571,9 +620,9 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
           onPointerLeave={cancel}
           onContextMenu={(e) => {
             e.preventDefault()
-            open()
+            openMenu()
           }}
-          animate={picker ? { scale: 1.04 } : { scale: 1 }}
+          animate={menu ? { scale: 1.03 } : { scale: 1 }}
           transition={{ type: 'spring', stiffness: 500, damping: 22 }}
         >
           {m.reply && (
@@ -592,7 +641,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
               <span>{displayBody(m.reply.body)}</span>
             </button>
           )}
-          {img ? <ImageBubble img={img} open={viewer} blur={once} onClose={() => setViewer(false)} /> : gone ? <span className="once-gone"><IconImage size={16} /> opened</span> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : tot !== null ? <TotCard m={m} meId={meId} peerName={peerName} /> : wish !== null ? <WishCard m={m} mine={mine} peerName={peerName} /> : toy ? <ToyBubble toy={toy} fresh={fresh} /> : game ? <GameBubble id={game} meId={meId} peerName={peerName} /> : linkify(m.body).map((p, i) =>
+          {img ? <ImageBubble img={img} open={viewer} blur={once} onClose={() => setViewer(false)} /> : gone ? <span className="once-gone"><IconImage size={16} /> opened</span> : voice ? <VoiceBubble note={voice} /> : cpl ? <CoupleSticker kind={cpl} a={mine ? myName : peerName} b={mine ? peerName : myName} size={180} /> : stk ? (NSFW_STICKERS.includes(stk) && !spicy ? <LockedSticker size={140} /> : <Sticker kind={stk} name={mine ? myName : peerName} size={140} />) : tot !== null ? <TotCard m={m} meId={meId} peerName={peerName} /> : wish !== null ? <WishCard m={m} mine={mine} peerName={peerName} /> : toy ? <ToyBubble toy={toy} fresh={fresh} forName={mine ? peerName : 'you'} /> : game ? <GameBubble id={game} meId={meId} peerName={peerName} /> : linkify(m.body).map((p, i) =>
             p.href ? (
               <a key={i} href={p.href} target="_blank" rel="noreferrer noopener">
                 {p.text}
@@ -603,34 +652,12 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
           )}
         </motion.div>
         {img && (
-          <button type="button" className="b-more" aria-label="message options" onClick={() => setActions((v) => !v)}>
+          <button type="button" className="b-more" aria-label="message options" onClick={openMenu}>
             <i />
             <i />
             <i />
           </button>
         )}
-        <AnimatePresence>
-          {actions && !picker && (
-            <motion.div className="b-actions" initial={{ opacity: 0, scale: 0.6, x: mine ? 10 : -10 }} animate={{ opacity: 1, scale: 1, x: 0 }} exit={{ opacity: 0, scale: 0.6 }} transition={spring}>
-              <button type="button" aria-label="react" onClick={() => { setActions(false); setPicker(true) }}>
-                <IconSmilePlus size={19} />
-              </button>
-              <button type="button" aria-label="reply" onClick={() => { setActions(false); onReply(m) }}>
-                <IconReply size={19} />
-              </button>
-              {stk && (
-                <button type="button" aria-label="share sticker" onClick={() => { setActions(false); void shareSticker(document.querySelector(`[data-mid="${m.id}"] .stk`), STICKERS.find((x) => x.id === stk)?.caption ?? 'sticker') }}>
-                  <IconArrowRight size={19} style={{ transform: 'rotate(-45deg)' }} />
-                </button>
-              )}
-              {mine && (
-                <button type="button" aria-label="unsend" onClick={() => { setActions(false); void unsend(m) }}>
-                  <IconClose size={19} />
-                </button>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
         <AnimatePresence>
           {burst > 0 && (
             <motion.span
@@ -654,7 +681,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 600, damping: 18 }}
-              onClick={() => setPicker(true)}
+              onClick={openMenu}
             >
               {chips.map(([e, n]) => (
                 <motion.span key={e} layout initial={{ scale: 0 }} animate={{ scale: 1 }} className={e === mineR ? 'is-mine' : ''}>
@@ -665,48 +692,23 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
             </motion.button>
           )}
         </AnimatePresence>
-        <AnimatePresence>
-          {picker && (
-            <motion.div
-              className="r-picker"
-              initial={{ opacity: 0, scale: 0.6, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.7, y: 8, transition: { duration: 0.15 } }}
-              transition={{ type: 'spring', stiffness: 520, damping: 26 }}
-            >
-              {REACTIONS.map((e, i) => (
-                <motion.button
-                  key={e}
-                  type="button"
-                  className={'r-opt' + (e === mineR ? ' is-on' : '')}
-                  initial={{ scale: 0, y: 10 }}
-                  animate={{ scale: 1, y: 0 }}
-                  transition={{ delay: 0.03 * i, type: 'spring', stiffness: 700, damping: 16 }}
-                  whileTap={{ scale: 1.5 }}
-                  onClick={() => pick(e)}
-                >
-                  {e}
-                </motion.button>
-              ))}
-              <motion.button
-                type="button"
-                className="r-opt r-more"
-                aria-label="more emojis"
-                initial={{ scale: 0, rotate: -90 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 600, damping: 16 }}
-                onClick={() => {
-                  setPicker(false)
-                  setMore(true)
-                }}
-              >
-                <IconSmilePlus size={22} />
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
-      {picker && createPortal(<div className="r-backdrop" onPointerDown={() => setPicker(false)} />, document.body)}
+      <AnimatePresence>
+        {menu && (
+          <MessageMenu
+            anchor={menu}
+            mine={mine}
+            current={mineR}
+            onReact={pick}
+            onMore={() => {
+              setMenu(null)
+              setMore(true)
+            }}
+            actions={actions}
+            onClose={closeMenu}
+          />
+        )}
+      </AnimatePresence>
       <Sheet open={more} onClose={() => setMore(false)} label="pick an emoji">
         <div className="emoji-sheet">
           {EMOJI_GROUPS.map((g) => (
@@ -735,26 +737,184 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
   )
 }
 
-function EmptyChat({ conv, now, sinceOnline, online }: { conv: Conversation; now: number; sinceOnline: string | null; online: boolean }) {
-  const sub = online ? hereFor(sinceOnline, now) : activeAgo(conv.peer.last_seen_at, now)
+function EmptyChat({ conv, now, sinceOnline, online, ice }: { conv: Conversation; now: number; sinceOnline: string | null; online: boolean; ice: string | null }) {
+  const p = conv.peer
+  const sub = online ? hereFor(sinceOnline, now) : activeAgo(p.last_seen_at, now)
+  const about = [p.show_age && p.age ? String(p.age) : '', p.place ?? ''].filter(Boolean).join(' · ')
+  const [pair, setPair] = useState(() => twoIce())
+  const ghost = useGhost((g) => g.on)
+  const open = !conv.blocked && conv.status !== 'declined' && !(ghost && !conv.status)
+  const chips = [...(ice ? [ice] : []), 'hi', ...pair]
   return (
     <motion.div className="chat-empty" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
-      <GoofyFace name={conv.peer.username} size={124} look={{ x: 0, y: 0.9 }} />
-      <p className="chat-empty-name">{conv.peer.username}</p>
+      <GoofyFace name={p.username} size={124} look={{ x: 0, y: 0.9 }} />
+      <p className="chat-empty-name">{p.username}</p>
       {sub && <p className="chat-empty-sub">{sub}</p>}
-      <motion.button className="say-hi" whileTap={{ scale: 0.94 }} onClick={() => sendMessage(conv.id, 'hi')}>
-        <IconHi size={20} /> say hi
-      </motion.button>
+      {(about || p.bio) && (
+        <div className="chat-empty-about">
+          {about && (
+            <span className="chat-empty-meta">
+              <GenderIcon g={p.gender} size={14} className={'g-ico g-' + p.gender} />
+              {about}
+            </span>
+          )}
+          {p.bio && <p className="chat-empty-bio">{p.bio}</p>}
+        </div>
+      )}
+      {open && (
+        <div className="ice-chips">
+          {chips.map((c, i) => (
+            <motion.button key={c + i} type="button" className={'ice-chip' + (i === 0 ? ' is-main' : '')} whileTap={{ scale: 0.95 }} onClick={() => sendMessage(conv.id, c)}>
+              {c === 'hi' ? (
+                <>
+                  <IconHi size={18} /> say hi
+                </>
+              ) : (
+                c
+              )}
+            </motion.button>
+          ))}
+          <button type="button" className="ice-shuffle" aria-label="other lines" onClick={() => setPair(twoIce())}>
+            <IconDice size={18} />
+          </button>
+        </div>
+      )}
     </motion.div>
+  )
+}
+
+function twoIce(): string[] {
+  const a = icebreaker()
+  let b = icebreaker()
+  for (let i = 0; i < 6 && b === a; i++) b = icebreaker()
+  return [a, b]
+}
+
+/** Strangers become friends when both add each other. Shows once you've actually been talking, or when they added you. */
+function FriendBar({ conv, meId }: { conv: Conversation; meId: string | null }) {
+  const mine = !!conv.my_friend
+  const theirs = !!conv.peer_friend
+  const msgs = useMessages(conv.id)
+  const key = 'gat.fbar.' + conv.id
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return !!localStorage.getItem(key)
+    } catch {
+      return false
+    }
+  })
+  const [sent, setSent] = useState(false)
+  useEffect(() => {
+    if (!sent) return
+    const t = setTimeout(() => setSent(false), 2000)
+    return () => clearTimeout(t)
+  }, [sent])
+  if (conv.status === 'pending' || conv.status === 'declined' || conv.blocked || (mine && theirs)) return null
+  const name = conv.peer.username
+  let body: React.ReactNode = null
+  if (sent) body = <span className="fbar-text is-quiet"><IconFriend size={18} /> requested</span>
+  else if (theirs && !mine)
+    body = (
+      <>
+        <GoofyFace name={name} size={28} blink={false} />
+        <span className="fbar-text"><b className="ellipsis">{name}</b>&nbsp;added you</span>
+        <button type="button" className="fbar-go" onClick={() => void setFriend(conv.id, true)}>
+          add back
+        </button>
+      </>
+    )
+  else if (!mine && !hidden) {
+    let a = 0
+    let b = 0
+    for (const x of msgs) {
+      if (x.kind !== 'text') continue
+      if (x.sender_id === meId) a++
+      else b++
+    }
+    if (a >= 3 && b >= 3)
+      body = (
+        <>
+          <IconAddFriend size={20} />
+          <span className="fbar-text">add&nbsp;<b className="ellipsis">{name}</b></span>
+          <button
+            type="button"
+            className="fbar-go"
+            onClick={() => {
+              void setFriend(conv.id, true)
+              setSent(true)
+            }}
+          >
+            add
+          </button>
+          <button
+            type="button"
+            className="fbar-x"
+            aria-label="hide"
+            onClick={() => {
+              try {
+                localStorage.setItem(key, '1')
+              } catch {
+                /* blocked */
+              }
+              setHidden(true)
+            }}
+          >
+            <IconClose size={16} />
+          </button>
+        </>
+      )
+  }
+  return (
+    <AnimatePresence initial={false}>
+      {body && (
+        <motion.div key="fbar" className="fbar" initial={{ opacity: 0, y: 10, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: 6, height: 0 }} transition={spring}>
+          <div className="fbar-in">{body}</div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+/** One-tap block on a request, with the same 'block?' confirm used everywhere. */
+function ArmBlock({ id, onDone }: { id: string; onDone: () => void }) {
+  const [arm, setArm] = useState(false)
+  useEffect(() => {
+    if (!arm) return
+    const t = setTimeout(() => setArm(false), 3000)
+    return () => clearTimeout(t)
+  }, [arm])
+  return (
+    <button
+      type="button"
+      className={'req-block' + (arm ? ' is-armed' : '')}
+      onClick={() => {
+        if (!arm) return setArm(true)
+        void setBlocked(id, true)
+        onDone()
+      }}
+    >
+      <IconBan size={16} />
+      {arm ? 'block?' : 'block'}
+    </button>
   )
 }
 
 /* ------------------------------------------------------------------ requests / blocks */
 
-function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: Conversation; meId: string | null; now: number; onEgg: () => void; replyTo: Message | null; onClearReply: () => void }) {
+type FooterProps = { conv: Conversation; meId: string | null; now: number; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; ice: { text: string; auto: boolean } | null; onWish: () => void; onConfetti: () => void }
+
+function ChatFooter(props: FooterProps) {
+  const { conv, meId, now } = props
+  const [, nav] = useLocation()
   const ghost = useGhost((g) => g.on)
   const name = conv.peer.username
+  const another = (
+    <button type="button" className="req-no" onClick={() => (queueRoll(), goBack(nav))}>
+      <IconDice size={16} /> roll another
+    </button>
+  )
   let content: React.ReactNode = null
+  let incoming = false
   if (conv.blocked === 'me')
     content = (
       <>
@@ -770,22 +930,27 @@ function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: C
   else if (ghost && !conv.status) content = <p className="ghost-only"><IconGhost size={16} /> ghosts can only reply</p>
   else if (conv.status === 'pending' && conv.requester === meId)
     content = (
-      <p>
-        waiting for <b>{name}</b> to accept
-      </p>
+      <>
+        <p>
+          waiting for <b>{name}</b>
+        </p>
+        <div className="req-actions">{another}</div>
+      </>
     )
-  else if (conv.status === 'pending' && conv.requester && conv.requester !== meId)
+  else if (conv.status === 'pending' && conv.requester && conv.requester !== meId) {
+    incoming = true
     content = (
       <>
         <div className="req-who">
-          <GoofyFace name={name} size={44} />
+          <GoofyFace name={name} size={40} />
           <span>
             <b>{name}</b> wants to chat
             {conv.peer.bio && <small className="ellipsis">{conv.peer.bio}</small>}
           </span>
         </div>
         <div className="req-actions">
-          <button type="button" className="req-no" onClick={() => void respondRequest(conv.id, false)}>
+          <ArmBlock id={conv.peer.id} onDone={() => goBack(nav)} />
+          <button type="button" className="req-no" onClick={() => void respondRequest(conv.id, false).then(() => goBack(nav), () => {})}>
             decline
           </button>
           <button type="button" className="req-yes" onClick={() => void respondRequest(conv.id, true)}>
@@ -794,26 +959,49 @@ function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: C
         </div>
       </>
     )
+  } else if (conv.status === 'declined' && conv.requester !== meId)
+    content = (
+      <>
+        <p>
+          you passed on <b>{name}</b>
+        </p>
+        <div className="req-actions">{another}</div>
+      </>
+    )
   else if (conv.status === 'declined' && conv.requester === meId && conv.declined_at) {
     const left = new Date(conv.declined_at).getTime() + 86400000 - now
     if (left > 0) {
       const h = Math.floor(left / 3600000)
       const m = Math.max(1, Math.ceil((left % 3600000) / 60000))
       content = (
-        <p>
-          declined. try again in{' '}
-          <b className="tnum">
-            {h}h {m}m
-          </b>
-        </p>
+        <>
+          <p>
+            not now. try again in{' '}
+            <b className="tnum">
+              {h}h {m}m
+            </b>
+          </p>
+          <div className="req-actions">{another}</div>
+        </>
       )
     }
   }
-  if (!content) return <Composer conv={conv} onEgg={onEgg} replyTo={replyTo} onClearReply={onClearReply} meId={meId} />
+  const composer = <Composer {...props} acceptFirst={incoming} />
+  if (!content)
+    return (
+      <>
+        <FriendBar conv={conv} meId={meId} />
+        {composer}
+      </>
+    )
   return (
-    <motion.div className="req" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={spring}>
-      {content}
-    </motion.div>
+    <>
+      <motion.div className="req" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={spring}>
+        {content}
+      </motion.div>
+      {/* replying to a request accepts it */}
+      {incoming && composer}
+    </>
   )
 }
 
@@ -821,14 +1009,39 @@ function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: C
 
 const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
 
-function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversation; onEgg: () => void; replyTo: Message | null; onClearReply: () => void; meId: string | null }) {
+/** The newest running game in this chat where it's your move, so it never gets lost up in the history. */
+function useMyMove(convId: string, meId: string | null): { mid: string; kind: 'rps' | 'ttt' } | null {
+  const msgs = useMessages(convId)
+  const ids = useMemo(() => {
+    const out: [string, string][] = []
+    for (const m of msgs) {
+      const g = gameOf(m.body)
+      if (g) out.push([g, m.id])
+    }
+    return out.slice(-6)
+  }, [msgs])
+  const key = useGames((s) => {
+    for (let i = ids.length - 1; i >= 0; i--) {
+      const g = s[ids[i][0]]
+      if (!g || g.done) continue
+      const side = g.a === meId ? 'a' : 'b'
+      const st = g.state as { turn?: string; moved?: Record<string, boolean> }
+      const my = g.kind === 'ttt' ? st.turn === side : !st.moved?.[side]
+      return my ? ids[i][1] + '|' + g.kind : ''
+    }
+    return ''
+  })
+  if (!key) return null
+  const [mid, kind] = key.split('|')
+  return { mid, kind: kind as 'rps' | 'ttt' }
+}
+
+function Composer({ conv, onEgg, replyTo, onClearReply, meId, ice, onWish, onConfetti, acceptFirst }: FooterProps & { acceptFirst: boolean }) {
   const [tray, setTray] = useState(false)
-  const [trayTab, setTrayTab] = useState<'toys' | 'me' | 'us' | 'hate' | 'lust'>('me')
+  const [trayTab, setTrayTab] = useState<TrayTab>(lastTrayTab)
   const [recording, setRecording] = useState(false)
   const myName = useMe()?.username ?? ''
   const spicyTray = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
-  const [ice] = useState(() => takeIce(conv.peer.username))
-  const lp = useRef<{ t?: ReturnType<typeof setTimeout>; fired: boolean }>({ fired: false })
   const [text, setText] = useState(() => getDraft(conv.id) || (ice && !ice.auto ? ice.text : ''))
   useEffect(() => {
     if (ice?.auto) sendMessage(conv.id, ice.text, null)
@@ -837,16 +1050,19 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const ta = useRef<HTMLTextAreaElement>(null)
   const lastSent = useRef<{ body: string; at: number } | null>(null)
   const has = text.trim().length > 0
-  const voiceOk = !!conv.my_voice && !!conv.peer_voice
-  const imagesOk = !!conv.my_images && !!conv.peer_images
-  const [pmenu, setPmenu] = useState(false)
+  const media = (mine?: boolean, theirs?: boolean): Media => (mine && theirs ? 'ok' : mine ? 'asked' : 'off')
+  const images = media(conv.my_images, conv.peer_images)
+  const voice = media(conv.my_voice, conv.peer_voice)
+  const [ask8, setAsk8] = useState(false)
+  const [nudgeOff, setNudgeOff] = useState(false)
   const chill = useChill((c) => c.until > 0)
   const onceRef = useRef(false)
-  const [upload, setUpload] = useState<{ preview: string; err?: boolean } | null>(null)
+  const [upload, setUpload] = useState<{ preview: string; file: File; once: boolean; reply: Message | null; err?: boolean } | null>(null)
   const [doodle, setDoodle] = useState(false)
+  const move = useMyMove(conv.id, meId)
   // A fresh native input per tap, no accept filter: on some Android phones the gallery app never
   // returns the photo to Chrome, while the system document picker does. Some Androids only fire 'input'.
-  const [aud, setAud] = useState<'sending' | 'big' | 'error' | null>(null)
+  const [aud, setAud] = useState<'sending' | 'big' | 'error' | 'failed' | 'asked' | null>(null)
   const openPicker = (kind: 'image' | 'audio' = 'image') => {
     const el = document.createElement('input')
     el.type = 'file'
@@ -882,18 +1098,12 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
       flash('error')
     }
   }
-  const flash = (s: 'big' | 'error') => {
+  const flash = (s: 'big' | 'error' | 'failed' | 'asked') => {
     setAud(s)
     setTimeout(() => setAud(null), 3000)
   }
-  const pickImage = async (file: File | undefined) => {
-    if (!file) return
-    if (file.type && !file.type.startsWith('image/') && !/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(file.name)) return
-    const once = onceRef.current
-    const preview = URL.createObjectURL(file)
-    setUpload({ preview })
-    const reply = replyTo
-    onClearReply()
+  const sendImage = async (file: File, once: boolean, reply: Message | null, preview: string) => {
+    setUpload({ preview, file, once, reply })
     try {
       const { blob, w, h } = await prepImage(file)
       const url = await uploadImage(blob, meId ?? 'anon')
@@ -901,13 +1111,31 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
       setUpload(null)
       URL.revokeObjectURL(preview)
     } catch {
-      setUpload({ preview, err: true })
-      setTimeout(() => {
-        setUpload(null)
-        URL.revokeObjectURL(preview)
-      }, 3500)
+      // stays up with retry and discard, never silently gone
+      setUpload({ preview, file, once, reply, err: true })
     }
   }
+  const pickImage = async (file: File | undefined) => {
+    if (!file) return
+    if (file.type && !file.type.startsWith('image/') && !/\.(jpe?g|png|webp|gif|heic|heif|avif)$/i.test(file.name)) return
+    const reply = replyTo
+    onClearReply()
+    await sendImage(file, onceRef.current, reply, URL.createObjectURL(file))
+  }
+  const discardUpload = () => {
+    if (upload) URL.revokeObjectURL(upload.preview)
+    setUpload(null)
+  }
+  // turning a media type on for this chat: live right away if they have it on, otherwise it waits on them
+  const askImages = () => {
+    void setImages(conv.id, true)
+    if (!conv.peer_images) flash('asked')
+  }
+  const askVoice = () => {
+    void setVoice(conv.id, true)
+    if (!conv.peer_voice) flash('asked')
+  }
+  const toyFail = (p: Promise<unknown>) => void p.catch(() => flash('failed'))
 
   const resize = () => {
     const el = ta.current
@@ -926,9 +1154,17 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
     return () => setTyping(conv.id, false)
   }, [conv.id])
 
-  const send = () => {
+  const closeTray = () => setTray(false)
+  const send = async () => {
     const body = text.trim()
     if (!body) return
+    if (acceptFirst) await respondRequest(conv.id, true).catch(() => {})
+    if (ask8) {
+      setAsk8(false)
+      setText('')
+      toyFail(sendToy(conv.id, '8ball', body))
+      return
+    }
     // Rapid double taps send the same text twice. A user found it and asked us to keep it, so it's an easter egg now.
     const now = performance.now()
     const prev = lastSent.current
@@ -947,9 +1183,16 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && fine && !e.nativeEvent.isComposing) {
       e.preventDefault()
-      send()
+      void send()
     }
   }
+  const sendSticker = (body: string) => {
+    if (acceptFirst) void respondRequest(conv.id, true).catch(() => {})
+    sendMessage(conv.id, body, replyTo)
+    onClearReply()
+  }
+  // they turned photos or voice on and you haven't: one tap to match
+  const nudge = nudgeOff ? null : conv.peer_images && !conv.my_images ? 'photos' : conv.peer_voice && !conv.my_voice ? 'voice notes' : null
 
   return (
     <div className="composer-wrap">
@@ -968,93 +1211,101 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
             </div>
           </motion.div>
         )}
+        {!replyTo && move && (
+          <motion.button
+            key="move"
+            type="button"
+            className="move-chip"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            onClick={() => {
+              const el = document.querySelector(`[data-mid="${move.mid}"]`)
+              el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+              el?.classList.add('flash')
+              setTimeout(() => el?.classList.remove('flash'), 1200)
+            }}
+          >
+            {move.kind === 'ttt' ? <IconTicTacToe size={18} /> : <IconScissors size={18} />}
+            your move
+          </motion.button>
+        )}
+        {!replyTo && !move && nudge && (
+          <motion.div key="nudge" className="media-nudge" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}>
+            <GoofyFace name={conv.peer.username} size={24} blink={false} />
+            <span>
+              {nudge === 'photos' ? <IconImage size={16} /> : <IconMic size={16} />} {nudge}
+            </span>
+            <button type="button" className="fbar-go" onClick={() => (nudge === 'photos' ? void setImages(conv.id, true) : void setVoice(conv.id, true))}>
+              turn on
+            </button>
+            <button type="button" className="fbar-x" aria-label="hide" onClick={() => setNudgeOff(true)}>
+              <IconClose size={16} />
+            </button>
+          </motion.div>
+        )}
       </AnimatePresence>
       <AnimatePresence>
         {tray && (
           <motion.div className="stk-tray" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 34 }}>
             <div className="stk-tray-in">
-              <div className="stk-tabs">
-                <Segmented
-                  layoutId="stk-tabs"
-                  value={trayTab}
-                  onChange={setTrayTab}
-                  items={[
-                    { id: 'toys' as const, label: 'toys' },
-                    { id: 'me' as const, label: 'me' },
-                    { id: 'us' as const, label: 'us two' },
-                    { id: 'hate' as const, label: 'hate' },
-                    ...(spicyTray ? [{ id: 'lust' as const, label: 'lust' }] : []),
-                  ]}
-                />
-              </div>
-              {trayTab === 'toys' ? (
-                <ToyGrid
-                  convId={conv.id}
-                  question={text}
-                  onUsed={(clear) => {
-                    if (clear) setText('')
-                    setTray(false)
+              <TrayTabs value={trayTab} onChange={setTrayTab} />
+              {trayTab === 'play' ? (
+                <PlayTray
+                  images={images}
+                  voice={voice}
+                  onAskImages={askImages}
+                  onAskVoice={askVoice}
+                  onPhoto={(once) => {
+                    closeTray()
+                    onceRef.current = once
+                    openPicker()
+                  }}
+                  onRecord={() => {
+                    closeTray()
+                    setRecording(true)
+                  }}
+                  onAudio={() => {
+                    closeTray()
+                    openPicker('audio')
                   }}
                   onDoodle={() => {
-                    setTray(false)
+                    closeTray()
                     setDoodle(true)
+                  }}
+                  onTot={() => {
+                    closeTray()
+                    toyFail(Promise.resolve(sendTot(conv.id)))
+                  }}
+                  onGame={(k) => {
+                    closeTray()
+                    toyFail(startGame(conv.id, k))
+                  }}
+                  onToy={(k) => {
+                    closeTray()
+                    toyFail(sendToy(conv.id, k))
+                  }}
+                  on8ball={() => {
+                    closeTray()
+                    if (has) {
+                      toyFail(sendToy(conv.id, '8ball', text))
+                      setText('')
+                    } else {
+                      setAsk8(true)
+                      ta.current?.focus()
+                    }
+                  }}
+                  onWish={() => {
+                    closeTray()
+                    onWish()
+                  }}
+                  onConfetti={() => {
+                    closeTray()
+                    onConfetti()
                   }}
                 />
               ) : (
-              <div className={'stk-grid' + (trayTab === 'us' ? ' is-couple' : '')} key={trayTab}>
-                {trayTab !== 'us'
-                  ? STICKERS.filter((st) => st.pack === (trayTab === 'lust' && !spicyTray ? 'me' : trayTab)).map((st, i) => (
-                      <motion.button
-                        key={st.id}
-                        type="button"
-                        className="stk-pick"
-                        aria-label={st.caption}
-                        initial={{ scale: 0.4, opacity: 0, y: 16 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        transition={{ delay: 0.025 * i, type: 'spring', stiffness: 520, damping: 22 }}
-                        whileTap={{ scale: 0.82 }}
-                        onPointerDown={(e) => {
-                          const el = e.currentTarget
-                          lp.current.fired = false
-                          lp.current.t = setTimeout(() => {
-                            lp.current.fired = true
-                            navigator.vibrate?.(14)
-                            void shareSticker(el, st.caption)
-                          }, 520)
-                        }}
-                        onPointerUp={() => clearTimeout(lp.current.t)}
-                        onPointerLeave={() => clearTimeout(lp.current.t)}
-                        onContextMenu={(e) => e.preventDefault()}
-                        onClick={() => {
-                          if (lp.current.fired) return
-                          navigator.vibrate?.(8)
-                          sendMessage(conv.id, stickerBody(st.id), replyTo)
-                          onClearReply()
-                        }}
-                      >
-                        <Sticker kind={st.id} name={myName} size={78} />
-                      </motion.button>
-                    ))
-                  : COUPLES.map((st, i) => (
-                      <motion.button
-                        key={st.id}
-                        type="button"
-                        className="stk-pick"
-                        aria-label={st.caption}
-                        initial={{ scale: 0.4, opacity: 0, y: 16 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        transition={{ delay: 0.03 * i, type: 'spring', stiffness: 520, damping: 22 }}
-                        whileTap={{ scale: 0.82 }}
-                        onClick={() => {
-                          navigator.vibrate?.(8)
-                          sendMessage(conv.id, stickerBody(st.id), replyTo)
-                          onClearReply()
-                        }}
-                      >
-                        <CoupleSticker kind={st.id} a={myName} b={conv.peer.username} size={104} />
-                      </motion.button>
-                    ))}
-              </div>
+                <StickerTray name={myName} peerName={conv.peer.username} spicy={spicyTray} couples onSend={sendSticker} />
               )}
             </div>
           </motion.div>
@@ -1078,15 +1329,33 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
         {upload && (
           <motion.div key="up" className={'img-up' + (upload.err ? ' is-err' : '')} initial={{ opacity: 0, y: 12, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.9 }}>
             <img src={upload.preview} alt="" />
-            {upload.err ? 'failed' : <TypingDots />}
+            {upload.err ? (
+              <>
+                <span>didn't send</span>
+                <button type="button" className="img-up-btn" aria-label="retry" onClick={() => void sendImage(upload.file, upload.once, upload.reply, upload.preview)}>
+                  <IconSend size={16} />
+                </button>
+                <button type="button" className="img-up-btn" aria-label="discard" onClick={discardUpload}>
+                  <IconClose size={16} />
+                </button>
+              </>
+            ) : (
+              <TypingDots />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
+      {aud && (
+        <span className={'aud-pill' + (aud === 'sending' || aud === 'asked' ? '' : ' is-err')}>
+          {aud === 'sending' ? 'sending audio...' : aud === 'big' ? 'too big, 5mb max' : aud === 'asked' ? `asked ${conv.peer.username}` : "couldn't send that"}
+        </span>
+      )}
       <div className="composer" style={recording ? { display: 'none' } : undefined}>
         <button
           type="button"
           className={'stk-toggle' + (tray ? ' is-on' : '')}
-          aria-label="stickers"
+          aria-label={tray ? 'close' : 'more'}
+          aria-expanded={tray}
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => {
             if (!tray) ta.current?.blur()
@@ -1096,38 +1365,17 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
         >
           <IconPlus size={24} />
         </button>
-        {(imagesOk || voiceOk) && (
-          <span className="pick-wrap">
-            {aud && <span className={'aud-pill' + (aud === 'sending' ? '' : ' is-err')}>{aud === 'sending' ? 'sending audio...' : aud === 'big' ? 'too big, 5mb max' : "couldn't send that"}</span>}
-            <button type="button" className="stk-toggle img-tg" aria-label="photo or audio" disabled={!!upload || aud === 'sending'} onPointerDown={(e) => e.preventDefault()} onClick={() => setPmenu((v) => !v)}>
-              <IconImage size={24} />
-            </button>
-            {pmenu && (
-              <span className="pick-menu">
-                {imagesOk && (
-                  <>
-                    <button type="button" onClick={() => { onceRef.current = false; setPmenu(false); openPicker() }}>
-                      <IconImage size={18} /> photo
-                    </button>
-                    <button type="button" onClick={() => { onceRef.current = true; setPmenu(false); openPicker() }}>
-                      <i className="once-1">1</i> view once
-                    </button>
-                  </>
-                )}
-                {voiceOk && (
-                  <button type="button" onClick={() => { setPmenu(false); openPicker('audio') }}>
-                    <IconMic size={18} /> audio
-                  </button>
-                )}
-              </span>
-            )}
-          </span>
+        {ask8 && (
+          <button type="button" className="ask8" aria-label="stop asking the 8 ball" onClick={() => setAsk8(false)}>
+            <IconEightBall size={16} />
+            <IconClose size={12} />
+          </button>
         )}
         <textarea
           ref={ta}
           rows={1}
           value={text}
-          placeholder="message..."
+          placeholder={ask8 ? 'ask the 8 ball...' : 'message...'}
           aria-label="message"
           onChange={(e) => {
             setText(e.target.value)
@@ -1140,12 +1388,12 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
           maxLength={2000}
         />
         <AnimatePresence mode="popLayout" initial={false}>
-          {!has && voiceOk && (
+          {!has && !ask8 ? (
             <motion.button
               key="mic"
               type="button"
-              className="send mic"
-              aria-label="record voice note"
+              className={'send mic' + (voice === 'ok' ? '' : ' is-locked')}
+              aria-label={voice === 'ok' ? 'record voice note' : 'turn on voice notes'}
               initial={{ scale: 0, rotate: 40 }}
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: -30 }}
@@ -1153,302 +1401,37 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
               whileTap={{ scale: 0.86 }}
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
+                if (voice === 'off') return askVoice()
+                if (voice === 'asked') return flash('asked')
                 setTray(false)
                 ta.current?.blur()
                 setRecording(true)
               }}
             >
               <IconMic size={21} />
+              {voice !== 'ok' && (
+                <i className="mic-badge">{voice === 'asked' ? <IconClock size={10} /> : <IconLock size={10} />}</i>
+              )}
             </motion.button>
-          )}
-          {(has || !voiceOk) && (
+          ) : (
             <motion.button
               key="send"
               className="send"
               aria-label="send"
+              disabled={!has}
               initial={{ scale: 0, rotate: -40 }}
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: 30 }}
               transition={{ type: 'spring', stiffness: 600, damping: 24 }}
               whileTap={{ scale: 0.86 }}
               onPointerDown={(e) => e.preventDefault()}
-              onClick={send}
+              onClick={() => void send()}
             >
               {chill ? <GoofyFace name={myName} mood="shocked" size={26} blink={false} /> : <IconSend size={20} />}
             </motion.button>
           )}
         </AnimatePresence>
       </div>
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ settings */
-
-function NameHistory({ peerId }: { peerId: string }) {
-  const [list, setList] = useState<{ username: string; changed_at: string }[]>([])
-  useEffect(() => {
-    let live = true
-    nameHistory(peerId).then((l) => live && setList(l || [])).catch(() => {})
-    return () => {
-      live = false
-    }
-  }, [peerId])
-  if (!list.length) return null
-  return (
-    <div className="aka">
-      <span className="aka-label">previously</span>
-      {list.map((h) => (
-        <span key={h.username + h.changed_at} className="aka-name">
-          {h.username} <small>{relTime(h.changed_at)}</small>
-        </span>
-      ))}
-    </div>
-  )
-}
-
-/** Shake or slide: what the bubbles do with tap-4 confetti in this chat (the tapper's pick plays on both screens). */
-function LandingControl({ convId }: { convId: string }) {
-  const landing = useAmbientPrefs((p) => p.landing[convId] ?? 'shake')
-  return (
-    <div className="settings-row" style={{ marginTop: 8 }}>
-      <span className="grow">confetti</span>
-      <span className="seg">
-        {(['shake', 'slide'] as const).map((k) => (
-          <button key={k} type="button" className={landing === k ? 'is-on' : ''} onClick={() => setLanding(convId, k)}>
-            {k}
-          </button>
-        ))}
-      </span>
-    </div>
-  )
-}
-
-function AmbientControls({ themeId }: { themeId: string }) {
-  const kind = getTheme(themeId).ambient
-  const amount = useAmbientPrefs((p) => p.amount)
-  const speed = useAmbientPrefs((p) => p.speed)
-  if (![...PARTICLE_AMBIENTS, ...SCENE_AMBIENTS].includes(kind as never)) return null
-  const label = AMBIENT_LABEL[kind]
-  const fixed = (SPEED_ONLY as readonly string[]).includes(kind)
-  return (
-    <div className="amb-ctl">
-      {!fixed && <label className="amb-row">
-        <span>{label}</span>
-        <input type="range" min={0.25} max={4} step={0.05} value={amount} onChange={(e) => setAmbientPrefs({ amount: +e.target.value })} aria-label={label + ' amount'} />
-        <b className="tnum">{amount < 0.6 ? 'few' : amount > 2.2 ? 'loads' : amount > 1.3 ? 'more' : 'some'}</b>
-      </label>}
-      <label className="amb-row">
-        <span>speed</span>
-        <input type="range" min={0.3} max={3} step={0.05} value={speed} onChange={(e) => setAmbientPrefs({ speed: +e.target.value })} aria-label={label + ' speed'} />
-        <b className="tnum">{speed < 0.7 ? 'chill' : speed > 1.8 ? 'zoom' : speed > 1.2 ? 'quick' : 'normal'}</b>
-      </label>
-    </div>
-  )
-}
-
-function DeleteChat({ conv, onDone }: { conv: Conversation; onDone: () => void }) {
-  const [ask, setAsk] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const go = async (both: boolean) => {
-    setBusy(true)
-    navigator.vibrate?.([12, 30, 12])
-    try {
-      await clearChat(conv.id, both)
-      onDone()
-    } finally {
-      setBusy(false)
-      setAsk(false)
-    }
-  }
-  return (
-    <AnimatePresence mode="wait" initial={false}>
-      {!ask ? (
-        <motion.button key="del" type="button" className="block-btn del-btn" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} onClick={() => setAsk(true)}>
-          delete chat
-        </motion.button>
-      ) : (
-        <motion.div key="ask" className="del-ask" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={spring}>
-          <b>delete this chat?</b>
-          <button type="button" className="del-opt" disabled={busy} onClick={() => void go(false)}>
-            delete for me
-          </button>
-          <button type="button" className="del-opt is-both" disabled={busy} onClick={() => void go(true)}>
-            delete for both
-          </button>
-          <button type="button" className="del-cancel" disabled={busy} onClick={() => setAsk(false)}>
-            cancel
-          </button>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-}
-
-function PinRow({ convId }: { convId: string }) {
-  const pins = usePins((s) => s.ids)
-  const on = pins.includes(convId)
-  const full = !on && pins.length >= MAX_PINS
-  return (
-    <>
-      <div className="settings-row">
-        <IconPin size={22} filled={on} />
-        <span className="grow">pin chat</span>
-        <Toggle label="pin chat" on={on} disabled={full} onChange={() => togglePin(convId)} />
-      </div>
-      {full && <p className="settings-hint">{MAX_PINS} pinned already</p>}
-    </>
-  )
-}
-
-/** both faces, lit when that person has the feature on */
-function BothOn({ mine, theirs, peer }: { mine: boolean; theirs: boolean; peer: string }) {
-  const me = useMe()
-  return (
-    <span className="both-on" aria-label={`you ${mine ? 'on' : 'off'}, ${peer} ${theirs ? 'on' : 'off'}`}>
-      <span className={mine ? 'is-on' : ''}>
-        <GoofyFace name={me?.username ?? ''} size={22} blink={false} />
-      </span>
-      <span className={theirs ? 'is-on' : ''}>
-        <GoofyFace name={peer} size={22} blink={false} />
-      </span>
-    </span>
-  )
-}
-
-const REPORT_REASONS = ['spam', 'creepy', 'underage', 'nasty', 'other'] as const
-
-function ReportRow({ name }: { name: string }) {
-  const [state, setState] = useState<'idle' | 'pick' | 'done'>('idle')
-  if (state === 'done') return <p className="settings-hint">reported</p>
-  if (state === 'idle')
-    return (
-      <button type="button" className="block-btn" onClick={() => setState('pick')}>
-        report {name}
-      </button>
-    )
-  return (
-    <div className="report-chips">
-      {REPORT_REASONS.map((r) => (
-        <button key={r} type="button" className="acc-btn" onClick={() => void report(name, r).then(() => setState('done'), () => setState('idle'))}>
-          {r}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => void }) {
-  const mode = useThemeMode()
-  const [themeOpen, setThemeOpen] = useState(false)
-  const [themeTab, setThemeTab] = useState<'default' | 'ember'>(EMBER_THEMES.includes(conv.theme ?? '') ? 'ember' : 'default')
-  const push = usePushState(conv.id)
-  const busy = usePushBusy()
-  const hint = push === 'denied' ? 'blocked in browser settings' : push === 'unsupported' ? 'not supported in this browser' : null
-  return (
-    <div className="settings">
-      <div className="settings-peer">
-        <GoofyFace name={conv.peer.username} size={64} />
-        <span className="settings-name">{conv.peer.username}</span>
-        <NameHistory peerId={conv.peer.id} />
-      </div>
-      <h3 className="settings-label">theme</h3>
-      <button type="button" className={'theme-row' + (themeOpen ? ' is-open' : '')} onClick={() => setThemeOpen((v) => !v)} aria-expanded={themeOpen}>
-        <span className="theme-row-sw" style={{ ...themeVars(getTheme(conv.theme, mode)), background: getTheme(conv.theme, mode).bg }}>
-          <span className="sw-b sw-recv" />
-          <span className="sw-b sw-sent" />
-        </span>
-        <span className="theme-row-name">{getTheme(conv.theme).name}</span>
-        <IconBack size={20} className="theme-row-chev" style={{ rotate: '180deg' }} />
-      </button>
-      <AnimatePresence initial={false}>
-        {themeOpen && (
-          <motion.div className="theme-drop" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 36 }}>
-      <div className="theme-tabs">
-        <Segmented
-          layoutId="theme-tab"
-          value={themeTab}
-          onChange={setThemeTab}
-          items={[
-            { id: 'default', label: 'default' },
-            { id: 'ember', label: 'ember' },
-          ]}
-        />
-      </div>
-      <div className="swatches" key={themeTab}>
-        {themeList(mode).filter((t) => (t.id !== 'matrix' || useStore.getState().me?.admin) && EMBER_THEMES.includes(t.id) === (themeTab === 'ember')).map((t) => {
-          const on = t.id === conv.theme
-          const meNow = useStore.getState().me
-          const lock = meNow?.admin || meNow?.username.toLowerCase() === 'ember' || on ? null : themeLocked(t.id, meNow?.stats)
-          return (
-            <motion.button key={t.id} className={'swatch' + (on ? ' is-on' : '') + (lock ? ' is-locked' : '')} onClick={(e) => {
-                if (lock || t.id === conv.theme) return
-                setThemeOrigin(e.clientX, e.clientY)
-                onPicked()
-                setTimeout(() => void setTheme(conv.id, t.id), 260)
-              }} whileTap={{ scale: 0.94 }} aria-pressed={on}>
-              <span className="swatch-prev" style={{ ...themeVars(t), background: t.bg }}>
-                <span className="sw-b sw-recv" />
-                <span className="sw-b sw-sent" />
-                {on && (
-                  <motion.span className="swatch-check" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring}>
-                    <IconCheck size={14} />
-                  </motion.span>
-                )}
-              </span>
-              <span className="swatch-name">{t.name}</span>
-              {lock && (
-                <span className="swatch-lock">
-                  <IconLock size={12} /> {Math.min(meNow?.stats?.[lock.k] ?? 0, lock.n)}/{lock.n} {lock.label}
-                </span>
-              )}
-            </motion.button>
-          )
-        })}
-      </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <AmbientControls themeId={conv.theme} />
-      <LandingControl convId={conv.id} />
-      <h3 className="settings-label">chat</h3>
-      <PinRow convId={conv.id} />
-      <div className="settings-row" style={{ marginTop: 8 }}>
-        <IconBell size={22} />
-        <span className="grow">notifications</span>
-        <Toggle label="notifications" on={push === 'on'} disabled={busy || push === 'needs-install' || push === 'unsupported' || push === 'denied'} onChange={() => void togglePush(conv.id)} />
-      </div>
-      {push === 'needs-install' ? (
-        <p className="settings-hint">
-          tap <IconShare size={14} style={{ verticalAlign: '-2px' }} /> then add to home screen
-        </p>
-      ) : (
-        hint && <p className="settings-hint">{hint}</p>
-      )}
-      <div className="settings-row" style={{ marginTop: 8 }}>
-        <IconBell size={22} className="is-muted-ico" />
-        <span className="grow">mute</span>
-        <Toggle label="mute" on={!!conv.muted} onChange={(v) => void setMuted(conv.id, v)} />
-      </div>
-      <div className="settings-row" style={{ marginTop: 8 }}>
-        <IconMic size={22} />
-        <span className="grow">voice notes</span>
-        <BothOn mine={!!conv.my_voice} theirs={!!conv.peer_voice} peer={conv.peer.username} />
-        <Toggle label="voice notes" on={!!conv.my_voice} onChange={(v) => void setVoice(conv.id, v)} />
-      </div>
-      <div className="settings-row" style={{ marginTop: 8 }}>
-        <IconImage size={22} />
-        <span className="grow">photos</span>
-        <BothOn mine={!!conv.my_images} theirs={!!conv.peer_images} peer={conv.peer.username} />
-        <Toggle label="photos" on={!!conv.my_images} onChange={(v) => void setImages(conv.id, v)} />
-      </div>
-      <h3 className="settings-label">safety</h3>
-      <ReportRow name={conv.peer.username} />
-      <DeleteChat conv={conv} onDone={onPicked} />
-      <button type="button" className={'block-btn' + (conv.blocked === 'me' ? ' is-on' : '')} onClick={() => void setBlocked(conv.peer.id, conv.blocked !== 'me')}>
-        {conv.blocked === 'me' ? 'unblock ' : 'block '}
-        {conv.peer.username}
-      </button>
     </div>
   )
 }
