@@ -8,19 +8,24 @@ import { useMe, useNow } from '../../lib/hooks'
 import { daySeparator, emojiOnlyCount, linkify, needsSeparator } from '../../lib/format'
 import type { Profile } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
-import { Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconAlert, IconArrowDown, IconBack, IconSend, IconSticker, IconUsers } from '../../ui/icons'
+import { Badge, Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
+import { useBlocks } from '../../lib/engine'
+import { useChatScroll } from '../chat/ChatScreen'
+import { StickerTray } from '../chat/Tray'
+import { IconAlert, IconArrowDown, IconBack, IconPlus, IconSend, IconUsers } from '../../ui/icons'
 import { getTheme, themeVars } from '../../themes/themes'
 import { useThemeMode } from '../../themes/mode'
 import { Ambient } from '../../themes/Ambient'
 import { goBack } from '../shell/nav'
 import { LockedSticker, Sticker } from '../stickers/Sticker'
-import { NSFW_STICKERS, STICKERS, stickerBody, stickerOf } from '../stickers/stickers'
-import { Crew } from './Crew'
+import { NSFW_STICKERS, stickerOf } from '../stickers/stickers'
+import { Crew, Faces } from './Crew'
 import { PeoplePicker } from './PeoplePicker'
 import { addPeople, enterRoom, fetchRoom, leaveRoom, loadOlderRoom, removeRoomMsg, retryRoom, roomPeople, roomTyping, sendRoom, useRooms, type Room, type RoomMsg } from './rooms'
 
 const EMPTY: RoomMsg[] = []
+const EMPTY_P: Profile[] = []
+const EMPTY_H: { id: string; name: string }[] = []
 const group = (a: RoomMsg | undefined, b: RoomMsg | undefined) =>
   !!a && !!b && a.sender_id === b.sender_id && Math.abs(Date.parse(b.created_at) - Date.parse(a.created_at)) < 180000 && !needsSeparator(a, b)
 
@@ -62,33 +67,59 @@ function Bubble({ m, mine, joinPrev, joinNext, mod, fresh }: { m: RoomMsg; mine:
           remove
         </button>
       )}
-      {m.state === 'failed' && (
-        <button className="mine-status is-failed" onClick={() => retryRoom(m.room_id, m.id)}>
-          <IconAlert size={14} /> tap to retry
-        </button>
-      )}
+      {m.state === 'failed' &&
+        (m.err === 'blocked' ? (
+          <span className="mine-status is-failed">
+            <IconAlert size={14} /> not sent
+          </span>
+        ) : m.err === 'fast' ? (
+          <span className="mine-status is-failed">
+            <IconAlert size={14} /> too fast
+          </span>
+        ) : (
+          <button className="mine-status is-failed" onClick={() => retryRoom(m.room_id, m.id)}>
+            <IconAlert size={14} /> tap to retry
+          </button>
+        ))}
     </>
   )
 }
 
-function List({ room }: { room: Room }) {
+function List({ room, onPeople }: { room: Room; onPeople: () => void }) {
   const me = useMe()
   const now = useNow(60000)
   const all = useRooms((s) => s.msgs[room.id]) ?? EMPTY
-  const msgs = useMemo(() => all.filter((m) => m.kind !== 'removed'), [all])
+  const blocked = useBlocks((b) => b.blocked)
+  const blockedBy = useBlocks((b) => b.blockedBy)
+  const gone = (id: string) => blocked.includes(id) || blockedBy.includes(id)
+  // blocks hold in rooms too: their messages and typing never show
+  const msgs = useMemo(() => all.filter((m) => m.kind !== 'removed' && !gone(m.sender_id)), [all, blocked, blockedBy])
   const mod = me?.admin === true && room.kind === 'public'
   const openedAt = useRef(Date.now())
+  const [unreadAt] = useState(room.unread)
   const more = useRooms((s) => !!s.more[room.id])
   const typers = useRooms((s) => s.typing[room.id])
-  const typing = typers ? Object.values(typers) : []
+  const typing = typers ? Object.entries(typers).filter(([id]) => !gone(id)).map(([, t]) => t) : []
+  const people = useRooms((s) => s.people[room.id])
+  const herePeople = useRooms((s) => s.herePeople[room.id])
   const scroller = useRef<HTMLDivElement>(null)
+  const inner = useRef<HTMLDivElement>(null)
   const top = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
   const mounted = useRef(false)
   const prev = useRef({ first: '', last: '', h: 0 })
-  const [jump, setJump] = useState(false)
+  const [far, setFar] = useState(false)
+  const [missed, setMissed] = useState(0)
   const first = msgs[0]?.id ?? ''
   const last = msgs[msgs.length - 1]?.id ?? ''
+  useChatScroll(scroller, inner, atBottom)
+  // the first unread, counted back from the end when the room opened
+  const newFrom = useMemo(() => {
+    if (!unreadAt) return null
+    const theirs = msgs.filter((m) => m.sender_id !== me?.id && !m.state)
+    return theirs[Math.max(0, theirs.length - unreadAt)]?.id ?? null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unreadAt, msgs.length > 0])
 
   useLayoutEffect(() => {
     const el = scroller.current
@@ -96,14 +127,16 @@ function List({ room }: { room: Room }) {
     const p = prev.current
     if (!mounted.current && msgs.length) {
       mounted.current = true
-      el.scrollTop = el.scrollHeight
+      const sep = newFrom ? el.querySelector<HTMLElement>('.sep.is-new') : null
+      if (sep && el.scrollHeight - sep.offsetTop > el.clientHeight) {
+        el.scrollTop = Math.max(0, sep.offsetTop - 70)
+        atBottom.current = false
+      } else el.scrollTop = el.scrollHeight
     } else if (first !== p.first && last === p.last) el.scrollTop += el.scrollHeight - p.h
     else if (last !== p.last) {
       const lm = msgs[msgs.length - 1]
-      if (atBottom.current || lm?.sender_id === me?.id) {
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-        setJump(false)
-      } else setJump(true)
+      if (atBottom.current || lm?.sender_id === me?.id) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+      else setMissed((n) => n + 1)
     }
     prev.current = { first, last, h: el.scrollHeight }
   })
@@ -124,8 +157,11 @@ function List({ room }: { room: Room }) {
   for (let i = 0; i < msgs.length; i++) {
     const m = msgs[i]
     if (needsSeparator(msgs[i - 1], m)) items.push(<div key={'sep' + m.id} className="sep">{daySeparator(m.created_at, now)}</div>)
-    items.push(<Bubble key={m.id} m={m} mine={m.sender_id === me?.id} joinPrev={group(msgs[i - 1], m)} joinNext={group(m, msgs[i + 1])} mod={mod} fresh={Date.parse(m.created_at) > openedAt.current - 5000} />)
+    if (m.id === newFrom) items.push(<div key="new" className="sep is-new">new</div>)
+    items.push(<Bubble key={m.id} m={m} mine={m.sender_id === me?.id} joinPrev={group(msgs[i - 1], m) && m.id !== newFrom} joinNext={group(m, msgs[i + 1]) && msgs[i + 1]?.id !== newFrom} mod={mod} fresh={Date.parse(m.created_at) > openedAt.current - 5000} />)
   }
+  const priv = room.kind === 'private'
+  const faces = priv ? (people ?? []).map((p) => p.username) : (herePeople ?? []).filter((p) => !gone(p.id)).map((p) => p.name)
 
   return (
     <div className="msgs-wrap">
@@ -134,18 +170,26 @@ function List({ room }: { room: Room }) {
         ref={scroller}
         onScroll={() => {
           const el = scroller.current!
-          atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 90
-          if (atBottom.current && jump) setJump(false)
+          const gap = el.scrollHeight - el.scrollTop - el.clientHeight
+          atBottom.current = gap < 90
+          if (atBottom.current && missed) setMissed(0)
+          const f = gap > el.clientHeight * 0.8
+          if (f !== far) setFar(f)
         }}
       >
         <div ref={top} className="msgs-top" />
         {msgs.length === 0 ? (
           <div className="room-empty">
-            <Crew seed={room.seed} size={150} count={room.kind === 'private' && (room.members ?? 3) < 3 ? 2 : 3} />
+            {faces.length ? <Faces names={faces} size={72} /> : <Crew seed={room.seed} size={150} count={priv && (room.members ?? 3) < 3 ? 2 : 3} />}
             <span className="room-empty-name">{room.name}</span>
+            {priv && (
+              <button type="button" className="empty-act is-ink" onClick={onPeople}>
+                add people
+              </button>
+            )}
           </div>
         ) : (
-          <div className="msgs-inner">{items}</div>
+          <div className="msgs-inner" ref={inner}>{items}</div>
         )}
         <AnimatePresence>
           {typing.length > 0 && (
@@ -161,9 +205,21 @@ function List({ room }: { room: Room }) {
         </AnimatePresence>
       </div>
       <AnimatePresence>
-        {jump && (
-          <motion.button className="jump" onClick={() => scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: 'smooth' })} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
-            new message <IconArrowDown size={15} />
+        {(far || missed > 0) && (
+          <motion.button
+            className="jump"
+            aria-label="latest messages"
+            onClick={() => {
+              scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: 'smooth' })
+              setMissed(0)
+            }}
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.6 }}
+            transition={spring}
+          >
+            <IconArrowDown size={20} />
+            <Badge n={missed} className="jump-badge" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -199,23 +255,7 @@ function Composer({ room }: { room: Room }) {
         {tray && (
           <motion.div className="stk-tray" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={spring}>
             <div className="stk-tray-in">
-              <div className="stk-grid">
-                {STICKERS.filter((st) => st.pack !== 'lust').map((st) => (
-                  <motion.button
-                    key={st.id}
-                    type="button"
-                    className="stk-pick"
-                    aria-label={st.caption}
-                    whileTap={{ scale: 0.82 }}
-                    onClick={() => {
-                      navigator.vibrate?.(8)
-                      void sendRoom(room.id, stickerBody(st.id))
-                    }}
-                  >
-                    <Sticker kind={st.id} name={me?.username ?? ''} size={78} />
-                  </motion.button>
-                ))}
-              </div>
+              <StickerTray name={me?.username ?? ''} spicy={false} couples={false} onSend={(body) => void sendRoom(room.id, body)} />
             </div>
           </motion.div>
         )}
@@ -224,14 +264,15 @@ function Composer({ room }: { room: Room }) {
         <button
           type="button"
           className={'stk-toggle' + (tray ? ' is-on' : '')}
-          aria-label="stickers"
+          aria-label={tray ? 'close' : 'stickers'}
+          aria-expanded={tray}
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => {
             if (!tray) ta.current?.blur()
             setTray((v) => !v)
           }}
         >
-          <IconSticker size={24} />
+          <IconPlus size={24} />
         </button>
         <textarea
           ref={ta}
@@ -257,6 +298,7 @@ function Composer({ room }: { room: Room }) {
         <motion.button
           className="send"
           aria-label="send"
+          disabled={!has}
           animate={{ scale: has ? 1 : 0.85, opacity: has ? 1 : 0.5 }}
           whileTap={{ scale: 0.86 }}
           onPointerDown={(e) => e.preventDefault()}
@@ -271,64 +313,101 @@ function Composer({ room }: { room: Room }) {
 
 function PeopleSheet({ room, open, onClose }: { room: Room; open: boolean; onClose: () => void }) {
   const [, nav] = useLocation()
-  const [people, setPeople] = useState<Profile[]>([])
+  const me = useMe()
+  const people = useRooms((s) => s.people[room.id]) ?? EMPTY_P
+  const herePeople = useRooms((s) => s.herePeople[room.id]) ?? EMPTY_H
+  const blocked = useBlocks((b) => b.blocked)
+  const blockedBy = useBlocks((b) => b.blockedBy)
   const [picked, setPicked] = useState<Profile[]>([])
   const [leaveArm, setLeaveArm] = useState(false)
   const [busy, setBusy] = useState(false)
-  const here = useRooms((s) => s.here[room.id] ?? 0)
+  const [err, setErr] = useState<'add' | 'leave' | null>(null)
   const priv = room.kind === 'private'
+  const hereIds = new Set(herePeople.map((p) => p.id))
   useEffect(() => {
-    if (!open || !priv) return
+    if (!open) return
+    // a fresh open never starts armed
+    setLeaveArm(false)
+    setErr(null)
     setPicked([])
-    roomPeople(room.id).then(setPeople).catch(() => {})
+    if (priv) roomPeople(room.id).catch(() => {})
   }, [open, room.id, priv])
+  useEffect(() => {
+    if (!leaveArm) return
+    const t = setTimeout(() => setLeaveArm(false), 3000)
+    return () => clearTimeout(t)
+  }, [leaveArm])
   const add = async () => {
     if (!picked.length) return
     setBusy(true)
+    setErr(null)
     try {
       await addPeople(room.id, picked.map((p) => p.id))
-      setPeople(await roomPeople(room.id))
       setPicked([])
+    } catch {
+      setErr('add')
     } finally {
       setBusy(false)
     }
   }
+  const leave = async () => {
+    if (!leaveArm) return setLeaveArm(true)
+    try {
+      await leaveRoom(room.id)
+      onClose()
+      nav('/rooms', { replace: true })
+    } catch {
+      setLeaveArm(false)
+      setErr('leave')
+    }
+  }
+  const open2 = (id: string, name: string) => {
+    onClose()
+    setTimeout(() => peek(name, id), 180)
+  }
+  const gone = (id: string) => blocked.includes(id) || blockedBy.includes(id)
+  // you first, then everyone else; a green dot for whoever is in the room right now
+  const rows: { id: string; name: string; here: boolean }[] = priv
+    ? [...people].sort((a, b) => Number(b.id === me?.id) - Number(a.id === me?.id)).filter((p) => !gone(p.id)).map((p) => ({ id: p.id, name: p.username, here: hereIds.has(p.id) }))
+    : herePeople.filter((p) => !gone(p.id)).sort((a, b) => Number(b.id === me?.id) - Number(a.id === me?.id)).map((p) => ({ ...p, here: true }))
   return (
     <Sheet open={open} onClose={onClose} label="room">
       <div className="settings">
-        <div className="rs-head">
-          <Crew seed={room.seed} size={120} count={priv && people.length < 3 ? 2 : 3} />
-          <span className="rs-title">{room.name}</span>
-          <span className="room-here empty-sub">{here} here</span>
+        <div className="rs-head is-row">
+          {priv && people.length ? <Faces names={people.map((p) => p.username)} size={40} /> : <Crew seed={room.seed} size={52} count={3} still />}
+          <span className="rs-head-text">
+            <span className="rs-title ellipsis">{room.name}</span>
+            <span className="room-here">{priv ? `${people.length || room.members || 1} people` : ''}{herePeople.length ? `${priv ? ', ' : ''}${herePeople.length} here` : ''}</span>
+          </span>
         </div>
+        {rows.length > 0 && <h3 className="settings-label">{priv ? 'people' : 'here now'}</h3>}
+        {rows.map((p) =>
+          p.id === me?.id ? (
+            <span key={p.id} className="rs-user is-me">
+              <GoofyFace name={p.name} size={40} presence={p.here ? 'online' : null} />
+              <span className="grow ellipsis">{p.name}</span>
+              <i className="rs-you">you</i>
+            </span>
+          ) : (
+            <button key={p.id} type="button" className="rs-user" onClick={() => open2(p.id, p.name)}>
+              <GoofyFace name={p.name} size={40} presence={p.here ? 'online' : null} />
+              <span className="grow ellipsis">{p.name}</span>
+            </button>
+          ),
+        )}
         {priv && (
           <>
-            <h3 className="settings-label">{people.length} people</h3>
-            {people.map((p) => (
-              <button key={p.id} type="button" className="rs-user" onClick={() => nav('/dm/' + encodeURIComponent(p.username))}>
-                <GoofyFace name={p.username} size={40} />
-                <span className="grow ellipsis">{p.username}</span>
-              </button>
-            ))}
             <h3 className="settings-label">add people</h3>
             <PeoplePicker picked={picked} onChange={setPicked} exclude={people.map((p) => p.id)} />
-            {picked.length > 0 && (
-              <button type="button" className="rs-go" disabled={busy} onClick={() => void add()}>
-                add {picked.length}
+            {picked.length > 0 ? (
+              <button type="button" className="rs-go is-sticky" disabled={busy} onClick={() => void add()}>
+                {err === 'add' ? 'try again' : `add ${picked.length}`}
+              </button>
+            ) : (
+              <button type="button" className={'rs-leave' + (leaveArm ? ' is-armed' : '')} onClick={() => void leave()}>
+                {err === 'leave' ? 'try again' : leaveArm ? 'leave room?' : 'leave room'}
               </button>
             )}
-            <button
-              type="button"
-              className={'rs-leave' + (leaveArm ? ' is-armed' : '')}
-              onClick={async () => {
-                if (!leaveArm) return setLeaveArm(true)
-                await leaveRoom(room.id).catch(() => {})
-                onClose()
-                nav('/rooms')
-              }}
-            >
-              {leaveArm ? 'tap again to leave' : 'leave room'}
-            </button>
           </>
         )}
       </div>
@@ -342,10 +421,15 @@ function Live({ room }: { room: Room }) {
   const [sheet, setSheet] = useState(false)
   const here = useRooms((s) => s.here[room.id] ?? 0)
   const typers = useRooms((s) => s.typing[room.id])
-  const names = typers ? Object.values(typers).map((t) => t.name) : []
+  const blocked = useBlocks((b) => b.blocked)
+  const names = typers ? Object.entries(typers).filter(([id]) => !blocked.includes(id)).map(([, t]) => t.name) : []
+  const people = useRooms((s) => s.people[room.id])
   const mode = useThemeMode()
   const theme = getTheme(room.theme, mode)
   useEffect(() => enterRoom(room), [room.id, room.topic])
+  useEffect(() => {
+    if (room.kind === 'private') roomPeople(room.id).catch(() => {})
+  }, [room.id, room.kind])
 
   const status = names.length ? (
     <span className="st-typing">
@@ -370,7 +454,7 @@ function Live({ room }: { room: Room }) {
           </button>
         )}
         <button type="button" className="chat-peer" style={{ textAlign: 'left' }} onClick={() => setSheet(true)}>
-          <Crew seed={room.seed} size={52} count={room.kind === 'private' && (room.members ?? 3) < 3 ? 2 : 3} />
+          {room.kind === 'private' && people?.length ? <Faces names={people.map((p) => p.username)} size={34} /> : <Crew seed={room.seed} size={52} count={room.kind === 'private' && (room.members ?? 3) < 3 ? 2 : 3} />}
           <div className="chat-peer-text">
             <span className="chat-peer-name ellipsis">{room.name}</span>
             <AnimatePresence mode="wait" initial={false}>
@@ -386,7 +470,7 @@ function Live({ room }: { room: Room }) {
           <IconUsers size={24} />
         </button>
       </header>
-      <List room={room} />
+      <List room={room} onPeople={() => setSheet(true)} />
       <Composer room={room} />
       <PeopleSheet room={room} open={sheet} onClose={() => setSheet(false)} />
     </div>
@@ -397,11 +481,12 @@ export default function RoomChat({ id }: { id: string }) {
   const [, nav] = useLocation()
   const desktop = useIsDesktop()
   const room = useRooms((s) => s.rooms[id])
-  const [missing, setMissing] = useState(false)
+  const [state, setState] = useState<'loading' | 'missing' | 'error'>('loading')
+  const [n, setN] = useState(0)
   useEffect(() => {
-    setMissing(false)
-    void fetchRoom(id).then((r) => !r && setMissing(true))
-  }, [id])
+    setState('loading')
+    fetchRoom(id).then((r) => !r && setState('missing'), () => setState('error'))
+  }, [id, n])
   if (room) return <Live room={room} />
   return (
     <div className="chat scheme-light" style={themeVars(getTheme('goofy'))}>
@@ -412,7 +497,22 @@ export default function RoomChat({ id }: { id: string }) {
           </button>
         )}
       </header>
-      <div className="chat-center">{missing ? <span className="chat-center-name">room not found</span> : <TypingDots />}</div>
+      <div className="chat-center">
+        {state === 'missing' ? (
+          <>
+            <span className="chat-center-name">room not found</span>
+            <button type="button" className="empty-act is-ink" onClick={() => nav('/rooms', { replace: true })}>
+              rooms
+            </button>
+          </>
+        ) : state === 'error' ? (
+          <button type="button" className="empty-act is-ink" onClick={() => setN((x) => x + 1)}>
+            retry
+          </button>
+        ) : (
+          <TypingDots />
+        )}
+      </div>
     </div>
   )
 }

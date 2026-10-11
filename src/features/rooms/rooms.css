@@ -87,3 +87,22 @@
   background: #E5383B; color: #FFF; font: 700 12.5px/1 var(--font-display); -webkit-tap-highlight-color: transparent;
 }
 .rm-del.mine { align-self: flex-end; margin: 2px 4px 6px 0; }
+
+/* ux rework */
+.faces { display: inline-flex; align-items: center; flex: none; }
+.faces-one { display: grid; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--surface, var(--bg)); background: var(--surface, var(--bg)); position: relative; }
+.faces-more { display: grid; place-items: center; border-radius: 50%; background: var(--bg-2); color: var(--ink); font: 760 12px/1 var(--font-display); box-shadow: 0 0 0 2.5px var(--surface, var(--bg)); position: relative; }
+.pub-card { min-height: 76px; }
+.pub-card .crew { margin: -6px 0; }
+.new-room.is-row { border-style: solid; border-width: 0; background: none; justify-content: flex-start; height: 56px; }
+.row-new { font: 760 11.5px/1 var(--font-display); padding: 4px 8px; border-radius: 999px; background: var(--accent); color: #fff; }
+.rs-head.is-row { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 4px 2px 8px; }
+.rs-head.is-row .rs-title { text-align: left; min-width: 0; }
+.rs-head-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rs-head-text .room-here { font: 650 13px/1 var(--font-display); color: var(--muted); }
+.rs-user { width: 100%; border: 0; background: none; color: var(--ink); cursor: pointer; }
+.rs-user.is-me { cursor: default; }
+.rs-you { font-style: normal; font: 700 12px/1 var(--font-display); color: var(--muted); padding: 4px 8px; border-radius: 999px; background: var(--bg-2); }
+.rs-go.is-sticky { position: sticky; bottom: calc(8px + var(--safe-b)); z-index: 2; }
+.rs-leave.is-armed { background: var(--danger); color: #fff; }
+.room-empty .empty-act { margin-top: 10px; }

@@ -42,3 +42,23 @@ function CrewImpl({ seed, size = 120, count = 3, still = false }: { seed: number
 }
 
 export const Crew = memo(CrewImpl)
+
+/** The real people of a room: up to 3 overlapping faces and a '+n'. */
+export function Faces({ names, size = 40 }: { names: string[]; size?: number }) {
+  const shown = names.slice(0, 3)
+  const more = names.length - shown.length
+  return (
+    <span className="faces" style={{ height: size }}>
+      {shown.map((n, i) => (
+        <span key={n + i} className="faces-one" style={{ marginLeft: i ? -size * 0.38 : 0, zIndex: 3 - i }}>
+          <GoofyFace name={n} size={size} blink={false} />
+        </span>
+      ))}
+      {more > 0 && (
+        <span className="faces-more tnum" style={{ width: size * 0.8, height: size * 0.8, marginLeft: -size * 0.25 }}>
+          +{more}
+        </span>
+      )}
+    </span>
+  )
+}

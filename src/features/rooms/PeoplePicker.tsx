@@ -5,6 +5,9 @@ import { GoofyFace } from '../../ui/GoofyFace'
 import { TypingDots } from '../../ui/kit'
 import { IconCheck, IconClose } from '../../ui/icons'
 import { searchUsers } from './rooms'
+import { useStore } from '../../lib/store'
+import { useShallow } from 'zustand/react/shallow'
+import { useBlocks } from '../../lib/engine'
 
 /** Username search with toggleable picks. `exclude` hides people already in the room. */
 export function PeoplePicker({ picked, onChange, exclude = [] }: { picked: Profile[]; onChange: (p: Profile[]) => void; exclude?: string[] }) {
@@ -29,19 +32,35 @@ export function PeoplePicker({ picked, onChange, exclude = [] }: { picked: Profi
     }, 180)
     return () => clearTimeout(t)
   }, [q])
+  const blocked = useBlocks((b) => b.blocked)
+  const blockedBy = useBlocks((b) => b.blockedBy)
+  const hide = (id: string) => exclude.includes(id) || blocked.includes(id) || blockedBy.includes(id)
+  // people you already talk to: friends first, then the rest of your chats, newest first
+  const known = useStore(
+    useShallow((s) => {
+      const list = Object.values(s.conversations).filter((c) => !c.blocked && c.status !== 'pending' && c.status !== 'declined' && c.last_message)
+      const friend = (c: (typeof list)[number]) => (c.my_friend && c.peer_friend ? 1 : 0)
+      return list
+        .sort((a, b) => friend(b) - friend(a) || (b.last_message_at ?? '').localeCompare(a.last_message_at ?? ''))
+        .map((c) => c.peer)
+        .slice(0, 16)
+    }),
+  )
+  const online = useStore((s) => s.online)
   const on = (id: string) => picked.some((p) => p.id === id)
-  const toggle = (p: Profile) => {
+  const toggle = (p: Profile, fromSearch = false) => {
     navigator.vibrate?.(6)
     onChange(on(p.id) ? picked.filter((x) => x.id !== p.id) : [...picked, p])
+    if (fromSearch) setQ('')
   }
-  const shown = res.filter((p) => !exclude.includes(p.id))
+  const shown = (q.trim() ? res : known).filter((p) => !hide(p.id)).slice(0, 12)
   return (
     <div>
       <input
         className="rs-name rs-search"
         value={q}
         onChange={(e) => setQ(e.target.value.replace(/[^A-Za-z0-9_.]/g, '').slice(0, 20))}
-        placeholder="search usernames"
+        placeholder="search a username"
         aria-label="search usernames"
         autoCapitalize="off"
         autoCorrect="off"
@@ -68,8 +87,8 @@ export function PeoplePicker({ picked, onChange, exclude = [] }: { picked: Profi
           </span>
         ) : (
           shown.map((p) => (
-            <button key={p.id} type="button" className={'rs-user' + (on(p.id) ? ' is-on' : '')} onClick={() => toggle(p)}>
-              <GoofyFace name={p.username} size={40} />
+            <button key={p.id} type="button" className={'rs-user' + (on(p.id) ? ' is-on' : '')} onClick={() => toggle(p, !!q.trim())}>
+              <GoofyFace name={p.username} size={40} presence={online[p.id] ? 'online' : null} />
               <span className="grow ellipsis">{p.username}</span>
               <span className="rs-check">{on(p.id) && <IconCheck size={16} />}</span>
             </button>

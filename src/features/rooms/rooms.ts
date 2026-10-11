@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { RealtimeChannel } from '@supabase/realtime-js'
-import { rpc } from '../../lib/api'
+import { isApiError, rpc } from '../../lib/api'
 import { getToken, onRoomEvent } from '../../lib/engine'
 import { canPush, channel, removeChannel } from '../../lib/realtime'
 import { useStore } from '../../lib/store'
@@ -16,6 +16,7 @@ export type RoomMsg = {
   sender?: Profile | null
   kind?: string // 'removed' = admin took it down; kept as a tombstone so device archives overwrite the original
   state?: 'sending' | 'failed'
+  err?: 'fast' | 'blocked'
 }
 export type Room = {
   id: string
@@ -41,9 +42,23 @@ type S = {
   more: Record<string, boolean>
   typing: Record<string, Record<string, Typer>>
   here: Record<string, number>
+  // who is in the room right now (presence), and the members of private rooms once fetched
+  herePeople: Record<string, { id: string; name: string }[]>
+  people: Record<string, Profile[]>
+  // private rooms someone added you to that you haven't opened yet
+  unseen: string[]
   active: string | null
 }
-export const useRooms = create<S>(() => ({ rooms: {}, loaded: false, msgs: {}, more: {}, typing: {}, here: {}, active: null }))
+const UNSEEN = 'gat.unseenRooms'
+const loadUnseen = (): string[] => {
+  try {
+    const v = JSON.parse(localStorage.getItem(UNSEEN) || '[]')
+    return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+export const useRooms = create<S>(() => ({ rooms: {}, loaded: false, msgs: {}, more: {}, typing: {}, here: {}, herePeople: {}, people: {}, unseen: loadUnseen(), active: null }))
 const get = useRooms.getState
 const set = useRooms.setState
 
@@ -70,8 +85,24 @@ function learn(list: (Profile | null | undefined)[]) {
   if (next) useStore.setState({ profiles: next })
 }
 
+function setUnseen(next: string[]) {
+  set({ unseen: next })
+  try {
+    localStorage.setItem(UNSEEN, JSON.stringify(next))
+  } catch {
+    /* blocked */
+  }
+}
+/** a private room that shows up without you making it: someone added you */
+function noteAdded(r: Room) {
+  const s = get()
+  if (!s.loaded || s.rooms[r.id] || r.kind !== 'private' || r.created_by === me()?.id || s.unseen.includes(r.id)) return
+  setUnseen([...s.unseen, r.id])
+}
+
 function putRoom(r: Room) {
   if (!r?.id) return
+  noteAdded(r)
   const active = get().active === r.id
   set((s) => ({ rooms: { ...s.rooms, [r.id]: { ...r, unread: active ? 0 : r.unread, last_message: r.last_message ?? s.rooms[r.id]?.last_message ?? null } } }))
   if (r.last_message) learn([r.last_message.sender])
@@ -85,7 +116,10 @@ export async function loadRooms(): Promise<void> {
     const rooms: Record<string, Room> = {}
     const act = get().active
     const prev = get().rooms
-    for (const r of list) rooms[r.id] = { ...r, unread: r.id === act ? 0 : r.unread, last_message: r.last_message ?? prev[r.id]?.last_message ?? null }
+    for (const r of list) {
+      noteAdded(r)
+      rooms[r.id] = { ...r, unread: r.id === act ? 0 : r.unread, last_message: r.last_message ?? prev[r.id]?.last_message ?? null }
+    }
     set({ rooms, loaded: true })
     learn(list.map((r) => r.last_message?.sender))
   } catch {
@@ -93,13 +127,15 @@ export async function loadRooms(): Promise<void> {
   }
 }
 
+/** null when the room is gone or not yours; throws on a network or server hiccup so the screen can offer a retry */
 export async function fetchRoom(id: string): Promise<Room | null> {
   try {
     const r = await rpc<Room>('gat_room_get', { p_token: tok(), p_room: id })
     putRoom(r)
     return r
-  } catch {
-    return null
+  } catch (e) {
+    if (isApiError(e, 'not_found') || isApiError(e, 'forbidden')) return null
+    throw e
   }
 }
 
@@ -192,6 +228,7 @@ export function enterRoom(room: Room): () => void {
   const id = room.id
   set({ active: id })
   markRead(id)
+  if (get().unseen.includes(id)) setUnseen(get().unseen.filter((x) => x !== id))
   void olderRoomMsgs<RoomMsg>(id, null, 50).then((local) => {
     if (local.length) set((s) => ({ msgs: { ...s.msgs, [id]: mergeMsgs(local, s.msgs[id] ?? []) } }))
     return history(id)
@@ -211,7 +248,9 @@ export function enterRoom(room: Room): () => void {
     })
   })
   ch.on('presence', { event: 'sync' }, () => {
-    set((s) => ({ here: { ...s.here, [id]: Object.keys(ch.presenceState()).length } }))
+    const st = ch.presenceState() as Record<string, { name?: string }[]>
+    const list = Object.entries(st).map(([k, v]) => ({ id: k, name: v[0]?.name ?? '' })).filter((x) => x.id)
+    set((s) => ({ here: { ...s.here, [id]: list.length }, herePeople: { ...s.herePeople, [id]: list } }))
   })
   ch.subscribe((st) => {
     if (st === 'SUBSCRIBED' && self) void ch.track({ name: self.username })
@@ -267,8 +306,11 @@ export async function sendRoom(id: string, body: string): Promise<void> {
       return { msgs: { ...s.msgs, [id]: mergeMsgs(list, [m]) } }
     })
     set((s) => (s.rooms[id] ? { rooms: { ...s.rooms, [id]: { ...s.rooms[id], last_message: m, last_message_at: m.created_at } } } : s))
-  } catch {
-    set((s) => ({ msgs: { ...s.msgs, [id]: (s.msgs[id] ?? []).map((x) => (x.id === tmp.id ? { ...x, state: 'failed' } : x)) } }))
+  } catch (e) {
+    // too fast retries on its own once; blocked words never will, so they say so
+    const err = isApiError(e, 'rate_limited') ? 'fast' : isApiError(e, 'not_allowed') ? 'blocked' : undefined
+    set((s) => ({ msgs: { ...s.msgs, [id]: (s.msgs[id] ?? []).map((x) => (x.id === tmp.id ? { ...x, state: 'failed', err } : x)) } }))
+    if (err === 'fast') setTimeout(() => retryRoom(id, tmp.id), 10000)
   }
 }
 
@@ -282,11 +324,13 @@ export function retryRoom(id: string, msgId: string) {
 export async function createRoom(name: string, people: string[]): Promise<Room> {
   const r = await rpc<Room>('gat_room_create', { p_token: tok(), p_name: name, p_members: people })
   putRoom(r)
+  void roomPeople(r.id).catch(() => {})
   return r
 }
 
 export async function addPeople(id: string, people: string[]): Promise<void> {
   putRoom(await rpc<Room>('gat_room_add', { p_token: tok(), p_room: id, p_users: people }))
+  void roomPeople(id).catch(() => {})
 }
 
 export async function leaveRoom(id: string): Promise<void> {
@@ -301,6 +345,7 @@ export async function leaveRoom(id: string): Promise<void> {
 export async function roomPeople(id: string): Promise<Profile[]> {
   const list = await rpc<Profile[]>('gat_room_people', { p_token: tok(), p_room: id })
   learn(list)
+  set((s) => ({ people: { ...s.people, [id]: list } }))
   return list
 }
 
@@ -320,4 +365,4 @@ export const useRoomList = (): Room[] => {
 }
 
 export const useRoomsUnread = (): number =>
-  useRooms((s) => Object.values(s.rooms).reduce((n, r) => n + (r.kind === 'private' ? r.unread : 0), 0))
+  useRooms((s) => Object.values(s.rooms).reduce((n, r) => n + (r.kind === 'private' ? r.unread : 0), 0) + s.unseen.filter((id) => s.rooms[id]).length)
