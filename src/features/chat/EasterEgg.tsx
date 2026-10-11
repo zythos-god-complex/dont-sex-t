@@ -71,7 +71,7 @@ export function EasterEgg({ me }: { me: string }) {
         wow, it's an easter egg
       </motion.div>
       <motion.div className="egg-sub" initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.95 }}>
-        double send unlocked
+        you found it
       </motion.div>
     </motion.div>
   )

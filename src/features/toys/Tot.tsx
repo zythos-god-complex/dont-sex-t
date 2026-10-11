@@ -50,7 +50,16 @@ export function TotCard({ m, meId, peerName }: { m: Message; meId: string | null
           </button>
         ))}
       </div>
-      {done ? <span className="tot-end">{mine === theirs ? 'same vibe' : 'opposites'}</span> : mine !== null && <span className="tot-end">waiting on {peerName}...</span>}
+      {done ? (
+        <div className="tot-foot">
+          <span className="tot-end">{mine === theirs ? 'same vibe' : 'opposites'}</span>
+          <button type="button" className="tot-next" onClick={() => sendTot(m.conversation_id)}>
+            another
+          </button>
+        </div>
+      ) : (
+        mine !== null && <span className="tot-end">waiting on {peerName}...</span>
+      )}
     </div>
   )
 }

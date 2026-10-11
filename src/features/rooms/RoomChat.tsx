@@ -12,7 +12,6 @@ import { Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
 import { IconAlert, IconArrowDown, IconBack, IconSend, IconSticker, IconUsers } from '../../ui/icons'
 import { getTheme, themeVars } from '../../themes/themes'
 import { useThemeMode } from '../../themes/mode'
-import { ModeButton } from '../chat/ChatScreen'
 import { Ambient } from '../../themes/Ambient'
 import { goBack } from '../shell/nav'
 import { LockedSticker, Sticker } from '../stickers/Sticker'
@@ -274,6 +273,7 @@ function PeopleSheet({ room, open, onClose }: { room: Room; open: boolean; onClo
   const [, nav] = useLocation()
   const [people, setPeople] = useState<Profile[]>([])
   const [picked, setPicked] = useState<Profile[]>([])
+  const [leaveArm, setLeaveArm] = useState(false)
   const [busy, setBusy] = useState(false)
   const here = useRooms((s) => s.here[room.id] ?? 0)
   const priv = room.kind === 'private'
@@ -319,14 +319,15 @@ function PeopleSheet({ room, open, onClose }: { room: Room; open: boolean; onClo
             )}
             <button
               type="button"
-              className="rs-leave"
+              className={'rs-leave' + (leaveArm ? ' is-armed' : '')}
               onClick={async () => {
+                if (!leaveArm) return setLeaveArm(true)
                 await leaveRoom(room.id).catch(() => {})
                 onClose()
                 nav('/rooms')
               }}
             >
-              leave room
+              {leaveArm ? 'tap again to leave' : 'leave room'}
             </button>
           </>
         )}
@@ -381,7 +382,6 @@ function Live({ room }: { room: Room }) {
             </AnimatePresence>
           </div>
         </button>
-        <ModeButton />
         <button className="icon-btn" onClick={() => setSheet(true)} aria-label="people">
           <IconUsers size={24} />
         </button>

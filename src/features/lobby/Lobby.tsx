@@ -56,6 +56,7 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
     const p = s.profiles[u.id]
     return p ? [p.age ? String(p.age) : '', p.place ?? ''].filter(Boolean).join(' · ') : ''
   })
+  const bio = useStore((s) => s.profiles[u.id]?.bio ?? '')
   // already chatted: straight to the DM, strangers get the peek card
   const known = useStore((s) => !!s.convByPeer[u.id])
   const down = () => {
@@ -97,6 +98,7 @@ function Card({ u, now }: { u: OnlineUser; now: number }) {
       </span>
       <span className="card-name ellipsis">{u.username}</span>
       {about && <span className="card-about ellipsis">{about}</span>}
+      {bio && <span className="card-bio">{bio}</span>}
       <span className={'card-meta' + (typing ? ' is-typing' : '')}>
         {typing ? (
           <>
@@ -209,7 +211,7 @@ export default function Lobby() {
               <IconRooms size={25} />
               <Badge n={roomsUnread} className="dm-badge" />
             </Link>
-            <Link href="/dm" className="icon-btn dm-btn" aria-label="dms">
+            <Link href="/dm" className="icon-btn dm-btn" aria-label="chats">
               <IconDm size={25} />
               <Badge n={unread} className="dm-badge" />
             </Link>
@@ -220,7 +222,7 @@ export default function Lobby() {
       {desktop && (
         <header className="d-head">
           <h1>
-            live <span className="tnum d-count">{counts.all}</span>
+            online <span className="tnum d-count">{counts.all}</span>
           </h1>
         </header>
       )}

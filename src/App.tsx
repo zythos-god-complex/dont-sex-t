@@ -145,7 +145,7 @@ function DesktopApp() {
           </div>
           <button className={'d-live' + (!inChat && !inRoom && !inRooms ? ' is-on' : '')} onClick={() => nav('/')}>
             <IconLive size={20} />
-            <span>live</span>
+            <span>home</span>
           </button>
           <button className={'d-live' + (inRoom || inRooms ? ' is-on' : '')} onClick={() => nav('/rooms')}>
             <IconRooms size={20} />
@@ -153,7 +153,7 @@ function DesktopApp() {
             <Badge n={roomsUnread} />
           </button>
           <div className="d-rail-head">
-            <span>dms</span>
+            <span>chats</span>
             <Badge n={unread} />
           </div>
           <Inbox variant="rail" />

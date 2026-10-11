@@ -415,10 +415,10 @@ export const EMBER_THEMES = ['meteor', 'temple', 'sakuranight', 'butterfly']
 // themes you earn: by chats started, best streak, or messages sent. matrix stays admin only.
 export type Unlock = { k: 'chats' | 'streak' | 'msgs'; n: number; label: string }
 export const UNLOCKS: Record<string, Unlock> = {
-  meteor: { k: 'chats', n: 3, label: '3 chats' },
-  sakuranight: { k: 'msgs', n: 100, label: '100 messages' },
-  temple: { k: 'streak', n: 3, label: 'a 3 day streak' },
-  butterfly: { k: 'chats', n: 10, label: '10 chats' },
+  meteor: { k: 'chats', n: 3, label: 'chats' },
+  sakuranight: { k: 'msgs', n: 100, label: 'messages' },
+  temple: { k: 'streak', n: 3, label: 'day streak' },
+  butterfly: { k: 'chats', n: 10, label: 'chats' },
 }
 export function themeLocked(id: string, stats?: { msgs: number; chats: number; streak: number } | null): Unlock | null {
   const u = UNLOCKS[id]

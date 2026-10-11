@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Sheet } from '../../ui/kit'
 
-const INKS = ['#17131F', '#FF5C7A', '#FFC83D', '#3DD6B5', '#5BB5FF', '#8A6BFF']
+const PAPER = '#FFFDF8'
+const INKS = ['#17131F', '#FF5C7A', '#FFC83D', '#3DD6B5', '#5BB5FF', '#8A6BFF', PAPER]
 type Stroke = { c: string; w: number; pts: [number, number][] }
 
 export function DoodleSheet({ open, onClose, onSend }: { open: boolean; onClose: () => void; onSend: (f: File) => void }) {
@@ -19,7 +20,7 @@ export function DoodleSheet({ open, onClose, onSend }: { open: boolean; onClose:
     const g = c?.getContext('2d')
     if (!c || !g) return
     g.setTransform(2, 0, 0, 2, 0, 0)
-    g.fillStyle = '#FFFDF8'
+    g.fillStyle = PAPER
     g.fillRect(0, 0, size, size)
     g.lineCap = 'round'
     g.lineJoin = 'round'
@@ -67,7 +68,7 @@ export function DoodleSheet({ open, onClose, onSend }: { open: boolean; onClose:
         <canvas ref={cv} width={size * 2} height={size * 2} style={{ width: size, height: size }} className="doodle-cv" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
         <div className="doodle-inks">
           {INKS.map((c) => (
-            <button key={c} type="button" className={'doodle-ink' + (ink === c ? ' is-on' : '')} style={{ background: c }} aria-label={c} onClick={() => setInk(c)} />
+            <button key={c} type="button" className={'doodle-ink' + (ink === c ? ' is-on' : '') + (c === PAPER ? ' is-eraser' : '')} style={{ background: c }} aria-label={c === PAPER ? 'eraser' : c} onClick={() => setInk(c)} />
           ))}
           <button type="button" className={'doodle-ink is-size' + (thick ? ' is-on' : '')} aria-label="brush size" onClick={() => setThick((v) => !v)}>
             <i style={{ width: thick ? 12 : 6, height: thick ? 12 : 6 }} />

@@ -17,7 +17,7 @@ import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle } from '../../ui/kit'
 import { setModePref, useModeStore } from '../../themes/mode'
 import { useReward } from '../rewards/Reward'
-import { IconBrush, IconCrown, IconFlame, IconSpotify } from '../../ui/icons'
+import { IconBrush, IconClose, IconCrown, IconFlame, IconSpotify } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { FaceBuilder } from '../onboarding/FaceBuilder'
 import { ProfileCardView } from '../profile/ProfileCard'
@@ -100,7 +100,7 @@ function Account() {
     <>
       <h3 className="settings-label">account</h3>
       {!temp && (
-        <div className="settings-row">
+        <div className={'settings-row' + (me.has_key ? '' : ' is-nudge')}>
           <span className="grow">recovery key</span>
           <button type="button" className="acc-btn" onClick={() => void makeKey().then(setWords).catch(() => {})}>
             {me.has_key ? 'new key' : 'make key'}
@@ -207,7 +207,6 @@ function GhostRow() {
     <div className="settings-row" style={{ marginTop: 8 }}>
       <span className="grow">
         ghost browse
-        <small className="settings-sub">off the board, replies only</small>
       </span>
       <Toggle label="ghost browse" on={on} disabled={busy} onChange={(v) => { setBusy(true); saveGhost(v).catch(() => {}).finally(() => setBusy(false)) }} />
     </div>
@@ -424,12 +423,7 @@ function About() {
     <>
       <h3 className="settings-label">about you</h3>
       <div className="about-row">
-        <input className="about-input" value={place} maxLength={30} placeholder="city or place (optional)" onChange={(e) => setPlace(e.target.value)} />
-        {dirty && (
-          <button type="button" className="acc-btn" disabled={busy} onClick={() => save(place, me.show_age === true)}>
-            save
-          </button>
-        )}
+        <input className="about-input" value={place} maxLength={30} placeholder="city or place (optional)" onChange={(e) => setPlace(e.target.value)} onBlur={() => dirty && save(place, me.show_age === true)} />
       </div>
       {me.age_set && (
         <div className="settings-row" style={{ marginTop: 8 }}>
@@ -474,6 +468,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState(me?.username ?? '')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [tab, setTab] = useState<'profile' | 'look' | 'settings' | 'account'>('profile')
   const [, nav] = useLocation()
   useEffect(() => setName(me?.username ?? ''), [me?.username])
   if (!me) return null
@@ -509,6 +504,9 @@ function MeBody({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="me">
+      <button type="button" className="icon-btn me-close" aria-label="close" onClick={onClose}>
+        <IconClose size={22} />
+      </button>
       <div className="me-face">
         <GoofyFace name={me.username} avatar={current} size={112} />
         {!temp && (
@@ -553,47 +551,73 @@ function MeBody({ onClose }: { onClose: () => void }) {
         </div>
       )}
       {err && <p className="ob-error">{err}</p>}
-      <FlairEditor />
-      <h3 className="settings-label">vibe</h3>
-      <div className="settings-row">
-        <span className="grow">
-          nsfw <small className="nsfw-sub">{me.age_set && !me.adult ? '18+ only' : 'foul language ok'}</small>
-        </span>
-        <Toggle
-          label="nsfw"
-          on={me.nsfw === true}
-          onChange={(v) => {
-            if (v && !me.adult) return void (!me.age_set && setPassport(true))
-            void saveNsfw(v).catch(() => {})
-          }}
+      <div className="me-tabs">
+        <Segmented
+          layoutId="me-tab"
+          value={tab}
+          onChange={setTab}
+          items={[
+            { id: 'profile', label: 'profile' },
+            { id: 'look', label: 'look' },
+            { id: 'settings', label: 'settings' },
+            { id: 'account', label: 'account', ...(!temp && !me.has_key ? { count: 1 } : {}) },
+          ]}
         />
       </div>
-      <MoodRow name={me.username} spicy={me.nsfw === true && me.adult === true} />
-      {!temp && <About />}
-      {!temp && <BioRow />}
-      {!temp && <SongRow />}
-      {spotifyEnabled() && <Music />}
-      <Looks />
-      <h3 className="settings-label">privacy</h3>
-      <GhostRow />
-      <div className="settings-row">
-        <span className="grow">show active status</span>
-        <Toggle label="show active status" on={me.show_status !== false} onChange={(v) => void savePrivacy(v, null)} />
-      </div>
-      <div className="settings-row" style={{ marginTop: 8 }}>
-        <span className="grow">show seen</span>
-        <Toggle label="show seen" on={me.show_seen !== false} onChange={(v) => void savePrivacy(null, v)} />
-      </div>
-      <Account />
-      <Blocked />
-      {me.admin && (
-        <button type="button" className="me-admin" onClick={() => { onClose(); nav('/admin') }}>
-          <IconCrown size={18} /> control room
-        </button>
+      {tab === 'profile' && (
+        <>
+          {!temp && <BioRow />}
+          {!temp && <SongRow />}
+          {spotifyEnabled() && <Music />}
+          <MoodRow name={me.username} spicy={me.nsfw === true && me.adult === true} />
+          {!temp && <About />}
+        </>
       )}
-      <button type="button" className="fb-done" style={{ marginTop: 18 }} onClick={onClose}>
-        done
-      </button>
+      {tab === 'look' && (
+        <>
+          <Looks />
+          <FlairEditor />
+        </>
+      )}
+      {tab === 'settings' && (
+        <>
+          <h3 className="settings-label">content</h3>
+          <div className="settings-row">
+            <span className="grow">
+              nsfw <small className="nsfw-sub">{me.age_set && !me.adult ? '18+ only' : '18+'}</small>
+            </span>
+            <Toggle
+              label="nsfw"
+              on={me.nsfw === true}
+              onChange={(v) => {
+                if (v && !me.adult) return void (!me.age_set && setPassport(true))
+                void saveNsfw(v).catch(() => {})
+              }}
+            />
+          </div>
+          <h3 className="settings-label">privacy</h3>
+          <GhostRow />
+          <div className="settings-row">
+            <span className="grow">show active status</span>
+            <Toggle label="show active status" on={me.show_status !== false} onChange={(v) => void savePrivacy(v, null)} />
+          </div>
+          <div className="settings-row" style={{ marginTop: 8 }}>
+            <span className="grow">show seen</span>
+            <Toggle label="show seen" on={me.show_seen !== false} onChange={(v) => void savePrivacy(null, v)} />
+          </div>
+        </>
+      )}
+      {tab === 'account' && (
+        <>
+          <Account />
+          <Blocked />
+          {me.admin && (
+            <button type="button" className="me-admin" onClick={() => { onClose(); nav('/admin') }}>
+              <IconCrown size={18} /> control room
+            </button>
+          )}
+        </>
+      )}
     </div>
   )
 }
@@ -607,6 +631,7 @@ export function MeButton({ size = 32 }: { size?: number }) {
     <>
       <button type="button" className="me-btn" aria-label="your profile" onClick={() => setOpen(true)}>
         <GoofyFace name={me.username} size={size} mood={moodRn} />
+        {!me.temp && !me.has_key && <i className="me-dot" aria-hidden="true" />}
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} label="your profile">
         <MeBody onClose={() => setOpen(false)} />

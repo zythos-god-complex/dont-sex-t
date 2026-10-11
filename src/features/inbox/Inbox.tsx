@@ -134,7 +134,7 @@ function RowMenu() {
             close()
           }}
         >
-          {arm ? 'remove for good?' : 'remove chat'}
+          {arm ? 'tap again, just for you' : 'remove chat'}
         </button>
       </div>
     </Sheet>
@@ -155,7 +155,8 @@ export default function Inbox({ variant }: InboxProps) {
   const friends = shown.filter(isFriend).length
   const [tab, setTab] = useState<'friends' | 'strangers'>(() => lastTab ?? (friends ? 'friends' : 'strangers'))
   const pick = (t: 'friends' | 'strangers') => setTab((lastTab = t))
-  const all = shown.filter((c) => isFriend(c) === (tab === 'friends'))
+  const asking = (c: Conversation) => c.status === 'pending' && !!c.requester && c.requester !== me?.id
+  const all = shown.filter((c) => isFriend(c) === (tab === 'friends')).sort((a, b) => Number(asking(b)) - Number(asking(a)))
   const unread = (want: boolean) => shown.filter((c) => isFriend(c) === want && c.unread > 0).length
   const list = [...pins.map((id) => all.find((c) => c.id === id)).filter((c): c is Conversation => !!c), ...all.filter((c) => !pins.includes(c.id))]
 
@@ -188,9 +189,15 @@ export default function Inbox({ variant }: InboxProps) {
             <p className="empty-title">{tab === 'friends' ? 'no friends yet' : 'no strangers yet'}</p>
             {variant !== 'rail' && (
               <div className="empty-acts">
-                <Link href="/" className="empty-act is-ink">
-                  find someone
-                </Link>
+                {tab === 'friends' && friends === 0 && shown.length > 0 ? (
+                  <button type="button" className="empty-act is-ink" onClick={() => pick('strangers')}>
+                    strangers
+                  </button>
+                ) : (
+                  <Link href="/" className="empty-act is-ink">
+                    find someone
+                  </Link>
+                )}
               </div>
             )}
           </div>

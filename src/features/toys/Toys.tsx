@@ -93,7 +93,7 @@ export function GameBubble({ id, meId, peerName }: { id: string; meId: string | 
   useEffect(() => {
     if (!g) void loadGame(id)
   }, [g, id])
-  if (!g) return <div className="game game-load">loading game...</div>
+  if (!g) return <div className="game game-load" aria-label="loading" />
   const side = g.a === meId ? 'a' : 'b'
   const other = side === 'a' ? 'b' : 'a'
   const move = (m: string) => {

@@ -321,3 +321,14 @@ export const IconLock = (p: P) => (
     <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
   </Svg>
 )
+export const IconClock = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </Svg>
+)
+export const IconShare = (p: P) => (
+  <Svg {...p}>
+    <path d="M12 3.5v11M8 7.5l4-4 4 4M6.5 11H5.8A1.8 1.8 0 0 0 4 12.8v6.4C4 20.2 4.8 21 5.8 21h12.4c1 0 1.8-.8 1.8-1.8v-6.4c0-1-.8-1.8-1.8-1.8h-.7" />
+  </Svg>
+)

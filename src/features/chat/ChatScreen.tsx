@@ -25,13 +25,13 @@ import {
   usePushState,
   useResolveChat,
 } from '../../lib/hooks'
-import { setFriend, clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti, openOnce, unsend } from '../../lib/engine'
+import { setFriend, setMuted, report, clearChat, loadOlder, nameHistory, react, respondRequest, retry, sendMessage, setActiveConv, setBlocked, setTheme, setTyping, setVoice, setImages, sendConfetti, onPeerConfetti, openOnce, unsend } from '../../lib/engine'
 import { togglePush } from '../../lib/push'
 import { activeAgo, relTime, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparator, sameGroup } from '../../lib/format'
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconSticker, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight, IconGhost, IconHi, IconAddFriend, IconFriend, IconLock } from '../../ui/icons'
+import { IconMoon, IconSun, IconPin, IconImage, IconMic, IconClose, IconReply, IconSmilePlus, IconAlert, IconArrowDown, IconBack, IconBell, IconCheck, IconGear, IconSend, IconArrowRight, IconGhost, IconHi, IconAddFriend, IconFriend, IconLock, IconClock, IconPlus, IconShare } from '../../ui/icons'
 import { EMBER_THEMES, getTheme, themeList, themeLocked, themeVars } from '../../themes/themes'
 import { flipModeFrom, useThemeMode } from '../../themes/mode'
 import { flushSync } from 'react-dom'
@@ -198,7 +198,6 @@ function ChatView({ conv }: { conv: Conversation }) {
           </div>
         </button>
         <FriendButton conv={conv} />
-        <ModeButton />
         <button className="icon-btn" onClick={() => setSettings(true)} aria-label="chat settings">
           <IconGear size={24} />
         </button>
@@ -268,6 +267,17 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
   const allMsgs = useMessages(conv.id)
   // only messages that arrive while the chat is open animate in; opening a chat paints instantly
   const openedAt = useRef(Date.now())
+  // the very first message anyone gets from a stranger shows the double-tap heart once, no words
+  const [hintId] = useState<string | null>(() => {
+    try {
+      if (localStorage.getItem('gat.hint.dbl')) return null
+      const last = [...allMsgs].reverse().find((x) => x.sender_id !== me?.id && x.kind === 'text' && !x.body.startsWith('[['))
+      if (last) localStorage.setItem('gat.hint.dbl', '1')
+      return last?.id ?? null
+    } catch {
+      return null
+    }
+  })
   const msgs = useMemo(() => allMsgs.filter((x) => x.body !== '[[unsent]]' && !isWishReply(x.body) && !isTotReply(x.body)), [allMsgs])
   const typing = usePeerTyping(conv.id)
   const mine = useMyLastStatus(conv.id)
@@ -345,6 +355,14 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
     const prev = msgs[i - 1]
     const next = msgs[i + 1]
     if (needsSeparator(prev, m)) items.push(<div key={'sep' + m.id} className="sep">{daySeparator(m.created_at, now)}</div>)
+    if (m.body === '[[friends]]') {
+      items.push(
+        <motion.div key={m.id} className="sys is-friends" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
+          <IconFriend size={14} /> you're friends now
+        </motion.div>,
+      )
+      continue
+    }
     if (m.kind === 'theme') {
       const who = m.sender_id === me?.id ? 'you' : peer.username
       items.push(
@@ -359,7 +377,7 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
     const joinNext = !!next && sameGroup(m, next) && !needsSeparator(m, next)
     items.push(
       <Fragment key={m.id}>
-        <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} meId={me?.id ?? null} onReply={onReply} fresh={Date.parse(m.created_at) > openedAt.current - 5000} />
+        <Bubble m={m} mine={isMine} joinPrev={joinPrev} joinNext={joinNext} peerName={peer.username} meId={me?.id ?? null} onReply={onReply} fresh={Date.parse(m.created_at) > openedAt.current - 5000} hint={m.id === hintId} />
         {isMine && mine?.id === m.id && <MineStatus state={mine.state === 'seen' && me?.show_seen === false ? 'sent' : mine.state} id={m.id} />}
       </Fragment>,
     )
@@ -399,7 +417,7 @@ function MessageList({ conv, now, sinceOnline, online, onReply }: { conv: Conver
 }
 
 function MineStatus({ state, id }: { state: 'sending' | 'failed' | 'sent' | 'seen'; id: string }) {
-  if (state === 'sending') return <div className="mine-status">sending...</div>
+  if (state === 'sending') return <div className="mine-status" aria-label="sending"><IconClock size={12} /></div>
   if (state === 'failed')
     return (
       <button className="mine-status is-failed" onClick={() => retry(id)}>
@@ -424,7 +442,7 @@ function peerNsfw(s: ReturnType<typeof useStore.getState>, peer: Conversation['p
 
 const REACTIONS = ['❤️', '😂', '💀', '😮', '😢', '👍']
 
-function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null; onReply: (m: Message) => void; fresh?: boolean }) {
+function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, hint }: { m: Message; mine: boolean; joinPrev: boolean; joinNext: boolean; peerName: string; meId: string | null; onReply: (m: Message) => void; fresh?: boolean; hint?: boolean }) {
   const [actions, setActions] = useState(false)
   const moved = useRef(false)
   const tapTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -517,7 +535,7 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh }:
   return (
     <motion.div
       data-mid={m.id}
-      className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '') + (chips.length ? ' has-reacts' : '')}
+      className={'b-row ' + (mine ? 'mine' : 'theirs') + (joinNext ? ' jn' : '') + (chips.length ? ' has-reacts' : '') + (hint ? ' b-hint' : '')}
       initial={fresh ? { opacity: 0, x: mine ? 14 : -14, y: 8, scale: 0.94 } : false}
       animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
       transition={spring}
@@ -759,9 +777,13 @@ function ChatFooter({ conv, meId, now, onEgg, replyTo, onClearReply }: { conv: C
   else if (conv.status === 'pending' && conv.requester && conv.requester !== meId)
     content = (
       <>
-        <p>
-          <b>{name}</b> wants to chat
-        </p>
+        <div className="req-who">
+          <GoofyFace name={name} size={44} />
+          <span>
+            <b>{name}</b> wants to chat
+            {conv.peer.bio && <small className="ellipsis">{conv.peer.bio}</small>}
+          </span>
+        </div>
         <div className="req-actions">
           <button type="button" className="req-no" onClick={() => void respondRequest(conv.id, false)}>
             decline
@@ -1072,7 +1094,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId }: { conv: Conversa
             setTray((v) => !v)
           }}
         >
-          <IconSticker size={24} />
+          <IconPlus size={24} />
         </button>
         {(imagesOk || voiceOk) && (
           <span className="pick-wrap">
@@ -1269,7 +1291,6 @@ function PinRow({ convId }: { convId: string }) {
   const full = !on && pins.length >= MAX_PINS
   return (
     <>
-      <h3 className="settings-label">pin</h3>
       <div className="settings-row">
         <IconPin size={22} filled={on} />
         <span className="grow">pin chat</span>
@@ -1280,13 +1301,50 @@ function PinRow({ convId }: { convId: string }) {
   )
 }
 
+/** both faces, lit when that person has the feature on */
+function BothOn({ mine, theirs, peer }: { mine: boolean; theirs: boolean; peer: string }) {
+  const me = useMe()
+  return (
+    <span className="both-on" aria-label={`you ${mine ? 'on' : 'off'}, ${peer} ${theirs ? 'on' : 'off'}`}>
+      <span className={mine ? 'is-on' : ''}>
+        <GoofyFace name={me?.username ?? ''} size={22} blink={false} />
+      </span>
+      <span className={theirs ? 'is-on' : ''}>
+        <GoofyFace name={peer} size={22} blink={false} />
+      </span>
+    </span>
+  )
+}
+
+const REPORT_REASONS = ['spam', 'creepy', 'underage', 'nasty', 'other'] as const
+
+function ReportRow({ name }: { name: string }) {
+  const [state, setState] = useState<'idle' | 'pick' | 'done'>('idle')
+  if (state === 'done') return <p className="settings-hint">reported</p>
+  if (state === 'idle')
+    return (
+      <button type="button" className="block-btn" onClick={() => setState('pick')}>
+        report {name}
+      </button>
+    )
+  return (
+    <div className="report-chips">
+      {REPORT_REASONS.map((r) => (
+        <button key={r} type="button" className="acc-btn" onClick={() => void report(name, r).then(() => setState('done'), () => setState('idle'))}>
+          {r}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => void }) {
   const mode = useThemeMode()
   const [themeOpen, setThemeOpen] = useState(false)
   const [themeTab, setThemeTab] = useState<'default' | 'ember'>(EMBER_THEMES.includes(conv.theme ?? '') ? 'ember' : 'default')
   const push = usePushState(conv.id)
   const busy = usePushBusy()
-  const hint = push === 'needs-install' ? 'share ⬆︎ then add to home screen, open it from there' : push === 'denied' ? 'blocked in browser settings' : push === 'unsupported' ? 'not supported in this browser' : null
+  const hint = push === 'denied' ? 'blocked in browser settings' : push === 'unsupported' ? 'not supported in this browser' : null
   return (
     <div className="settings">
       <div className="settings-peer">
@@ -1341,7 +1399,7 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
               <span className="swatch-name">{t.name}</span>
               {lock && (
                 <span className="swatch-lock">
-                  <IconLock size={11} /> {lock.label}
+                  <IconLock size={12} /> {Math.min(meNow?.stats?.[lock.k] ?? 0, lock.n)}/{lock.n} {lock.label}
                 </span>
               )}
             </motion.button>
@@ -1353,32 +1411,39 @@ function SettingsBody({ conv, onPicked }: { conv: Conversation; onPicked: () => 
       </AnimatePresence>
       <AmbientControls themeId={conv.theme} />
       <LandingControl convId={conv.id} />
+      <h3 className="settings-label">chat</h3>
       <PinRow convId={conv.id} />
-      <h3 className="settings-label">notifications</h3>
-      <div className="settings-row">
+      <div className="settings-row" style={{ marginTop: 8 }}>
         <IconBell size={22} />
         <span className="grow">notifications</span>
         <Toggle label="notifications" on={push === 'on'} disabled={busy || push === 'needs-install' || push === 'unsupported' || push === 'denied'} onChange={() => void togglePush(conv.id)} />
       </div>
-      {hint && <p className="settings-hint">{hint}</p>}
-      <h3 className="settings-label">voice notes</h3>
-      <div className="settings-row">
+      {push === 'needs-install' ? (
+        <p className="settings-hint">
+          tap <IconShare size={14} style={{ verticalAlign: '-2px' }} /> then add to home screen
+        </p>
+      ) : (
+        hint && <p className="settings-hint">{hint}</p>
+      )}
+      <div className="settings-row" style={{ marginTop: 8 }}>
+        <IconBell size={22} className="is-muted-ico" />
+        <span className="grow">mute</span>
+        <Toggle label="mute" on={!!conv.muted} onChange={(v) => void setMuted(conv.id, v)} />
+      </div>
+      <div className="settings-row" style={{ marginTop: 8 }}>
         <IconMic size={22} />
         <span className="grow">voice notes</span>
+        <BothOn mine={!!conv.my_voice} theirs={!!conv.peer_voice} peer={conv.peer.username} />
         <Toggle label="voice notes" on={!!conv.my_voice} onChange={(v) => void setVoice(conv.id, v)} />
       </div>
-      <p className="settings-hint">
-        {conv.peer_voice ? (conv.my_voice ? 'on for both of you' : `${conv.peer.username} has it on`) : conv.my_voice ? `waiting on ${conv.peer.username}` : `${conv.peer.username} has it off`}
-      </p>
-      <h3 className="settings-label">photos</h3>
-      <div className="settings-row">
+      <div className="settings-row" style={{ marginTop: 8 }}>
         <IconImage size={22} />
         <span className="grow">photos</span>
+        <BothOn mine={!!conv.my_images} theirs={!!conv.peer_images} peer={conv.peer.username} />
         <Toggle label="photos" on={!!conv.my_images} onChange={(v) => void setImages(conv.id, v)} />
       </div>
-      <p className="settings-hint">
-        {conv.peer_images ? (conv.my_images ? 'on for both of you' : `${conv.peer.username} has it on`) : conv.my_images ? `waiting on ${conv.peer.username}` : `${conv.peer.username} has it off`}
-      </p>
+      <h3 className="settings-label">safety</h3>
+      <ReportRow name={conv.peer.username} />
       <DeleteChat conv={conv} onDone={onPicked} />
       <button type="button" className={'block-btn' + (conv.blocked === 'me' ? ' is-on' : '')} onClick={() => void setBlocked(conv.peer.id, conv.blocked !== 'me')}>
         {conv.blocked === 'me' ? 'unblock ' : 'block '}

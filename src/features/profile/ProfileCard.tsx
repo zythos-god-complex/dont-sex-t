@@ -19,6 +19,15 @@ import { Sheet } from '../../ui/kit'
 import type { Flair } from '../../lib/types'
 
 // earned on the server (hourly), shown under the bio
+const HOW: Record<string, string> = {
+  first: 'sent their first message',
+  chatty: '100 messages sent',
+  social: 'chatted with 10 people',
+  owl: 'lots of late night yapping',
+  streak7: 'kept a streak 7 days',
+  bestie: 'made a friend',
+  squad: '5 friends',
+}
 const BADGES: Record<string, [string, typeof IconHi]> = {
   first: ['first hi', IconHi],
   chatty: ['yapper', IconDm],
@@ -41,6 +50,7 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
   const chips = prof ? [prof.age ? String(prof.age) : '', prof.place ?? '', since].filter(Boolean) : []
   const bio = prof?.bio || flair?.bio
   const np = prof?.now_playing
+  const [open, setOpen] = useState<string | null>(null)
   const color = applyAvatar(faceTraits(name), custom).color
   const card = flair ? (CARDS.find((c) => c.id === flair.card) ?? CARDS[0]) : null
   const style = {
@@ -73,10 +83,10 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
               .map((b) => {
                 const [label, Ico] = BADGES[b]
                 return (
-                  <i key={b} className="pc-badge">
+                  <button key={b} type="button" className={'pc-badge' + (open === b ? ' is-open' : '')} onClick={() => setOpen(open === b ? null : b)}>
                     <Ico size={14} />
-                    {label}
-                  </i>
+                    {open === b ? HOW[b] : label}
+                  </button>
                 )
               })}
           </span>

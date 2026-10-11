@@ -11,10 +11,13 @@ import { FaceBuilder } from './FaceBuilder'
 import type { Gender } from '../../lib/types'
 
 const VALID = /^[A-Za-z0-9_.]{3,20}$/
+const NAME_A = ['zesty', 'wobbly', 'sleepy', 'spicy', 'tiny', 'chonky', 'sneaky', 'goofy', 'fuzzy', 'salty', 'sunny', 'moody']
+const NAME_B = ['pickle', 'mango', 'noodle', 'bean', 'otter', 'momo', 'toast', 'gecko', 'boba', 'waffle', 'panda', 'samosa']
+const pickName = () => `${NAME_A[(Math.random() * NAME_A.length) | 0]}.${NAME_B[(Math.random() * NAME_B.length) | 0]}${10 + ((Math.random() * 89) | 0)}`
 const DECOR = ['wobbly.bob', 'sirgoofsalot', 'mochi_mochi', 'xX_bean_Xx', 'lil.pickle', 'beep.boop', 'nugget', 'zesty.lemon']
 
 export default function Onboarding() {
-  const [name, setName] = useState('')
+  const [name, setName] = useState(pickName)
   const [gender, setGender] = useState<Gender | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -148,7 +151,7 @@ export default function Onboarding() {
       </div>
 
       <motion.form className="ob-form" onSubmit={submit} animate={shake}>
-        <div className={'ob-input' + (error ? ' has-error' : '')}>
+        <div className={'ob-input' + (error ? ' has-error' : name && valid ? ' is-ok' : '')}>
           <input
             value={name}
             onChange={(e) => onChange(e.target.value)}
@@ -162,6 +165,10 @@ export default function Onboarding() {
             aria-label="username"
             aria-invalid={!!error}
           />
+          <span className="ob-count tnum" aria-hidden="true">{name.length}/20</span>
+          <button type="button" className="ob-reroll" aria-label="random username" onClick={() => onChange(pickName())}>
+            <IconDice size={18} />
+          </button>
         </div>
         <AnimatePresence>
           {error && (
