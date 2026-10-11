@@ -1488,3 +1488,4 @@ button.me-face { position: relative; margin: 0; flex: none; border: 0; padding: 
 }
 .tour-next:active { transform: translateY(3px); box-shadow: 0 1px 0 #17131F; }
 .me-tour { width: 100%; border: 0; color: inherit; text-align: left; cursor: pointer; margin-top: 18px; }
+.tour-next:focus-visible { outline: 3px solid #17131F; outline-offset: 3px; }
