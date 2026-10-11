@@ -15,13 +15,12 @@ function load(): string[] {
 
 export const usePins = create<{ ids: string[] }>(() => ({ ids: load() }))
 
-/** Pin or unpin a conversation. Returns false when all pin slots are taken. */
+/** Pin or unpin a conversation. A 4th pin pushes out the oldest one, so pinning never dead-ends. */
 export function togglePin(convId: string): boolean {
   const ids = usePins.getState().ids
   let next: string[]
   if (ids.includes(convId)) next = ids.filter((x) => x !== convId)
-  else if (ids.length >= MAX_PINS) return false
-  else next = [...ids, convId]
+  else next = [...ids, convId].slice(-MAX_PINS)
   usePins.setState({ ids: next })
   try {
     localStorage.setItem(KEY, JSON.stringify(next))

@@ -9,7 +9,7 @@ import { initSpotify } from './spotify'
 import { useReward } from '../features/rewards/Reward'
 import { archiveMsgs, claimArchive, olderMsgs, wipeConv } from './archive'
 import { canPush, channel, getRealtime, onSocket, reconnectNow, removeChannel } from './realtime'
-import { clearSession, readSession, setManifestToken, takeUrlToken, writeSession, writeTempSession } from './session'
+import { clearSession, keepSession, readSession, setManifestToken, takeUrlToken, writeSession, writeTempSession } from './session'
 import {
   countUnread,
   EMPTY_MESSAGES,
@@ -1700,6 +1700,16 @@ export function submitPhoto(url: string | null): Promise<string | null> {
 
 export function pendingPhoto(): Promise<string | null> {
   return token ? api.photoStatus(token) : Promise.resolve(null)
+}
+
+/** Temp to kept, in place: same account, so chats, friends and streaks stay. Renames first if the name changed. */
+export async function keepAccount(name: string): Promise<void> {
+  if (!token) return
+  const me = get().me
+  if (me && name && name !== me.username) updateMe(await api.rename(token, name))
+  const r = await api.keep(token)
+  keepSession(token, r.me.username)
+  updateMe(r.me)
 }
 
 export async function renameMe(username: string): Promise<void> {

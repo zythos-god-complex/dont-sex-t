@@ -121,6 +121,7 @@ export const api = {
   setImages: (token: string, conv: string, on: boolean) => rpc<Record<string, unknown>>('gat_set_images', { p_token: token, p_conversation: conv, p_on: on }),
   setBirth: (token: string, year: number, month: number) => rpc<Me>('gat_set_birth', { p_token: token, p_year: year, p_month: month }),
   makeKey: (token: string) => rpc<{ words: string; me: Me }>('gat_make_key', { p_token: token }),
+  keep: (token: string) => rpc<{ me: Me }>('gat_keep', { p_token: token }),
   recover: (username: string, words: string) => rpc<{ token?: string; me?: Me; error?: string }>('gat_recover', { p_username: username, p_words: words }),
   admin: <T = unknown>(token: string, op: string, a: Record<string, unknown> = {}) => rpc<T>('gat_admin', { p_token: token, p_op: op, p_a: a }),
   report: (token: string, name: string, reason: string) => rpc<boolean>('gat_report', { p_token: token, p_name: name, p_reason: reason }),

@@ -16,7 +16,7 @@ import { Badge, Wordmark, useIsDesktop } from './ui/kit'
 import { IconLive, IconRooms } from './ui/icons'
 import { bindEdgeBack, bindVisualViewport, goBack, goTab, trackNav } from './features/shell/nav'
 import TabBar, { tabOf } from './features/shell/TabBar'
-import { MeButton } from './features/shell/MeSheet'
+import { MeButton, MeSheetHost } from './features/shell/MeSheet'
 import { refreshBlocks } from './lib/engine'
 import { useBan } from './lib/ban'
 import { api } from './lib/api'
@@ -310,6 +310,7 @@ export default function App() {
       <DailyReward />
       {desktop ? <DesktopApp /> : <MobileApp />}
       <PeekHost />
+      <MeSheetHost />
       <UpdateBanner />
       <Toasts />
     </>

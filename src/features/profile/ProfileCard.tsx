@@ -1,11 +1,13 @@
 // Steam / Discord style profile card. Everyone gets the basic card; perk users get their card colours,
 // live banner and bio.
-import { IconDm, IconFlame, IconFriend, IconHi, IconMoon, IconUsers } from '../../ui/icons'
+import { IconAddFriend, IconBrush, IconDm, IconFlame, IconFriend, IconGhost, IconHi, IconMoon, IconUsers } from '../../ui/icons'
+import { Flame } from '../../ui/Flame'
+import { openMeSheet } from '../shell/meSheet'
 import { NowPlaying, SongCard } from '../music/NowPlaying'
 import { useStore } from '../../lib/store'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useMe } from '../../lib/hooks'
-import { report, setBlocked, useBlocks, useGhost } from '../../lib/engine'
+import { report, saveGhost, setBlocked, setFriend, useBlocks, useGhost } from '../../lib/engine'
 import { closePeek, usePeek } from './peek'
 import { icebreaker, setIce } from '../../lib/drafts'
 import { useLocation } from 'wouter'
@@ -121,54 +123,109 @@ function Report({ name }: { name: string }) {
           {r}
         </button>
       ))}
+      <button type="button" className="rp-chip is-quiet" onClick={() => setState('idle')}>
+        cancel
+      </button>
     </div>
+  )
+}
+
+/** first tap arms (label ends in '?'), second does it */
+function Armed({ label, onGo }: { label: string; onGo: () => void }) {
+  const [arm, setArm] = useState(false)
+  useEffect(() => {
+    if (!arm) return
+    const t = setTimeout(() => setArm(false), 3000)
+    return () => clearTimeout(t)
+  }, [arm])
+  return (
+    <button type="button" className={'rp-open' + (arm ? ' is-armed' : '')} onClick={() => (arm ? (setArm(false), onGo()) : setArm(true))}>
+      {arm ? label + '?' : label}
+    </button>
   )
 }
 
 function BlockBtn({ id }: { id: string }) {
   const blocked = useBlocks((b) => b.blocked.includes(id))
-  const [arm, setArm] = useState(false)
-  useEffect(() => setArm(false), [id])
-  const tap = () => {
-    if (blocked) void setBlocked(id, false)
-    else if (arm) {
-      setArm(false)
-      void setBlocked(id, true)
-    } else setArm(true)
-  }
-  return (
-    <button type="button" className={'rp-open' + (arm ? ' is-armed' : '')} onClick={tap}>
-      {blocked ? 'unblock' : arm ? 'block, sure?' : 'block'}
-    </button>
-  )
+  if (blocked)
+    return (
+      <button type="button" className="rp-open" onClick={() => void setBlocked(id, false)}>
+        unblock
+      </button>
+    )
+  return <Armed key={id} label="block" onGo={() => void setBlocked(id, true)} />
 }
 
-export function ProfileCard({ name, id, sub, open, onClose, chat = false }: { name: string; id?: string | null; sub?: string | null; open: boolean; onClose: () => void; chat?: boolean }) {
+// the relationship lives here: say hi, message, add friend, add back, friends, unfriend
+export function ProfileCard({ name, id, sub, open, onClose }: { name: string; id?: string | null; sub?: string | null; open: boolean; onClose: () => void; chat?: boolean }) {
   const me = useMe()
   const [, nav] = useLocation()
   const mine = me?.username.toLowerCase() === name.toLowerCase()
   const blocked = useBlocks((b) => !!id && (b.blocked.includes(id) || b.blockedBy.includes(id)))
   const ghost = useGhost((g) => g.on)
-  const open2 = (text: string, auto: boolean) => {
-    setIce(name, text, auto)
+  const conv = useStore((s) => (id ? s.conversations[s.convByPeer[id]] : undefined))
+  const go = () => {
     onClose()
     nav('/dm/' + encodeURIComponent(name))
   }
+  const sayHi = () => {
+    setIce(name, icebreaker(), false)
+    go()
+  }
+  const live = !!conv && conv.status !== 'pending' && conv.status !== 'declined' && !conv.blocked
+  const myF = !!conv?.my_friend
+  const theirF = !!conv?.peer_friend
   return (
     <Sheet open={open} onClose={onClose} label={name + ' profile'}>
       <ProfileCardView name={name} sub={sub} />
-      {!mine && me && chat && !blocked && !ghost && (
+      {mine && (
         <div className="pc-say">
-          <button type="button" className="pc-hi" onClick={() => open2(icebreaker(), false)}>
-            say hi
+          <button
+            type="button"
+            className="pc-hi is-soft"
+            onClick={() => {
+              onClose()
+              setTimeout(() => openMeSheet(), 180)
+            }}
+          >
+            <IconBrush size={18} /> edit
           </button>
-          <button type="button" className="pc-wave" onClick={() => open2('[[sticker:hey]]', true)} aria-label="wave">
-            <IconHi size={24} />
-          </button>
+        </div>
+      )}
+      {!mine && me && !blocked && (
+        <div className="pc-say">
+          {!conv && ghost ? (
+            <button type="button" className="pc-hi is-soft" onClick={() => void saveGhost(false)}>
+              <IconGhost size={18} /> ghosting
+            </button>
+          ) : !conv ? (
+            <button type="button" className="pc-hi" onClick={sayHi}>
+              <IconHi size={20} /> say hi
+            </button>
+          ) : (
+            <>
+              <button type="button" className="pc-hi" onClick={go}>
+                <IconDm size={18} /> message
+              </button>
+              {live &&
+                (myF && theirF ? (
+                  <span className="pc-friends">
+                    <IconFriend size={18} /> friends
+                    <Flame convId={conv.id} />
+                  </span>
+                ) : (
+                  <button type="button" className={'pc-hi is-soft' + (theirF && !myF ? ' is-accent' : '')} onClick={() => void setFriend(conv.id, !myF)}>
+                    {myF ? <IconFriend size={18} /> : <IconAddFriend size={18} />}
+                    {myF ? 'requested' : theirF ? 'add back' : 'add friend'}
+                  </button>
+                ))}
+            </>
+          )}
         </div>
       )}
       {!mine && me && (
         <div className="pc-acts">
+          {live && myF && theirF && <Armed key={'uf' + conv.id} label="unfriend" onGo={() => void setFriend(conv.id, false)} />}
           {id && <BlockBtn id={id} />}
           <Report name={name} />
         </div>
@@ -182,5 +239,5 @@ export function PeekHost() {
   const last = useRef(name)
   if (name) last.current = name
   if (!last.current) return null
-  return <ProfileCard name={last.current} id={id} open={!!name} onClose={closePeek} chat />
+  return <ProfileCard name={last.current} id={id} open={!!name} onClose={closePeek} />
 }

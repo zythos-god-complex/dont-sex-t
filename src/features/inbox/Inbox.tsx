@@ -1,6 +1,6 @@
 import { Link, useLocation, useRoute } from 'wouter'
 import { Sheet } from '../../ui/kit'
-import { removeChat } from '../../lib/engine'
+import { clearChat, removeChat, respondRequest } from '../../lib/engine'
 import { create } from 'zustand'
 import { Flame, Melt } from '../../ui/Flame'
 import { AnimatePresence, motion } from 'motion/react'
@@ -10,7 +10,8 @@ import type { Conversation } from '../../lib/types'
 import { Aura } from '../../ui/Aura'
 import { useFlairFor } from '../../ui/flair'
 import { GoofyFace } from '../../ui/GoofyFace'
-import { Badge, Segmented, TypingDots, spring } from '../../ui/kit'
+import { Badge, TypingDots, spring } from '../../ui/kit'
+import { peek } from '../profile/peek'
 import { IconPin } from '../../ui/icons'
 import { MeButton } from '../shell/MeSheet'
 import { useRef, useState } from 'react'
@@ -20,10 +21,10 @@ export type InboxProps = { variant: 'screen' | 'rail' }
 
 function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolean; now: number; meId: string | null; pinned: boolean }) {
   const [, nav] = useLocation()
-  const [nope] = useState(0)
-  // long press pins / unpins; a full set of pins makes the row shake instead
+  // long press opens the same pin / delete choices as chat info
   const press = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number; fired: boolean } | null>(null)
   const down = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('.row-acts')) return
     const st = { x: e.clientX, y: e.clientY, fired: false, t: setTimeout(() => {
       st.fired = true
       navigator.vibrate?.(14)
@@ -40,71 +41,91 @@ function Row({ c, active, now, meId, pinned }: { c: Conversation; active: boolea
   const online = useIsOnline(c.peer.id) && !hide
   const typing = usePeerTyping(c.id)
   const unread = c.unread > 0
+  const asking = c.status === 'pending' && !!c.requester && c.requester !== meId
   const when = c.last_message?.created_at ?? c.last_message_at ?? c.created_at
   const fl = useFlairFor(c.peer.username)
   const aura = fl?.aura
   const plate = !!aura && aura !== 'none'
+  const open = () => nav('/dm/' + encodeURIComponent(c.peer.username))
   return (
-    <motion.button
+    <motion.div
       layout="position"
       transition={spring}
-      className={'row-item' + (active ? ' is-active' : '') + (unread ? ' is-unread' : '') + (pinned ? ' is-pinned' : '') + (plate ? ' has-aura' : '')}
-      animate={nope ? { x: [0, -8, 8, -5, 5, 0] } : undefined}
-      key={'n' + nope}
+      role="button"
+      tabIndex={0}
+      className={'row-item' + (active ? ' is-active' : '') + (unread ? ' is-unread' : '') + (pinned ? ' is-pinned' : '') + (plate ? ' has-aura' : '') + (asking ? ' is-ask' : '')}
       onPointerDown={down}
       onPointerUp={cancel}
       onPointerLeave={cancel}
       onPointerMove={move}
-      onContextMenu={(e) => e.preventDefault()}
-      onClick={() => {
-        if (press.current?.fired) return
-        nav('/dm/' + encodeURIComponent(c.peer.username))
+      onContextMenu={(e) => {
+        e.preventDefault()
+        useRowMenu.setState({ c })
+      }}
+      onKeyDown={(e) => e.key === 'Enter' && open()}
+      onClick={(e) => {
+        if (press.current?.fired || (e.target as HTMLElement).closest('.row-acts, .row-face')) return
+        open()
       }}
     >
       {plate && <Aura id={aura} />}
-      <GoofyFace name={c.peer.username} size={50} presence={online ? 'online' : null} />
+      <span
+        className="row-face"
+        onClick={() => peek(c.peer.username, c.peer.id)}
+      >
+        <GoofyFace name={c.peer.username} size={50} presence={online ? 'online' : null} />
+      </span>
       <span className="row-main">
-        <span className="row-name ellipsis">{c.peer.username}{fl && <i className="vchk" aria-label="verified" />}<Flame convId={c.id} /></span>
-        <span className={'row-preview ellipsis' + (typing ? ' is-typing' : '')}>
+        <span className="row-name">
+          <span className="ellipsis">{c.peer.username}</span>
+          {fl && <i className="vchk" aria-label="verified" />}
+          <Flame convId={c.id} />
+        </span>
+        <span className={'row-preview ellipsis' + (typing ? ' is-typing' : '') + (asking ? ' is-ask' : '')}>
           {typing ? (
             <>
               <TypingDots /> typing...
             </>
           ) : (
-            c.status === 'pending' && c.requester && c.requester !== meId ? (
-              <b className="row-req">wants to chat</b>
-            ) : (
-              messagePreview(c.last_message, meId) || 'say hi'
-            )
+            messagePreview(c.last_message, meId) || 'say hi'
           )}
         </span>
       </span>
-      <span className="row-side">
-        <Melt convId={c.id} />
-          <span className="row-time tnum">
-          {pinned && <IconPin size={13} filled className="row-pin" />}
-          {relTime(when, now)}
+      {asking ? (
+        <span className="row-acts">
+          <button type="button" className="row-no" onClick={() => void respondRequest(c.id, false)}>
+            nah
+          </button>
+          <button type="button" className="row-yes" onClick={() => void respondRequest(c.id, true)}>
+            accept
+          </button>
         </span>
-        <Badge n={c.unread} />
-      </span>
-    </motion.button>
+      ) : (
+        <span className="row-side">
+          <Melt convId={c.id} />
+          <span className="row-time tnum">
+            {pinned && <IconPin size={13} filled className="row-pin" />}
+            {relTime(when, now)}
+          </span>
+          <Badge n={c.unread} />
+        </span>
+      )}
+    </motion.div>
   )
 }
 
-// long press on a chat: pin it, or remove it from the list
+// long press on a chat: same choices and words as chat info
 const useRowMenu = create<{ c: Conversation | null }>(() => ({ c: null }))
 
 function RowMenu() {
   const c = useRowMenu((s) => s.c)
   const pins = usePins((s) => s.ids)
-  const [arm, setArm] = useState(false)
-  const [full, setFull] = useState(false)
+  const [ask, setAsk] = useState(false)
   const last = useRef(c)
   if (c) last.current = c
   const close = () => {
     useRowMenu.setState({ c: null })
-    setArm(false)
-    setFull(false)
+    setAsk(false)
   }
   const cur = last.current
   if (!cur) return null
@@ -112,37 +133,64 @@ function RowMenu() {
   return (
     <Sheet open={!!c} onClose={close} label={'chat with ' + cur.peer.username}>
       <div className="rm-menu">
-        <div className="rm-head">
+        <button
+          type="button"
+          className="rm-head"
+          onClick={() => {
+            close()
+            setTimeout(() => peek(cur.peer.username, cur.peer.id), 180)
+          }}
+        >
           <GoofyFace name={cur.peer.username} size={44} />
           <span className="rm-name ellipsis">{cur.peer.username}</span>
-        </div>
+        </button>
         <button
           type="button"
           className="rm-btn"
           onClick={() => {
-            if (togglePin(cur.id)) close()
-            else setFull(true)
-          }}
-        >
-          {pinned ? 'unpin' : full ? 'pins are full' : 'pin to top'}
-        </button>
-        <button
-          type="button"
-          className={'rm-btn is-red' + (arm ? ' is-armed' : '')}
-          onClick={() => {
-            if (!arm) return setArm(true)
-            void removeChat(cur.id)
+            togglePin(cur.id)
             close()
           }}
         >
-          {arm ? 'tap again, just for you' : 'remove chat'}
+          <IconPin size={20} filled={pinned} />
+          {pinned ? 'unpin chat' : 'pin chat'}
         </button>
+        {!ask ? (
+          <button type="button" className="rm-btn is-red" onClick={() => setAsk(true)}>
+            delete chat
+          </button>
+        ) : (
+          <div className="del-ask">
+            <b>delete chat?</b>
+            <button
+              type="button"
+              className="del-opt"
+              onClick={() => {
+                void removeChat(cur.id)
+                close()
+              }}
+            >
+              for me
+            </button>
+            <button
+              type="button"
+              className="del-opt is-both"
+              onClick={() => {
+                void clearChat(cur.id, true)
+                close()
+              }}
+            >
+              for both
+            </button>
+            <button type="button" className="del-cancel" onClick={() => setAsk(false)}>
+              cancel
+            </button>
+          </div>
+        )}
       </div>
     </Sheet>
   )
 }
-
-let lastTab: 'friends' | 'strangers' | null = null
 
 export default function Inbox({ variant }: InboxProps) {
   const me = useMe()
@@ -153,13 +201,14 @@ export default function Inbox({ variant }: InboxProps) {
   const pins = usePins((s) => s.ids)
   const shown = convs.filter((c) => c.last_message || c.peer.username.toLowerCase() === activeName || pins.includes(c.id))
   const isFriend = (c: Conversation) => !!c.my_friend && !!c.peer_friend
-  const friends = shown.filter(isFriend).length
-  const [tab, setTab] = useState<'friends' | 'strangers'>(() => lastTab ?? (friends ? 'friends' : 'strangers'))
-  const pick = (t: 'friends' | 'strangers') => setTab((lastTab = t))
   const asking = (c: Conversation) => c.status === 'pending' && !!c.requester && c.requester !== me?.id
-  const all = shown.filter((c) => isFriend(c) === (tab === 'friends')).sort((a, b) => Number(asking(b)) - Number(asking(a)))
-  const unread = (want: boolean) => shown.filter((c) => isFriend(c) === want && c.unread > 0).length
-  const list = [...pins.map((id) => all.find((c) => c.id === id)).filter((c): c is Conversation => !!c), ...all.filter((c) => !pins.includes(c.id))]
+  // pinned first inside each section, then most recent (the list already comes newest first)
+  const order = (l: Conversation[]) => [...l.filter((c) => pins.includes(c.id)), ...l.filter((c) => !pins.includes(c.id))]
+  const sections: [string, Conversation[]][] = [
+    ['requests', shown.filter(asking)],
+    ['friends', order(shown.filter((c) => !asking(c) && isFriend(c)))],
+    ['strangers', order(shown.filter((c) => !asking(c) && !isFriend(c)))],
+  ]
 
   return (
     <div className={'inbox inbox-' + variant}>
@@ -171,42 +220,35 @@ export default function Inbox({ variant }: InboxProps) {
           </div>
         </header>
       )}
-      <div className="inbox-tabs">
-        <Segmented
-          layoutId={'inbox-tab-' + variant}
-          value={tab}
-          onChange={pick}
-          items={[
-            { id: 'friends', label: 'friends', ...(unread(true) ? { count: unread(true) } : {}) },
-            { id: 'strangers', label: 'strangers', ...(unread(false) ? { count: unread(false) } : {}) },
-          ]}
-        />
-      </div>
       <div className="inbox-list scroll-y">
-        {list.length === 0 ? (
+        {shown.length === 0 ? (
           <div className="empty empty-sm">
             <GoofyFace name="lonely.potato" size={variant === 'rail' ? 72 : 110} mood="neutral" />
-            <p className="empty-title">{tab === 'friends' ? 'no friends yet' : 'no strangers yet'}</p>
+            <p className="empty-title">no chats yet</p>
             {variant !== 'rail' && (
               <div className="empty-acts">
-                {tab === 'friends' && friends === 0 && shown.length > 0 ? (
-                  <button type="button" className="empty-act is-ink" onClick={() => pick('strangers')}>
-                    strangers
-                  </button>
-                ) : (
-                  <Link href="/" className="empty-act is-ink">
-                    find someone
-                  </Link>
-                )}
+                <Link href="/" className="empty-act is-ink">
+                  find someone
+                </Link>
               </div>
             )}
           </div>
         ) : (
-          <AnimatePresence initial={false}>
-            {list.map((c) => (
-              <Row key={c.id} c={c} now={now} meId={me?.id ?? null} pinned={pins.includes(c.id)} active={c.peer.username.toLowerCase() === activeName} />
-            ))}
-          </AnimatePresence>
+          sections.map(([label, list]) =>
+            list.length ? (
+              <section key={label} className={'inbox-sec is-' + label}>
+                <h3 className="inbox-label">
+                  {label}
+                  {label === 'requests' && <i className="inbox-n tnum">{list.length}</i>}
+                </h3>
+                <AnimatePresence initial={false}>
+                  {list.map((c) => (
+                    <Row key={c.id} c={c} now={now} meId={me?.id ?? null} pinned={pins.includes(c.id)} active={c.peer.username.toLowerCase() === activeName} />
+                  ))}
+                </AnimatePresence>
+              </section>
+            ) : null,
+          )
         )}
       </div>
       <RowMenu />

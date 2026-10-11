@@ -125,6 +125,16 @@ export function readSession(): Session | null {
   return { token, username }
 }
 
+/** A temp session becomes a kept one: drop the tab-only copy, then save it like any account. */
+export function keepSession(token: string, username: string): void {
+  try {
+    sessionStorage.removeItem(SS_T)
+  } catch {
+    /* blocked */
+  }
+  writeSession(token, username)
+}
+
 export function writeSession(token: string, username: string | null): void {
   if (isTempToken(token)) return
   writeCookie(COOKIE_T, token)

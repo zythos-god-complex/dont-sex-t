@@ -1351,3 +1351,66 @@ button.ob-face { border: 0; background: none; padding: 0; cursor: pointer; -webk
 @keyframes once-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 .vn-speed { position: relative; }
 .vn-speed::before { content: ''; position: absolute; inset: -8px -6px; }
+
+/* ============================================================ ux rework: chats list */
+.inbox-sec + .inbox-sec { margin-top: 6px; }
+.inbox-label { display: flex; align-items: center; gap: 6px; padding: 12px 18px 4px; font: 720 12.5px/1 var(--font-display); color: var(--muted); }
+.inbox-n { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; }
+.row-item { cursor: pointer; }
+.row-name { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.row-name > .ellipsis { min-width: 0; }
+.row-name > :not(.ellipsis) { flex: none; }
+.row-face { flex: none; display: grid; border-radius: 50%; }
+.row-preview.is-ask { color: var(--accent); font-weight: 650; }
+.row-acts { flex: none; display: flex; gap: 6px; }
+.row-acts button { height: 34px; padding: 0 12px; border: 0; border-radius: 999px; font: 720 13.5px/1 var(--font-display); cursor: pointer; }
+.row-yes { background: var(--ink); color: var(--bg); }
+.row-no { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+.rm-head { width: 100%; border: 0; background: none; color: var(--ink); cursor: pointer; text-align: left; }
+.rm-btn { display: flex; align-items: center; gap: 10px; }
+.rm-menu .del-ask { margin-top: 4px; }
+
+/* ============================================================ ux rework: you + profile card */
+.rm-btn { justify-content: center; }
+.me-head { display: flex; align-items: center; gap: 14px; padding: 6px 44px 4px 2px; }
+button.me-face { position: relative; margin: 0; flex: none; border: 0; padding: 0; background: none; border-radius: 50%; cursor: pointer; }
+.me-face .me-edit { position: absolute; right: -4px; bottom: -2px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: var(--bg); box-shadow: 0 0 0 3px var(--surface); }
+.me-head-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.me-nm { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; border: 0; background: none; padding: 0; color: var(--ink); font: 780 21px/1.1 var(--font-display); letter-spacing: -0.02em; cursor: pointer; }
+.me-nm svg { flex: none; color: var(--muted); }
+.me-nm.is-static { cursor: default; }
+.me-nm-edit { width: 100%; }
+.me-nm-edit .me-name input { min-width: 0; }
+.me-card-btn { height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); font: 700 13px/1 var(--font-display); cursor: pointer; }
+.saved-tick { color: var(--online); margin-left: 6px; vertical-align: -2px; }
+.pic { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 4px; }
+.pic-tiles { display: flex; gap: 8px; width: 100%; }
+.pic-tile { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border: 0; border-radius: 18px; background: var(--bg-2); color: var(--ink); font: 700 13px/1 var(--font-display); cursor: pointer; }
+.pic-tile:disabled { opacity: .55; }
+.me-photo-wait.is-err { color: var(--danger); padding-left: 12px; }
+.pic-x { width: 22px; height: 22px; display: grid; place-items: center; margin-right: -6px; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); cursor: pointer; }
+.key-card, .keep-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 20px; border: 2px dashed var(--ink); }
+.key-card { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.key-title { flex: 1; display: inline-flex; align-items: center; gap: 8px; font: 760 16px/1.2 var(--font-display); }
+.key-words { width: 100%; padding: 12px; border-radius: 14px; background: var(--bg-2); font: 750 18px/1.45 var(--font-mono, monospace); word-spacing: 6px; text-align: center; }
+.key-acts { display: flex; gap: 8px; width: 100%; justify-content: center; }
+.key-acts .acc-btn { gap: 6px; }
+.bio-wrap { position: relative; }
+.bio-n { position: absolute; right: 12px; bottom: 10px; font: 650 11.5px/1 var(--font-display); color: var(--muted); pointer-events: none; }
+.mood-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px; overflow: visible; }
+.mood-opt { width: auto; aspect-ratio: 1; height: auto; }
+.song-row.is-skel { pointer-events: none; }
+.song-row.is-skel > i { width: 44px; height: 44px; border-radius: 10px; background: var(--bg-2); flex: none; }
+.song-row.is-skel b, .song-row.is-skel small { display: block; height: 10px; border-radius: 5px; background: var(--bg-2); width: 70%; }
+.song-row.is-skel small { width: 40%; margin-top: 4px; }
+.song-none { display: flex; align-items: center; gap: 8px; padding: 8px 4px; color: var(--muted); font: 650 14px/1 var(--font-display); }
+.me-btn { position: relative; }
+.me-ghost { position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: var(--bg); }
+.pc-hi { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.pc-hi.is-soft { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+.pc-hi.is-accent { background: var(--accent); color: #fff; }
+.pc-friends { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 50px; border-radius: 999px; background: color-mix(in srgb, var(--online) 14%, transparent); color: var(--ink); font: 740 15px/1 var(--font-display); }
+.rp-open { min-height: 44px; padding: 0 16px; border-radius: 999px; }
+.rp-open.is-armed { background: var(--danger); color: #fff; }
+.rp-chip.is-quiet { background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink); }
+.acc-btn { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }

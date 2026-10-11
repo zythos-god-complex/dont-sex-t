@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { isPhoto } from '../../ui/photoUrl'
 import { uploadPhoto } from '../profile/photo'
 import { AnimatePresence, motion } from 'motion/react'
@@ -6,7 +6,7 @@ import { useMe } from '../../lib/hooks'
 import { useLocation } from 'wouter'
 import { useStore } from '../../lib/store'
 import { useShallow } from 'zustand/react/shallow'
-import { pendingPhoto, saveAbout, saveBio, saveGhost, saveMood, saveSong, searchSongs, submitPhoto, useGhost, useMood } from '../../lib/engine'
+import { keepAccount, pendingPhoto, saveAbout, saveBio, saveGhost, saveMood, saveSong, searchSongs, submitPhoto, useGhost, useMood } from '../../lib/engine'
 import type { Song } from '../../lib/types'
 import { connectSpotify, disconnectSpotify, spotifyEnabled, useSpotify } from '../../lib/spotify'
 import { NowPlaying, SongCard } from '../music/NowPlaying'
@@ -14,16 +14,18 @@ import type { FaceMood } from '../../ui/GoofyFace'
 import { forgetMe, logout, setBlocked, useBlocks, makeKey, renameMe, saveAvatar, saveBirth, saveFlair, saveNsfw, savePrivacy } from '../../lib/engine'
 import { isApiError } from '../../lib/api'
 import { GoofyFace } from '../../ui/GoofyFace'
-import { Segmented, Sheet, Toggle } from '../../ui/kit'
+import { Segmented, Sheet, Toggle, useIsDesktop } from '../../ui/kit'
 import { setModePref, useModeStore } from '../../themes/mode'
 import { useReward } from '../rewards/Reward'
-import { IconBrush, IconClose, IconCrown, IconFlame, IconSpotify } from '../../ui/icons'
+import { IconBrush, IconCheck, IconClose, IconCopy, IconCrown, IconFlame, IconGhost, IconImage, IconLock, IconSpotify } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { FaceBuilder } from '../onboarding/FaceBuilder'
 import { ProfileCardView } from '../profile/ProfileCard'
 import { AURAS, Aura, CARDS } from '../../ui/Aura'
 import type { CSSProperties } from 'react'
 import type { HatId } from '../../lib/types'
+import { peek } from '../profile/peek'
+import { closeMeSheet, openMeSheet, useMeSheet, type MeTab } from './meSheet'
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
@@ -78,8 +80,8 @@ function Passport({ onDone }: { onDone: () => void }) {
         </div>
         {stamp && <span className={'pp-stamp ' + stamp}>{stamp === 'adult' ? '18+' : 'under 18'}</span>}
       </div>
-      <p className="pp-note">set once, can't be changed</p>
       <button type="button" className="fb-done" disabled={!month || !year || busy} onClick={go}>
+        <IconLock size={16} />
         {age === null ? 'stamp it' : `stamp it, i'm ${age}`}
       </button>
       <button type="button" className="pp-back" onClick={onDone}>
@@ -89,40 +91,130 @@ function Passport({ onDone }: { onDone: () => void }) {
   )
 }
 
-/** Recovery key, sign out, forget me. */
-function Account() {
+/** first tap arms (red, label ends in '?'), second tap does it; disarms on its own */
+function useArm<T extends string>(): [T | null, (k: T) => boolean] {
+  const [arm, setArm] = useState<T | null>(null)
+  useEffect(() => {
+    if (!arm) return
+    const t = setTimeout(() => setArm(null), 3000)
+    return () => clearTimeout(t)
+  }, [arm])
+  return [arm, (k: T) => (arm === k ? (setArm(null), true) : (setArm(k), false))]
+}
+
+// the 6 words survive closing the sheet until you say you saved them
+let shownWords: string | null = null
+
+/** Make or show the recovery key: big words, copy, and an 'i saved it' that puts it away. */
+function KeyCard({ words, onWords }: { words: string | null; onWords: (w: string | null) => void }) {
   const me = useMe()
-  const [words, setWords] = useState<string | null>(null)
-  const [arm, setArm] = useState<'out' | 'forget' | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [busy, setBusy] = useState(false)
+  if (!me) return null
+  if (!words && me.has_key) return null
+  const make = () => {
+    setBusy(true)
+    makeKey()
+      .then((w) => onWords((shownWords = w)))
+      .catch(() => {})
+      .finally(() => setBusy(false))
+  }
+  return (
+    <div className="key-card">
+      {words ? (
+        <>
+          <span className="key-words">{words}</span>
+          <div className="key-acts">
+            <button
+              type="button"
+              className="acc-btn"
+              onClick={() =>
+                void navigator.clipboard?.writeText(me.username + ': ' + words).then(() => {
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1500)
+                }, () => {})
+              }
+            >
+              {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+              {copied ? 'copied' : 'copy'}
+            </button>
+            <button type="button" className="acc-btn is-main" onClick={() => onWords((shownWords = null))}>
+              i saved it
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <span className="key-title">
+            <IconLock size={18} /> save your account
+          </span>
+          <button type="button" className="acc-btn is-main" disabled={busy} onClick={make}>
+            {busy ? 'making...' : 'make key'}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Temp accounts: keep it in place (same chats, friends, streaks), with the name you want. */
+function KeepCard() {
+  const me = useMe()
+  const [name, setName] = useState(me?.username ?? '')
+  const [err, setErr] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  if (!me) return null
+  const go = async () => {
+    if (!VALID.test(name)) return setErr('3 to 20 letters, numbers, _ or .')
+    setBusy(true)
+    setErr(null)
+    try {
+      await keepAccount(name)
+    } catch (e) {
+      setErr(isApiError(e, 'username_taken') ? 'taken, try another' : 'something broke, try again')
+    }
+    setBusy(false)
+  }
+  return (
+    <div className="keep-card">
+      <span className="key-title">
+        <IconGhost size={18} /> temp, gone on close
+      </span>
+      <div className="me-name">
+        <input value={name} onChange={(e) => (setName(e.target.value.replace(/[^A-Za-z0-9_.]/g, '').slice(0, 20)), setErr(null))} aria-label="username" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+        <button type="button" className="me-save" disabled={busy} onClick={() => void go()}>
+          keep it
+        </button>
+      </div>
+      {err && <p className="ob-error">{err}</p>}
+    </div>
+  )
+}
+
+function Account({ onWords }: { onWords: (w: string) => void }) {
+  const me = useMe()
+  const [arm, tap] = useArm<'out' | 'forget' | 'key'>()
   if (!me) return null
   const temp = !!me.temp
   return (
     <>
       <h3 className="settings-label">account</h3>
-      {!temp && (
-        <div className={'settings-row' + (me.has_key ? '' : ' is-nudge')}>
+      {!temp && me.has_key && (
+        <div className="settings-row">
           <span className="grow">recovery key</span>
-          <button type="button" className="acc-btn" onClick={() => void makeKey().then(setWords).catch(() => {})}>
-            {me.has_key ? 'new key' : 'make key'}
-          </button>
-        </div>
-      )}
-      {words && (
-        <div className="acc-key">
-          <span className="acc-words">{words}</span>
-          <button type="button" className="acc-btn" onClick={() => void navigator.clipboard?.writeText(me.username + ': ' + words).catch(() => {})}>
-            copy
+          <button type="button" className={'acc-btn' + (arm === 'key' ? ' acc-forget is-armed' : '')} onClick={() => tap('key') && void makeKey().then((w) => onWords((shownWords = w))).catch(() => {})}>
+            {arm === 'key' ? 'new key?' : 'new key'}
           </button>
         </div>
       )}
       <div className="acc-danger">
         {!temp && me.has_key && (
-          <button type="button" className={'acc-out' + (arm === 'out' ? ' is-armed' : '')} onClick={() => (arm === 'out' ? logout() : setArm('out'))}>
-            {arm === 'out' ? 'tap again to sign out' : 'sign out'}
+          <button type="button" className={'acc-out' + (arm === 'out' ? ' is-armed' : '')} onClick={() => tap('out') && logout()}>
+            {arm === 'out' ? 'sign out?' : 'sign out'}
           </button>
         )}
-        <button type="button" className={'acc-forget' + (arm === 'forget' ? ' is-armed' : '')} onClick={() => (arm === 'forget' ? void forgetMe() : setArm('forget'))}>
-          {arm === 'forget' ? 'tap again, gone forever' : 'forget me'}
+        <button type="button" className={'acc-forget' + (arm === 'forget' ? ' is-armed' : '')} onClick={() => tap('forget') && void forgetMe()}>
+          {arm === 'forget' ? 'forget me?' : 'forget me'}
         </button>
       </div>
     </>
@@ -204,18 +296,19 @@ function GhostRow() {
   const on = useGhost((g) => g.on)
   const [busy, setBusy] = useState(false)
   return (
-    <div className="settings-row" style={{ marginTop: 8 }}>
-      <span className="grow">
-        ghost browse
-      </span>
+    <div className="settings-row">
+      <span className="grow">ghost browse</span>
       <Toggle label="ghost browse" on={on} disabled={busy} onChange={(v) => { setBusy(true); saveGhost(v).catch(() => {}).finally(() => setBusy(false)) }} />
     </div>
   )
 }
 
-function PhotoButton({ current }: { current: AvatarConfig }) {
+/** Your picture: build a face, use a photo (goes to review), or go back to the face. */
+function Picture({ current, onBuild }: { current: AvatarConfig; onBuild: () => void }) {
   const [busy, setBusy] = useState(false)
   const [wait, setWait] = useState<string | null>(null)
+  const [err, setErr] = useState(false)
+  const me = useMe()
   const has = isPhoto(current.photo)
   useEffect(() => {
     let on = true
@@ -232,86 +325,100 @@ function PhotoButton({ current }: { current: AvatarConfig }) {
       const f = el.files?.[0]
       if (!f || !f.type.startsWith('image/')) return
       setBusy(true)
+      setErr(false)
       uploadPhoto(f)
         .then((url) => submitPhoto(url))
         .then((u) => setWait(isPhoto(u) ? u : null))
-        .catch(() => {})
+        .catch(() => {
+          setErr(true)
+          setTimeout(() => setErr(false), 3000)
+        })
         .finally(() => setBusy(false))
     }
     el.click()
   }
-  if (wait)
-    return (
-      <div className="me-photo">
-        <span className="me-photo-wait">
-          <img src={wait} alt="" />
-          in review
-        </span>
-        <button
-          type="button"
-          className="acc-btn"
-          disabled={busy}
-          onClick={() => {
-            setBusy(true)
-            submitPhoto(null)
-              .then(() => setWait(null))
-              .catch(() => {})
-              .finally(() => setBusy(false))
-          }}
-        >
-          cancel
-        </button>
-      </div>
-    )
   return (
-    <div className="me-photo">
-      <button type="button" className="acc-btn" disabled={busy} onClick={pick}>
-        {busy ? 'uploading...' : has ? 'change photo' : 'use a photo'}
-      </button>
-      {has && (
-        <button type="button" className="acc-btn" disabled={busy} onClick={() => void saveAvatar({ ...current, photo: null })}>
-          back to face
+    <div className="pic">
+      <div className="pic-tiles">
+        <button type="button" className="pic-tile" onClick={onBuild}>
+          <IconBrush size={22} /> build face
         </button>
+        <button type="button" className="pic-tile" disabled={busy} onClick={pick}>
+          <IconImage size={22} /> {busy ? 'uploading...' : 'photo'}
+        </button>
+        {has && (
+          <button type="button" className="pic-tile" disabled={busy} onClick={() => void saveAvatar({ ...current, photo: null })}>
+            <GoofyFace name={me?.username ?? ''} avatar={{ ...current, photo: null }} size={22} blink={false} /> face again
+          </button>
+        )}
+      </div>
+      {(wait || err) && (
+        <div className={'me-photo-wait' + (err ? ' is-err' : '')}>
+          {wait && !err && <img src={wait} alt="" />}
+          {err ? "didn't upload" : 'in review'}
+          {wait && !err && (
+            <button
+              type="button"
+              className="pic-x"
+              aria-label="cancel photo"
+              disabled={busy}
+              onClick={() => {
+                setBusy(true)
+                submitPhoto(null)
+                  .then(() => setWait(null))
+                  .catch(() => {})
+                  .finally(() => setBusy(false))
+              }}
+            >
+              <IconClose size={14} />
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
 }
 
-function Looks() {
-  const pref = useModeStore((s) => s.pref)
-  const freezes = useReward((s) => s.freezes)
-  return (
-    <>
-      <h3 className="settings-label">appearance</h3>
-      <div className="me-mode">
-        <Segmented
-          layoutId="me-mode"
-          value={pref}
-          onChange={setModePref}
-          items={[
-            { id: 'auto', label: 'auto' },
-            { id: 'light', label: 'light' },
-            { id: 'dark', label: 'dark' },
-          ]}
-        />
-      </div>
-      <div className="settings-row" style={{ marginTop: 10 }}>
-        <IconFlame size={22} />
-        <span className="grow">streak freezes</span>
-        <b className="tnum">{freezes}/2</b>
-      </div>
-    </>
+/** saves on its own a moment after you stop typing (and when the sheet closes) */
+function useAutosave(value: string, saved: string, save: (v: string) => Promise<unknown>): boolean {
+  const [ok, setOk] = useState(false)
+  const latest = useRef({ value, saved, save })
+  latest.current = { value, saved, save }
+  useEffect(() => {
+    if (value.trim() === saved.trim()) return
+    const t = setTimeout(() => {
+      void save(value).then(() => {
+        setOk(true)
+        setTimeout(() => setOk(false), 1500)
+      }, () => {})
+    }, 800)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+  useEffect(
+    () => () => {
+      const l = latest.current
+      if (l.value.trim() !== l.saved.trim()) void l.save(l.value).catch(() => {})
+    },
+    [],
   )
+  return ok
 }
 
 function BioRow() {
   const me = useMe()
   const saved = me?.bio ?? me?.flair?.bio ?? ''
   const [bio, setBio] = useState(saved)
+  const ok = useAutosave(bio, saved, saveBio)
   return (
     <>
-      <h3 className="settings-label">bio</h3>
-      <textarea className="fl-bio" maxLength={140} value={bio} aria-label="bio" onChange={(e) => setBio(e.target.value)} onBlur={() => bio.trim() !== saved && void saveBio(bio).catch(() => {})} />
+      <h3 className="settings-label">
+        bio{ok && <IconCheck size={14} className="saved-tick" />}
+      </h3>
+      <div className="bio-wrap">
+        <textarea className="fl-bio" maxLength={140} value={bio} aria-label="bio" onChange={(e) => setBio(e.target.value)} />
+        <span className="bio-n tnum">{bio.length}/140</span>
+      </div>
     </>
   )
 }
@@ -321,16 +428,30 @@ function SongRow() {
   const [picking, setPicking] = useState(false)
   const [q, setQ] = useState('')
   const [res, setRes] = useState<Song[]>([])
+  const [st, setSt] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [busy, setBusy] = useState(false)
+  const [n, setN] = useState(0)
   useEffect(() => {
-    if (!picking || q.trim().length < 2) return setRes([])
+    if (!picking || q.trim().length < 2) {
+      setRes([])
+      setSt('idle')
+      return
+    }
     let on = true
-    const t = setTimeout(() => searchSongs(q.trim()).then((r) => on && setRes(r), () => {}), 300)
+    setSt('loading')
+    const t = setTimeout(
+      () =>
+        searchSongs(q.trim()).then(
+          (r) => on && (setRes(r), setSt('done')),
+          () => on && setSt('error'),
+        ),
+      300,
+    )
     return () => {
       on = false
       clearTimeout(t)
     }
-  }, [q, picking])
+  }, [q, picking, n])
   const pick = (s: Song | null) => {
     setBusy(true)
     saveSong(s)
@@ -348,15 +469,35 @@ function SongRow() {
         <div className="song-pick">
           <input className="song-q" value={q} placeholder="search a song" autoFocus onChange={(e) => setQ(e.target.value)} />
           <div className="song-res">
-            {res.map((s) => (
-              <button key={s.id} type="button" className="song-row" disabled={busy} onClick={() => pick(s)}>
-                <img src={s.img.replace('/600x600bb.', '/100x100bb.')} alt="" loading="lazy" />
-                <span className="np-text">
-                  <b className="ellipsis">{s.t}</b>
-                  <small className="ellipsis">{s.by}</small>
+            {st === 'loading' &&
+              [0, 1, 2].map((i) => (
+                <span key={i} className="song-row is-skel">
+                  <i />
+                  <span className="np-text">
+                    <b />
+                    <small />
+                  </span>
                 </span>
-              </button>
-            ))}
+              ))}
+            {st === 'done' && res.length === 0 && <p className="song-none">no songs</p>}
+            {st === 'error' && (
+              <p className="song-none">
+                search broke{' '}
+                <button type="button" className="acc-btn" onClick={() => setN((x) => x + 1)}>
+                  retry
+                </button>
+              </p>
+            )}
+            {st === 'done' &&
+              res.map((s) => (
+                <button key={s.id} type="button" className="song-row" disabled={busy} onClick={() => pick(s)}>
+                  <img src={s.img.replace('/600x600bb.', '/100x100bb.')} alt="" loading="lazy" />
+                  <span className="np-text">
+                    <b className="ellipsis">{s.t}</b>
+                    <small className="ellipsis">{s.by}</small>
+                  </span>
+                </button>
+              ))}
           </div>
           <button type="button" className="acc-btn" onClick={() => setPicking(false)}>
             cancel
@@ -394,7 +535,7 @@ function Music() {
           {track ? (
             <NowPlaying track={track} />
           ) : (
-            <p className="settings-hint">nothing playing on spotify right now</p>
+            <p className="settings-hint">nothing playing</p>
           )}
           <button type="button" className="block-btn" style={{ marginTop: 10 }} onClick={() => disconnectSpotify()}>
             disconnect spotify
@@ -413,22 +554,24 @@ function About() {
   const me = useMe()
   const [place, setPlace] = useState(me?.place ?? '')
   const [busy, setBusy] = useState(false)
+  const ok = useAutosave(place, me?.place ?? '', (p) => saveAbout(p, me?.show_age === true))
   if (!me) return null
   const save = (p: string, show: boolean) => {
     setBusy(true)
     saveAbout(p, show).catch(() => {}).finally(() => setBusy(false))
   }
-  const dirty = place.trim() !== (me.place ?? '')
   return (
     <>
-      <h3 className="settings-label">about you</h3>
+      <h3 className="settings-label">
+        about you{ok && <IconCheck size={14} className="saved-tick" />}
+      </h3>
       <div className="about-row">
-        <input className="about-input" value={place} maxLength={30} placeholder="city or place (optional)" onChange={(e) => setPlace(e.target.value)} onBlur={() => dirty && save(place, me.show_age === true)} />
+        <input className="about-input" value={place} maxLength={30} placeholder="city or place" onChange={(e) => setPlace(e.target.value)} />
       </div>
       {me.age_set && (
         <div className="settings-row" style={{ marginTop: 8 }}>
           <span className="grow">show my age</span>
-          <Toggle label="show my age" on={me.show_age === true} disabled={busy} onChange={(v) => save(me.place ?? '', v)} />
+          <Toggle label="show my age" on={me.show_age === true} disabled={busy} onChange={(v) => save(place, v)} />
         </div>
       )}
     </>
@@ -460,17 +603,85 @@ function Blocked() {
   )
 }
 
-function MeBody({ onClose }: { onClose: () => void }) {
+/** Your name as text with a pencil; editing swaps in the input with save and cancel. */
+function NameRow() {
   const me = useMe()
-  const [editing, setEditing] = useState(false)
-  const [passport, setPassport] = useState(false)
-  const [face, setFace] = useState<AvatarConfig | null>(null)
+  const [edit, setEdit] = useState(false)
   const [name, setName] = useState(me?.username ?? '')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [tab, setTab] = useState<'profile' | 'look' | 'settings' | 'account'>('profile')
+  const [ok, setOk] = useState(false)
+  if (!me) return null
+  const save = async () => {
+    if (name === me.username) return setEdit(false)
+    if (!VALID.test(name)) return setErr('3 to 20 letters, numbers, _ or .')
+    setBusy(true)
+    try {
+      await renameMe(name)
+      setErr(null)
+      setEdit(false)
+      setOk(true)
+      setTimeout(() => setOk(false), 1200)
+    } catch (e) {
+      setErr(isApiError(e, 'username_taken') ? 'taken, try another' : isApiError(e, 'rename_cooldown') ? 'one rename a week' : 'something broke, try again')
+    }
+    setBusy(false)
+  }
+  if (!edit)
+    return (
+      <button
+        type="button"
+        className="me-nm"
+        onClick={() => {
+          setName(me.username)
+          setEdit(true)
+        }}
+      >
+        <span className="ellipsis">{me.username}</span>
+        {ok ? <IconCheck size={16} className="saved-tick" /> : <IconBrush size={16} />}
+      </button>
+    )
+  return (
+    <div className="me-nm-edit">
+      <div className="me-name">
+        <input
+          value={name}
+          autoFocus
+          onChange={(e) => {
+            setName(e.target.value.replace(/[^A-Za-z0-9_.]/g, '').slice(0, 20))
+            setErr(null)
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && void save()}
+          aria-label="username"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        <button type="button" className="me-save" disabled={busy} onClick={() => void save()}>
+          save
+        </button>
+        <button type="button" className="acc-btn" onClick={() => (setEdit(false), setErr(null))}>
+          cancel
+        </button>
+      </div>
+      {err && <p className="ob-error">{err}</p>}
+    </div>
+  )
+}
+
+function MeBody({ onClose }: { onClose: () => void }) {
+  const me = useMe()
+  const desktop = useIsDesktop()
+  const [editing, setEditing] = useState(false)
+  const [passport, setPassport] = useState(false)
+  const [face, setFace] = useState<AvatarConfig | null>(null)
+  const [pic, setPic] = useState(false)
+  const [words, setWords] = useState<string | null>(shownWords)
+  const tab = useMeSheet((s) => s.tab)
+  const setTab = (t: MeTab) => useMeSheet.setState({ tab: t })
+  const pref = useModeStore((s) => s.pref)
+  const freezes = useReward((s) => s.freezes)
   const [, nav] = useLocation()
-  useEffect(() => setName(me?.username ?? ''), [me?.username])
   if (!me) return null
   const temp = !!me.temp
   const current = me.avatar ?? avatarFromTraits(faceTraits(me.username))
@@ -489,97 +700,13 @@ function MeBody({ onClose }: { onClose: () => void }) {
       />
     )
 
-  const dirty = name !== me.username
-  const saveName = async () => {
-    if (!VALID.test(name)) return setErr('3 to 20 letters, numbers, _ or .')
-    setBusy(true)
-    try {
-      await renameMe(name)
-      setErr(null)
-    } catch (e) {
-      setErr(isApiError(e, 'username_taken') ? 'taken, try another' : isApiError(e, 'rename_cooldown') ? 'one rename a week' : 'something broke, try again')
-    }
-    setBusy(false)
-  }
-
-  return (
-    <div className="me">
-      <button type="button" className="icon-btn me-close" aria-label="close" onClick={onClose}>
-        <IconClose size={22} />
-      </button>
-      <div className="me-face">
-        <GoofyFace name={me.username} avatar={current} size={112} />
-        {!temp && (
-          <button
-            type="button"
-            className="ob-face-btn ob-brush me-edit"
-            aria-label="edit face"
-            onClick={() => {
-              setFace({ ...current, photo: undefined })
-              setEditing(true)
-            }}
-          >
-            <IconBrush size={22} />
-          </button>
-        )}
+  const settings = (
+    <>
+      <h3 className="settings-label">appearance</h3>
+      <div className="me-mode">
+        <Segmented layoutId="me-mode" value={pref} onChange={setModePref} items={[{ id: 'auto', label: 'auto' }, { id: 'light', label: 'light' }, { id: 'dark', label: 'dark' }]} />
       </div>
-      {!temp && <PhotoButton current={current} />}
-      {temp ? (
-        <p className="me-temp">
-          {me.username} <span>temp</span>
-        </p>
-      ) : (
-        <div className="me-name">
-          <input
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value.replace(/[^A-Za-z0-9_.]/g, '').slice(0, 20))
-              setErr(null)
-            }}
-            aria-label="username"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-          />
-          <AnimatePresence>
-            {dirty && (
-              <motion.button type="button" className="me-save" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} disabled={busy} onClick={saveName}>
-                save
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-      {err && <p className="ob-error">{err}</p>}
-      <div className="me-tabs">
-        <Segmented
-          layoutId="me-tab"
-          value={tab}
-          onChange={setTab}
-          items={[
-            { id: 'profile', label: 'profile' },
-            { id: 'look', label: 'look' },
-            { id: 'settings', label: 'settings' },
-            { id: 'account', label: 'account', ...(!temp && !me.has_key ? { count: 1 } : {}) },
-          ]}
-        />
-      </div>
-      {tab === 'profile' && (
-        <>
-          {!temp && <BioRow />}
-          {!temp && <SongRow />}
-          {spotifyEnabled() && <Music />}
-          <MoodRow name={me.username} spicy={me.nsfw === true && me.adult === true} />
-          {!temp && <About />}
-        </>
-      )}
-      {tab === 'look' && (
-        <>
-          <Looks />
-          <FlairEditor />
-        </>
-      )}
-      {tab === 'settings' && (
+      {!temp && (
         <>
           <h3 className="settings-label">content</h3>
           <div className="settings-row">
@@ -589,32 +716,110 @@ function MeBody({ onClose }: { onClose: () => void }) {
             <Toggle
               label="nsfw"
               on={me.nsfw === true}
+              disabled={me.age_set === true && !me.adult}
               onChange={(v) => {
                 if (v && !me.adult) return void (!me.age_set && setPassport(true))
                 void saveNsfw(v).catch(() => {})
               }}
             />
           </div>
-          <h3 className="settings-label">privacy</h3>
-          <GhostRow />
-          <div className="settings-row">
-            <span className="grow">show active status</span>
-            <Toggle label="show active status" on={me.show_status !== false} onChange={(v) => void savePrivacy(v, null)} />
-          </div>
-          <div className="settings-row" style={{ marginTop: 8 }}>
-            <span className="grow">show seen</span>
-            <Toggle label="show seen" on={me.show_seen !== false} onChange={(v) => void savePrivacy(null, v)} />
-          </div>
         </>
       )}
-      {tab === 'account' && (
+      <h3 className="settings-label">privacy</h3>
+      <GhostRow />
+      <div className="settings-row">
+        <span className="grow">
+          show active status <small className="nsfw-sub">both ways</small>
+        </span>
+        <Toggle label="show active status" on={me.show_status !== false} onChange={(v) => void savePrivacy(v, null)} />
+      </div>
+      <div className="settings-row">
+        <span className="grow">
+          show seen <small className="nsfw-sub">both ways</small>
+        </span>
+        <Toggle label="show seen" on={me.show_seen !== false} onChange={(v) => void savePrivacy(null, v)} />
+      </div>
+      <Account onWords={setWords} />
+      <Blocked />
+      {me.admin && (
+        <button type="button" className="me-admin" onClick={() => { onClose(); nav('/admin') }}>
+          <IconCrown size={18} /> control room
+        </button>
+      )}
+    </>
+  )
+
+  return (
+    <div className="me">
+      {!desktop && (
+        <button type="button" className="icon-btn me-close" aria-label="close" onClick={onClose}>
+          <IconClose size={22} />
+        </button>
+      )}
+      <div className="me-head">
+        <button type="button" className="me-face" aria-label="change picture" onClick={() => !temp && setPic((v) => !v)}>
+          <GoofyFace name={me.username} avatar={current} size={72} />
+          {!temp && (
+            <span className="me-edit" aria-hidden="true">
+              <IconBrush size={14} />
+            </span>
+          )}
+        </button>
+        <div className="me-head-text">
+          {temp ? <span className="me-nm is-static ellipsis">{me.username}</span> : <NameRow />}
+          <button
+            type="button"
+            className="me-card-btn"
+            onClick={() => {
+              onClose()
+              setTimeout(() => peek(me.username, me.id), 180)
+            }}
+          >
+            see my card
+          </button>
+        </div>
+      </div>
+      <AnimatePresence initial={false}>
+        {pic && !temp && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
+            <Picture
+              current={current}
+              onBuild={() => {
+                setFace({ ...current, photo: undefined })
+                setEditing(true)
+                setPic(false)
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <MoodRow name={me.username} spicy={me.nsfw === true && me.adult === true} />
+      {temp ? (
         <>
-          <Account />
-          <Blocked />
-          {me.admin && (
-            <button type="button" className="me-admin" onClick={() => { onClose(); nav('/admin') }}>
-              <IconCrown size={18} /> control room
-            </button>
+          <KeepCard />
+          {settings}
+        </>
+      ) : (
+        <>
+          <KeyCard words={words} onWords={setWords} />
+          <div className="me-tabs">
+            <Segmented layoutId="me-tab" value={tab} onChange={setTab} items={[{ id: 'me', label: 'me' }, { id: 'settings', label: 'settings' }]} />
+          </div>
+          {tab === 'me' ? (
+            <>
+              <BioRow />
+              <SongRow />
+              {spotifyEnabled() && <Music />}
+              <About />
+              <div className="settings-row" style={{ marginTop: 10 }}>
+                <IconFlame size={22} />
+                <span className="grow">streak freezes</span>
+                <b className="tnum">{freezes}/2</b>
+              </div>
+              <FlairEditor />
+            </>
+          ) : (
+            settings
           )}
         </>
       )}
@@ -622,20 +827,48 @@ function MeBody({ onClose }: { onClose: () => void }) {
   )
 }
 
+/** red dot only once there's something to lose: a friend, or a few real chats */
+function useKeyDot(): boolean {
+  return useStore((s) => {
+    const me = s.me
+    if (!me || (me.has_key && !me.temp)) return false
+    let friends = 0
+    let chats = 0
+    for (const c of Object.values(s.conversations)) {
+      if (c.my_friend && c.peer_friend) friends++
+      if (c.last_message) chats++
+    }
+    return me.temp ? friends > 0 : friends > 0 || chats >= 3
+  })
+}
+
 export function MeButton({ size = 32 }: { size?: number }) {
   const moodRn = useMood((m) => (m.mood && m.mood.until > Date.now() ? (m.mood.mood as FaceMood) : undefined))
   const me = useMe()
-  const [open, setOpen] = useState(false)
+  const dot = useKeyDot()
+  const ghost = useGhost((g) => g.on)
   if (!me) return null
   return (
-    <>
-      <button type="button" className="me-btn" aria-label="your profile" onClick={() => setOpen(true)}>
-        <GoofyFace name={me.username} size={size} mood={moodRn} />
-        {!me.temp && !me.has_key && <i className="me-dot" aria-hidden="true" />}
-      </button>
-      <Sheet open={open} onClose={() => setOpen(false)} label="your profile">
-        <MeBody onClose={() => setOpen(false)} />
-      </Sheet>
-    </>
+    <button type="button" className={'me-btn' + (ghost ? ' is-ghost' : '')} aria-label="your profile" onClick={() => openMeSheet()}>
+      <GoofyFace name={me.username} size={size} mood={moodRn} />
+      {ghost && (
+        <i className="me-ghost" aria-hidden="true">
+          <IconGhost size={14} />
+        </i>
+      )}
+      {dot && <i className="me-dot" aria-hidden="true" />}
+    </button>
+  )
+}
+
+/** mounted once in App; every MeButton opens this one */
+export function MeSheetHost() {
+  const open = useMeSheet((s) => s.open)
+  const me = useMe()
+  if (!me) return null
+  return (
+    <Sheet open={open} onClose={closeMeSheet} label="your profile">
+      <MeBody onClose={closeMeSheet} />
+    </Sheet>
   )
 }
