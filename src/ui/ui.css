@@ -1489,3 +1489,33 @@ button.me-face { position: relative; margin: 0; flex: none; border: 0; padding: 
 .tour-next:active { transform: translateY(3px); box-shadow: 0 1px 0 #17131F; }
 .me-tour { width: 100%; border: 0; color: inherit; text-align: left; cursor: pointer; margin-top: 18px; }
 .tour-next:focus-visible { outline: 3px solid #17131F; outline-offset: 3px; }
+
+/* ============================================================ voice call (admin and ember only) */
+.call {
+  position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: calc(64px + var(--safe-t)) 24px calc(48px + var(--safe-b));
+  background: radial-gradient(120% 80% at 50% 20%, #3A2A55 0%, #1B1424 55%, #110D17 100%); color: #FFF7EA;
+}
+.call-mini { position: absolute; top: calc(10px + var(--safe-t)); left: 12px; color: #FFF7EA; }
+.call-who { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 4vh; }
+.call-face { position: relative; display: grid; border-radius: 50%; }
+.call-face::before, .call-face::after { content: ''; position: absolute; inset: -14px; border-radius: 50%; border: 3px solid rgba(255, 200, 61, .5); opacity: 0; }
+.call-face.is-ringing::before { animation: call-ring 1.6s ease-out infinite; }
+.call-face.is-ringing::after { animation: call-ring 1.6s ease-out .8s infinite; }
+.call-face.is-live::before { opacity: 1; border-color: rgba(61, 214, 181, .55); }
+@keyframes call-ring { 0% { transform: scale(.9); opacity: .9; } 100% { transform: scale(1.35); opacity: 0; } }
+.call-name { margin-top: 18px; font: 800 30px/1 var(--font-display); letter-spacing: -0.03em; }
+.call-status { font: 650 16px/1 var(--font-display); color: rgba(255, 247, 234, .7); }
+.call-acts { display: flex; justify-content: center; gap: 28px; width: 100%; }
+.call-act { display: flex; flex-direction: column; align-items: center; gap: 8px; font: 650 13px/1 var(--font-display); color: rgba(255, 247, 234, .75); }
+.call-btn { width: 70px; height: 70px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 247, 234, .14); color: #FFF7EA; cursor: pointer; transition: transform 90ms, background .15s; }
+.call-btn:active { transform: scale(.92); }
+.call-btn.is-on { background: #FFF7EA; color: #17131F; }
+.call-btn.is-end { background: #E5484D; }
+.call-btn.is-go { background: #2FB67C; animation: call-bob 1s ease-in-out infinite alternate; }
+@keyframes call-bob { to { transform: translateY(-5px); } }
+.call-pill { position: fixed; z-index: 90; top: calc(8px + var(--safe-t)); left: 50%; translate: -50% 0; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 10px; border: 0; border-radius: 999px; background: #2FB67C; color: #fff; font: 750 14px/1 var(--font-display); box-shadow: var(--shadow-lift); cursor: pointer; }
+.call-pill-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: call-blink 1s steps(2) infinite; }
+@keyframes call-blink { 50% { opacity: .3; } }
+.sys.is-call { display: inline-flex; align-items: center; gap: 6px; }
+.call-start:disabled { opacity: .4; }

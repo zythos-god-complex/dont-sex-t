@@ -368,3 +368,24 @@ export const IconEraser = (p: P) => (
     <path d="M8.6 19.5h11M4.9 14.9l8.8-8.8a2 2 0 0 1 2.8 0l2.4 2.4a2 2 0 0 1 0 2.8l-7.9 7.9a1 1 0 0 1-.7.3H8.3a1 1 0 0 1-.7-.3l-2.7-2.7a1.1 1.1 0 0 1 0-1.6zM9.3 10.5l5.2 5.2" />
   </Svg>
 )
+export const IconPhone = (p: P) => (
+  <Svg {...p}>
+    <path d="M6.6 3.6l2.3-.4c.6-.1 1.1.2 1.3.8l1 2.9c.2.5 0 1.1-.4 1.4L9.3 9.6c.9 2 2.6 3.7 4.6 4.6l1.3-1.5c.3-.4.9-.6 1.4-.4l2.9 1c.6.2.9.7.8 1.3l-.4 2.3c-.1.7-.7 1.2-1.4 1.2C10.8 18.1 5.4 12.7 5.4 5c0-.7.5-1.3 1.2-1.4z" fill="currentColor" stroke="none" />
+  </Svg>
+)
+export const IconMicOff = (p: P) => (
+  <Svg {...p}>
+    <path d="M9 9v2.5a3 3 0 0 0 5.1 2.1M15 10V6a3 3 0 0 0-5.7-1.3M5.5 11.5a6.5 6.5 0 0 0 10.6 5M18.5 11.5c0 .7-.1 1.4-.3 2M12 18v3M4 4l16 16" />
+  </Svg>
+)
+export const IconSpeaker = (p: P) => (
+  <Svg {...p}>
+    <path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor" />
+    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+  </Svg>
+)
+export const IconChevronDown = (p: P) => (
+  <Svg {...p}>
+    <path d="M6 9l6 6 6-6" />
+  </Svg>
+)

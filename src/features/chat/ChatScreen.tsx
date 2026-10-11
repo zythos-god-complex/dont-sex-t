@@ -20,7 +20,7 @@ import { activeAgo, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparat
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Badge, Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { GenderIcon, IconImage, IconMic, IconClose, IconReply, IconAlert, IconArrowDown, IconBack, IconGear, IconSend, IconGhost, IconHi, IconAddFriend, IconFriend, IconLock, IconClock, IconPlus, IconShare, IconCopy, IconTrash, IconBan, IconDice, IconEightBall, IconTicTacToe, IconScissors } from '../../ui/icons'
+import { GenderIcon, IconImage, IconMic, IconClose, IconReply, IconAlert, IconArrowDown, IconBack, IconGear, IconSend, IconGhost, IconHi, IconAddFriend, IconFriend, IconLock, IconClock, IconPlus, IconShare, IconCopy, IconTrash, IconBan, IconDice, IconEightBall, IconTicTacToe, IconScissors, IconPhone } from '../../ui/icons'
 import { getTheme, themeVars } from '../../themes/themes'
 import { useThemeMode } from '../../themes/mode'
 import { goBack, queueRoll } from '../shell/nav'
@@ -42,6 +42,7 @@ import { useFlairFor } from '../../ui/flair'
 import { ThemeBackground } from './ThemeReveal'
 import { landingFor } from '../../themes/ambientPrefs'
 import { maybeTour } from '../guide/Tour'
+import { isCallPair, startCall, useCall } from '../call/call'
 
 export type ChatScreenProps = { username: string }
 
@@ -167,6 +168,7 @@ function ChatView({ conv }: { conv: Conversation }) {
   const [themeBump, setThemeBump] = useState(false)
   const me = useMe()
   const spicy = useStore((s) => s.me?.nsfw === true && peerNsfw(s, conv.peer))
+  const calling = useCall((c) => c.state !== 'idle' && c.state !== 'ended')
   const peerFl = useFlairFor(conv.peer.username)
   const peerAura = peerFl?.aura
   const plate = !!peerAura && peerAura !== 'none'
@@ -231,6 +233,11 @@ function ChatView({ conv }: { conv: Conversation }) {
             </AnimatePresence>
           </div>
         </button>
+        {isCallPair(me, peer) && !conv.blocked && (
+          <button className="icon-btn call-start" onClick={() => void startCall(conv)} aria-label={'call ' + peer.username} disabled={calling}>
+            <IconPhone size={23} />
+          </button>
+        )}
         <button className="icon-btn" onClick={() => setInfo(true)} aria-label="chat info">
           <IconGear size={24} />
         </button>
@@ -389,6 +396,14 @@ function MessageList({ conv, now, sinceOnline, online, onReply, ice }: { conv: C
         <motion.div key={m.id} className="sys is-friends" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
           <IconFriend size={14} /> you're friends now
         </motion.div>,
+      )
+      continue
+    }
+    if (m.body === '[[call]]') {
+      items.push(
+        <div key={m.id} className="sys is-call">
+          <IconPhone size={13} /> {m.sender_id === me?.id ? 'you called' : peer.username + ' called'}
+        </div>,
       )
       continue
     }

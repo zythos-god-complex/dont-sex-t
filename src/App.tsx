@@ -24,6 +24,7 @@ import { GoofyFace } from './ui/GoofyFace'
 import { PeekHost } from './features/profile/ProfileCard'
 import { DailyReward } from './features/rewards/Reward'
 import { TourHost } from './features/guide/Tour'
+import { CallHost } from './features/call/CallUI'
 
 // screens most visits never open load on demand, then get warmed up when the phone is idle.
 // onboarding is tiny and is the first thing new people see, so it ships in the main bundle.
@@ -322,6 +323,7 @@ export default function App() {
       <PeekHost />
       <MeSheetHost />
       <TourHost />
+      <CallHost />
       <UpdateBanner />
       <Toasts />
     </>
