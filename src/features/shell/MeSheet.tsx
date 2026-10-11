@@ -17,7 +17,7 @@ import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Sheet, Toggle, useIsDesktop } from '../../ui/kit'
 import { setModePref, useModeStore } from '../../themes/mode'
 import { useReward } from '../rewards/Reward'
-import { IconBrush, IconCheck, IconClose, IconCopy, IconCrown, IconFlame, IconGhost, IconImage, IconLock, IconSpotify } from '../../ui/icons'
+import { IconArrowRight, IconBrush, IconCheck, IconClose, IconCopy, IconCrown, IconFlame, IconGhost, IconImage, IconLock, IconSpotify } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { FaceBuilder } from '../onboarding/FaceBuilder'
 import { ProfileCardView } from '../profile/ProfileCard'
@@ -26,6 +26,7 @@ import type { CSSProperties } from 'react'
 import type { HatId } from '../../lib/types'
 import { peek } from '../profile/peek'
 import { closeMeSheet, openMeSheet, useMeSheet, type MeTab } from './meSheet'
+import { replayTour } from '../guide/Tour'
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
@@ -741,6 +742,19 @@ function MeBody({ onClose }: { onClose: () => void }) {
       </div>
       <Account onWords={setWords} />
       <Blocked />
+      <button
+        type="button"
+        className="settings-row me-tour"
+        onClick={() => {
+          onClose()
+          nav('/')
+          replayTour()
+        }}
+      >
+        <GoofyFace name="tour.goof" size={26} mood="wink" blink={false} />
+        <span className="grow">how it works</span>
+        <IconArrowRight size={18} />
+      </button>
       <div className="me-legal">
         <a href="/privacy" onClick={(e) => (e.preventDefault(), onClose(), nav('/privacy'))}>privacy</a>
         <a href="/terms" onClick={(e) => (e.preventDefault(), onClose(), nav('/terms'))}>terms</a>

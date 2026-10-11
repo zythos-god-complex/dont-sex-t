@@ -12,6 +12,7 @@ import { loadRooms, useRoomList, useRooms } from '../rooms/rooms'
 import { Crew } from '../rooms/Crew'
 import { MeButton } from '../shell/MeSheet'
 import { takeRoll } from '../shell/nav'
+import { maybeTour } from '../guide/Tour'
 import { saveGhost, setLooking, useBlocks, useGhost, useMood } from '../../lib/engine'
 import { api } from '../../lib/api'
 import { icebreaker, setIce } from '../../lib/drafts'
@@ -171,6 +172,7 @@ export default function Lobby() {
     return visible.map((u, i) => ({ u, i, s: score(u) })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.u)
   }, [visible, convByPeer, conversations, typing, myNsfw, myMood])
   useEffect(() => void loadRooms(), [])
+  useEffect(() => maybeTour('home', 1100), [])
   const rooms = useRoomList()
   const here = useRooms((s) => s.here)
   const now = useNow(30000)

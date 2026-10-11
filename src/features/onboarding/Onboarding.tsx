@@ -8,6 +8,7 @@ import { Sheet, Wordmark, spring } from '../../ui/kit'
 import { IconArrowRight, IconBrush, IconDice, IconFemale, IconLock, IconMale } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { FaceBuilder } from './FaceBuilder'
+import { markNewUser } from '../guide/Tour'
 import type { Gender } from '../../lib/types'
 
 const VALID = /^[A-Za-z0-9_.]{3,20}$/
@@ -65,6 +66,7 @@ export default function Onboarding() {
     setTimeout(() => setWink(false), 700)
     if (!VALID.test(as)) return fail('3 to 20 letters, numbers, _ or .')
     setBusy(g)
+    markNewUser()
     try {
       if (temp) {
         await joinTemp(g)

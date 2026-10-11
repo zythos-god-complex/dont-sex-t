@@ -41,6 +41,7 @@ import { Aura } from '../../ui/Aura'
 import { useFlairFor } from '../../ui/flair'
 import { ThemeBackground } from './ThemeReveal'
 import { landingFor } from '../../themes/ambientPrefs'
+import { maybeTour } from '../guide/Tour'
 
 export type ChatScreenProps = { username: string }
 
@@ -180,6 +181,7 @@ function ChatView({ conv }: { conv: Conversation }) {
     setActiveConv(conv.id)
     return () => setActiveConv(null)
   }, [conv.id])
+  useEffect(() => maybeTour('chat', 900), [])
 
   const offline = conn === 'offline'
   let statusLine: React.ReactNode = null
