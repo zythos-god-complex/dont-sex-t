@@ -289,7 +289,7 @@ export default function App() {
     return () => clearInterval(t)
   }, [status])
   useEffect(() => {
-    document.title = unread > 0 ? `(${unread}) GoofyAhhChat` : 'GoofyAhhChat'
+    document.title = unread > 0 ? `(${unread}) strangers cafe` : 'strangers cafe'
   }, [unread])
   // the policies open for everyone: signed out, in jail, mid sign up
   if (loc === '/privacy' || loc === '/terms')

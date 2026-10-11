@@ -6,8 +6,8 @@ const TOKEN_RE = /^[A-Za-z0-9_-]{1,64}$/
 export function buildManifest(t?: string | null) {
   const token = t && TOKEN_RE.test(t) ? t : null
   return {
-    name: 'GoofyAhhChat',
-    short_name: 'GoofyAhhChat',
+    name: 'strangers cafe',
+    short_name: 'strangers',
     id: '/',
     scope: '/',
     start_url: token ? `/?t=${token}` : '/',
@@ -15,9 +15,9 @@ export function buildManifest(t?: string | null) {
     background_color: '#FBF5EC',
     theme_color: '#FBF5EC',
     icons: [
-      { src: '/icons/icon-192.png?v=2', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/icons/icon-512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: '/icons/icon-maskable-512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: '/icons/icon-192.png?v=3', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-512.png?v=3', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-maskable-512.png?v=3', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   }
 }

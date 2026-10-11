@@ -9,10 +9,9 @@ export const softSpring = { type: 'spring' as const, stiffness: 380, damping: 36
 
 export function Wordmark({ size = 28 }: { size?: number }) {
   return (
-    <span className="wordmark" style={{ fontSize: size }} aria-label="GoofyAhhChat">
-      <span>goofy</span>
-      <span className="wordmark-ahh">ahh</span>
-      <span>chat</span>
+    <span className="wordmark" style={{ fontSize: size }} aria-label="strangers cafe">
+      <span>strangers</span>
+      <span className="wordmark-ahh">cafe</span>
     </span>
   )
 }

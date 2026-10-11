@@ -19,12 +19,12 @@ const PRIVACY: Sec[] = [
   {
     h: 'the short version',
     p: [
-      'GoofyAhhChat is a place to chat with strangers and friends. we collect as little as we can, we never sell your data, we show no ads, and chat messages, photos and voice notes are wiped from our servers about 24 hours after they are sent.',
+      'strangers cafe is a place to chat with strangers and friends. we collect as little as we can, we never sell your data, we show no ads, and chat messages, photos and voice notes are wiped from our servers about 24 hours after they are sent.',
     ],
   },
   {
     h: 'who we are',
-    p: [`GoofyAhhChat ("we", "us") runs the app at strangers.cafe and decides how your data is used, which makes us the data controller (or data fiduciary under india's DPDP Act). to reach us or our grievance officer, ${contact}`],
+    p: [`strangers cafe ("we", "us") runs the app at strangers.cafe and decides how your data is used, which makes us the data controller (or data fiduciary under india's DPDP Act). to reach us or our grievance officer, ${contact}`],
   },
   {
     h: 'what we collect',
@@ -100,7 +100,7 @@ const PRIVACY: Sec[] = [
   },
   {
     h: 'kids',
-    p: ['you must be at least 13 to use GoofyAhhChat, or older if your country sets a higher age for using apps like this without a parent (for example 16 in some EU countries). if you are under 18, you need a parent or guardian\'s okay. 18+ content is only for people who stamp an age of 18 or more. if you think a child under 13 is using the app, report them and we will remove the account.'],
+    p: ['you must be at least 13 to use strangers cafe, or older if your country sets a higher age for using apps like this without a parent (for example 16 in some EU countries). if you are under 18, you need a parent or guardian\'s okay. 18+ content is only for people who stamp an age of 18 or more. if you think a child under 13 is using the app, report them and we will remove the account.'],
   },
   {
     h: 'security',
@@ -115,7 +115,7 @@ const PRIVACY: Sec[] = [
 const TERMS: Sec[] = [
   {
     h: 'the deal',
-    p: ['by using GoofyAhhChat you agree to these terms and the privacy policy. if you do not agree, please do not use the app.'],
+    p: ['by using strangers cafe you agree to these terms and the privacy policy. if you do not agree, please do not use the app.'],
   },
   {
     h: 'who can use it',
@@ -124,7 +124,7 @@ const TERMS: Sec[] = [
         'you are at least 13, or the minimum age for using apps like this in your country if that is higher.',
         'if you are under 18, a parent or guardian has said yes.',
         'you only turn on 18+ stuff if you really are 18 or older. lying about your age is on you.',
-        'you have not been banned from GoofyAhhChat before.',
+        'you have not been banned from strangers cafe before.',
       ],
     ],
   },
@@ -143,7 +143,7 @@ const TERMS: Sec[] = [
   {
     h: 'house rules',
     p: [
-      'do not use GoofyAhhChat to:',
+      'do not use strangers cafe to:',
       [
         'harass, bully, threaten, stalk or blackmail anyone.',
         'post hate based on race, religion, caste, gender, sexuality, disability or similar.',
@@ -173,7 +173,7 @@ const TERMS: Sec[] = [
   {
     h: 'no guarantees',
     p: [
-      'GoofyAhhChat is a free hobby project provided "as is" and "as available". we do not promise it will always work, be bug free, keep your messages, or that other users are who they say they are.',
+      'strangers cafe is a free hobby project provided "as is" and "as available". we do not promise it will always work, be bug free, keep your messages, or that other users are who they say they are.',
       'other users are responsible for what they say and do, not us. to the fullest extent the law allows, we are not liable for any indirect or consequential loss, or for anything caused by other users, your own choices, or things outside our control, and our total liability is limited to zero, since you pay nothing.',
       'you agree to cover us for claims that come from you breaking these terms or the law.',
       'nothing here takes away rights you have under consumer laws that cannot be waived where you live.',
@@ -218,7 +218,7 @@ export default function Legal({ page }: { page: 'privacy' | 'terms' }) {
   const [, nav] = useLocation()
   useEffect(() => {
     const prev = document.title
-    document.title = (page === 'privacy' ? 'privacy policy' : 'terms of use') + ' · GoofyAhhChat'
+    document.title = (page === 'privacy' ? 'privacy policy' : 'terms of use') + ' · strangers cafe'
     window.scrollTo(0, 0)
     return () => {
       document.title = prev
