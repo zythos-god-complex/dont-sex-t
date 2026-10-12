@@ -1523,3 +1523,15 @@ button.me-face { position: relative; margin: 0; flex: none; border: 0; padding: 
 .pc-admin .grow { flex: 1; }
 .ban-mail { margin-top: 18px; color: var(--ink-2); font: 650 13.5px/1 var(--font-display); text-decoration: underline; text-underline-offset: 3px; }
 .legal-contact a { color: var(--accent); font-weight: 700; }
+
+/* kaomoji faces */
+.faces-tray { display: flex; flex-direction: column; gap: 8px; }
+.faces-cats { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: none; }
+.faces-cats::-webkit-scrollbar { display: none; }
+.faces-cat { flex: none; height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--theme-composer-ink, var(--ink)) 8%, transparent); color: var(--theme-composer-ink, var(--ink)); font: 700 13px/1 var(--font-display); white-space: nowrap; cursor: pointer; }
+.faces-cat.is-on { background: var(--theme-composer-ink, var(--ink)); color: var(--theme-composer, var(--bg)); }
+.faces-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; max-height: min(260px, 36vh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding-bottom: 4px; }
+.faces-grid::-webkit-scrollbar { display: none; }
+.faces-k { min-height: 46px; padding: 6px 8px; border: 0; border-radius: 14px; background: var(--theme-composer, var(--bg-2)); color: var(--theme-composer-ink, var(--ink)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme-composer-ink, var(--ink)) 10%, transparent); font: 500 15px/1.15 system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: background .15s; }
+.faces-k.is-hit { background: var(--theme-accent, var(--accent)); color: var(--theme-accent-ink, #fff); }
+.faces-k.is-wide { grid-column: span 2; }

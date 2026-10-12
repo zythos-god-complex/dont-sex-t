@@ -1,6 +1,6 @@
 import { MessageMenu, type MenuAction } from './MessageMenu'
 import { ChatInfo } from './ChatInfo'
-import { PlayTray, StickerTray, TrayTabs, lastTrayTab, type Media, type TrayTab } from './Tray'
+import { FacesTray, PlayTray, StickerTray, TrayTabs, lastTrayTab, type Media, type TrayTab } from './Tray'
 import { WishCard, WishSheet, isWishReply, wishOf } from '../toys/Wish'
 import { TotCard, isTotReply, sendTot, totOf } from '../toys/Tot'
 import { DoodleSheet } from '../toys/Doodle'
@@ -1321,8 +1321,10 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId, ice, onWish, onCon
                     onConfetti()
                   }}
                 />
-              ) : (
+              ) : trayTab === 'stickers' ? (
                 <StickerTray name={myName} peerName={conv.peer.username} spicy={spicyTray} couples onSend={sendSticker} />
+              ) : (
+                <FacesTray onPick={(k) => setText((t) => (t && !/\s$/.test(t) ? t + ' ' : t) + k + ' ')} />
               )}
             </div>
           </motion.div>

@@ -8,10 +8,10 @@ import { useMe, useNow } from '../../lib/hooks'
 import { daySeparator, emojiOnlyCount, linkify, needsSeparator } from '../../lib/format'
 import type { Profile } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
-import { Badge, Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
+import { Badge, Segmented, Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
 import { useBlocks } from '../../lib/engine'
 import { useChatScroll } from '../chat/ChatScreen'
-import { StickerTray } from '../chat/Tray'
+import { FacesTray, StickerTray } from '../chat/Tray'
 import { IconAlert, IconArrowDown, IconBack, IconClose, IconCopy, IconPlus, IconReply, IconSend, IconTrash, IconUsers } from '../../ui/icons'
 import { MessageMenu, type MenuAction } from '../chat/MessageMenu'
 import { EMOJI_GROUPS } from '../chat/emojis'
@@ -354,6 +354,7 @@ function Composer({ room, replyTo, onClearReply }: { room: Room; replyTo: RoomMs
   const [text, setText] = useState(() => getDraft('r:' + room.id))
   useEffect(() => setDraft('r:' + room.id, text), [room.id, text])
   const [tray, setTray] = useState(false)
+  const [tab, setTab] = useState<'stickers' | 'faces'>('stickers')
   const ta = useRef<HTMLTextAreaElement>(null)
   const fine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
   useLayoutEffect(() => {
@@ -394,7 +395,22 @@ function Composer({ room, replyTo, onClearReply }: { room: Room; replyTo: RoomMs
         {tray && (
           <motion.div className="stk-tray" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={spring}>
             <div className="stk-tray-in">
-              <StickerTray name={me?.username ?? ''} spicy={false} couples={false} onSend={(body) => void sendRoom(room.id, body)} />
+              <div className="stk-tabs">
+                <Segmented
+                  layoutId="room-tray-tab"
+                  value={tab}
+                  onChange={setTab}
+                  items={[
+                    { id: 'stickers' as const, label: 'stickers' },
+                    { id: 'faces' as const, label: 'faces' },
+                  ]}
+                />
+              </div>
+              {tab === 'stickers' ? (
+                <StickerTray name={me?.username ?? ''} spicy={false} couples={false} onSend={(body) => void sendRoom(room.id, body)} />
+              ) : (
+                <FacesTray onPick={(k) => setText((t) => (t && !/\s$/.test(t) ? t + ' ' : t) + k + ' ')} />
+              )}
             </div>
           </motion.div>
         )}

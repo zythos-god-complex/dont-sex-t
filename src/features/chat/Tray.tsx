@@ -7,6 +7,7 @@ import { Sticker } from '../stickers/Sticker'
 import { CoupleSticker } from '../stickers/CoupleSticker'
 import { COUPLES, STICKERS, stickerBody } from '../stickers/stickers'
 import { shareSticker } from '../stickers/share'
+import { KAOMOJI } from './kaomoji'
 
 const load = (k: string) => {
   try {
@@ -23,8 +24,11 @@ const save = (k: string, v: string) => {
   }
 }
 
-export type TrayTab = 'play' | 'stickers'
-export const lastTrayTab = (): TrayTab => (load('gat.tray') === 'stickers' ? 'stickers' : 'play')
+export type TrayTab = 'play' | 'stickers' | 'faces'
+export const lastTrayTab = (): TrayTab => {
+  const v = load('gat.tray')
+  return v === 'stickers' || v === 'faces' ? v : 'play'
+}
 
 export function TrayTabs({ value, onChange }: { value: TrayTab; onChange: (t: TrayTab) => void }) {
   return (
@@ -39,6 +43,7 @@ export function TrayTabs({ value, onChange }: { value: TrayTab; onChange: (t: Tr
         items={[
           { id: 'play' as const, label: 'play' },
           { id: 'stickers' as const, label: 'stickers' },
+          { id: 'faces' as const, label: 'faces' },
         ]}
       />
     </div>
@@ -232,6 +237,56 @@ export function StickerTray({ name, peerName, spicy, couples, onSend }: { name: 
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+/** Kaomoji by mood; a tap adds the face to whatever you're typing. */
+export function FacesTray({ onPick }: { onPick: (k: string) => void }) {
+  const stored = load('gat.faces')
+  const [cat, setCat] = useState(KAOMOJI.some((c) => c.id === stored) ? stored! : KAOMOJI[0].id)
+  const [hit, setHit] = useState<string | null>(null)
+  const list = KAOMOJI.find((c) => c.id === cat)?.list ?? []
+  return (
+    <div className="faces-tray">
+      <div className="faces-cats" role="tablist" aria-label="moods">
+        {KAOMOJI.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            role="tab"
+            aria-selected={cat === c.id}
+            className={'faces-cat' + (cat === c.id ? ' is-on' : '')}
+            onClick={() => {
+              save('gat.faces', c.id)
+              setCat(c.id)
+            }}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <div className="faces-grid" key={cat}>
+        {list.map((k, i) => (
+          <motion.button
+            key={k + i}
+            type="button"
+            className={'faces-k' + ([...k].length > 11 ? ' is-wide' : '') + (hit === k ? ' is-hit' : '')}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(i, 14) * 0.015 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => {
+              navigator.vibrate?.(6)
+              setHit(k)
+              setTimeout(() => setHit(null), 350)
+              onPick(k)
+            }}
+          >
+            {k}
+          </motion.button>
+        ))}
+      </div>
     </div>
   )
 }
