@@ -3,15 +3,15 @@ import type { AvatarConfig } from '../ui/face'
 
 export type Gender = 'm' | 'f'
 
-export type HatId = 'none' | 'crown' | 'cap' | 'beanie' | 'halo' | 'bow' | 'tophat' | 'party' | 'ghost' | 'neo'
-export type CardId = 'ink' | 'gold' | 'rose' | 'grape' | 'mint' | 'sky'
+export type HatId = 'none' | 'crown' | 'cap' | 'beanie' | 'halo' | 'bow' | 'tophat' | 'party' | 'cowboy' | 'wizard' | 'headphones' | 'flowercrown' | 'chef' | 'ghost' | 'neo'
+export type CardId = 'none' | 'ink' | 'gold' | 'rose' | 'grape' | 'mint' | 'sky'
 export type AuraId = 'matrix' | 'none' | 'gold' | 'sunset' | 'galaxy' | 'sakura' | 'aurora' | 'hearts'
 /** Perk-only extras (server-validated). */
 export type Flair = { hat?: HatId; bio?: string; card?: CardId; aura?: AuraId }
 export type Profile = { id: string; username: string; gender: Gender; last_seen_at: string; avatar?: AvatarConfig | null; show_status?: boolean; show_seen?: boolean; temp?: boolean; nsfw?: boolean; vip?: boolean; flair?: Flair | null; admin?: boolean; place?: string | null; age?: number | null; show_age?: boolean; now_playing?: { t: string; by: string; img: string; url: string } | null; song?: Song | null; bio?: string | null; joined?: string; badges?: string[] | null; can_call?: boolean }
 export type Song = { id: string; t: string; by: string; img: string }
 
-export type Me = Profile & { inbox: string; age_set?: boolean; adult?: boolean; has_key?: boolean; stats?: { msgs: number; chats: number; streak: number }; freezes?: number }
+export type Me = Profile & { inbox: string; age_set?: boolean; adult?: boolean; has_key?: boolean; stats?: { msgs: number; chats: number; streak: number }; freezes?: number; coins?: number }
 
 export type MessageKind = 'text' | 'theme'
 
@@ -33,6 +33,7 @@ export type Conversation = {
   theme: string
   theme_by: string | null
   theme_at: string | null
+  graffiti?: boolean
   created_at: string
   last_message_at: string | null
   peer: Profile
@@ -76,6 +77,12 @@ export const THEME_IDS = [
   'temple',
   'sakuranight',
   'butterfly',
+  'vapor',
+  'ocean',
+  'galaxy',
+  'sunset',
+  'noir',
+  'arcade',
 ] as const
 export type ThemeId = (typeof THEME_IDS)[number]
 
@@ -97,6 +104,9 @@ export type ErrorCode =
   | 'age_required'
   | 'banned'
   | 'rename_cooldown'
+  | 'locked' // a shop item you don't own
+  | 'not_enough' // not enough coins
+  | 'too_soon' // ad claimed before it finished
   | 'network' // fetch failed / offline / timeout
   | 'server' // anything else (5xx, PostgREST errors, missing RPC)
 
@@ -132,3 +142,6 @@ export type ConnectionState = 'connecting' | 'online' | 'offline'
 
 export type ResolveStatus = 'loading' | 'ready' | 'not_found' | 'self' | 'error'
 export type ResolveEntry = { status: ResolveStatus; convId?: string; peerId?: string }
+
+/** gat_shop / gat_buy / gat_ad_claim */
+export type ShopState = { coins: number; owned: string[]; prices: Record<string, number>; ads: { left: number; coins: number; seconds: number }; gift: number | null; temp: boolean }

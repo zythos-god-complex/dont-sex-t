@@ -3,6 +3,14 @@ import { AnimatePresence, motion } from 'motion/react'
 import { getTheme } from '../../themes/themes'
 import { Ambient } from '../../themes/Ambient'
 import { useThemeMode } from '../../themes/mode'
+import { graffitiTile } from '../../themes/graffiti'
+
+/** the doodle wall, tinted with the theme's accent */
+function Graffiti({ themeId, color }: { themeId: string; color: string }) {
+  const tile = graffitiTile(themeId)
+  if (!tile) return null
+  return <span className="graffiti" aria-hidden="true" style={{ background: color, WebkitMaskImage: tile, maskImage: tile }} />
+}
 
 // Where the next theme change should bloom from (set when you tap a swatch).
 export let pendingOrigin: { x: number; y: number } | null = null
@@ -18,7 +26,7 @@ type Reveal = { id: string; x: string; y: string; key: number }
  * Chat background with a theme change that blooms out of the tapped swatch (or drops from the
  * header when the other person changed it): a circular wipe, shockwave rings and a name pill that drops in under the header.
  */
-export function ThemeBackground({ themeId, onPhase, spicy = false }: { themeId: string; host: RefObject<HTMLDivElement | null>; onPhase?: (on: boolean) => void; spicy?: boolean }) {
+export function ThemeBackground({ themeId, onPhase, spicy = false, graffiti = false }: { themeId: string; host: RefObject<HTMLDivElement | null>; onPhase?: (on: boolean) => void; spicy?: boolean; graffiti?: boolean }) {
   useThemeMode() // re-render on light / dark flips
   const [label, setLabel] = useState<{ name: string; key: number } | null>(null)
   const [base, setBase] = useState(themeId)
@@ -60,6 +68,7 @@ export function ThemeBackground({ themeId, onPhase, spicy = false }: { themeId: 
   return (
     <>
       <div className="chat-bg" style={{ background: b.bg }}>
+        {graffiti && !reveal && <Graffiti themeId={b.id} color={b.accent} />}
         <Ambient kind={b.ambient} spicy={spicy} />
       </div>
       {reveal && n && (
@@ -71,6 +80,7 @@ export function ThemeBackground({ themeId, onPhase, spicy = false }: { themeId: 
           animate={{ clipPath: `circle(150% at ${reveal.x} ${reveal.y})` }}
           transition={{ duration: 0.85, ease: [0.7, 0, 0.2, 1] }}
         >
+          {graffiti && <Graffiti themeId={n.id} color={n.accent} />}
           <Ambient kind={n.ambient} spicy={spicy} />
         </motion.div>
       )}

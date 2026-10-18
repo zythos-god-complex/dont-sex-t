@@ -4,13 +4,17 @@ import { AnimatePresence, motion } from 'motion/react'
 import type { Conversation } from '../../lib/types'
 import { useMe } from '../../lib/hooks'
 import { useStore } from '../../lib/store'
-import { clearChat, nameHistory, report, setBlocked, setFriend, setImages, setMuted, setTheme, setVoice } from '../../lib/engine'
+import { clearChat, nameHistory, report, setBlocked, setFriend, setGraffiti, setImages, setMuted, setTheme, setVoice } from '../../lib/engine'
 import { enable } from '../../lib/push'
 import { usePushBusy, usePushState } from '../../lib/hooks'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, Toggle, spring } from '../../ui/kit'
-import { IconAddFriend, IconArrowRight, IconBack, IconBan, IconBell, IconCheck, IconFlag, IconFriend, IconImage, IconLock, IconMic, IconPin, IconPlus, IconShare, IconSparkle } from '../../ui/icons'
-import { EMBER_THEMES, getTheme, themeList, themeLocked, themeVars } from '../../themes/themes'
+import { IconAddFriend, IconArrowRight, IconBack, IconBan, IconBell, IconCheck, IconFlag, IconFriend, IconImage, IconMic, IconPin, IconPlus, IconShare, IconSparkle } from '../../ui/icons'
+import { EMBER_THEMES, getTheme, themeList, themeVars } from '../../themes/themes'
+import { GRAFFITI, graffitiIcon } from '../../themes/graffiti'
+import { itemById } from '../shop/catalog'
+import { askBuy, coinText, useOwnsFn, useShop } from '../shop/shop'
+import { Coin } from '../shop/Coin'
 import { useThemeMode } from '../../themes/mode'
 import { AMBIENT_LABEL, PARTICLE_AMBIENTS, SCENE_AMBIENTS, SPEED_ONLY, setAmbientPrefs, setLanding, useAmbientPrefs } from '../../themes/ambientPrefs'
 import { setThemeOrigin } from './ThemeReveal'
@@ -92,45 +96,43 @@ function Effects({ convId, themeId }: { convId: string; themeId: string }) {
 function Themes({ conv, onPicked }: { conv: Conversation; onPicked: () => void }) {
   const mode = useThemeMode()
   const [tab, setTab] = useState<'default' | 'ember'>(EMBER_THEMES.includes(conv.theme ?? '') ? 'ember' : 'default')
-  const [shake, setShake] = useState<string | null>(null)
   const me = useStore((s) => s.me)
   const spicy = useStore((s) => s.me?.nsfw === true && s.online[conv.peer.id]?.nsfw === true)
-  const free = !!me?.admin || me?.username.toLowerCase() === 'ember'
+  const has = useOwnsFn()
+  const prices = useShop((s) => s.prices)
+  const pick = (id: string, x: number, y: number) => {
+    setThemeOrigin(x, y)
+    onPicked()
+    setTimeout(() => void setTheme(conv.id, id), 260)
+  }
   const list = themeList(mode)
     .filter((t) => (t.id !== 'matrix' || me?.admin) && (t.id !== 'lust' || spicy || conv.theme === 'lust') && EMBER_THEMES.includes(t.id) === (tab === 'ember'))
-    .map((t) => ({ t, lock: free || t.id === conv.theme ? null : themeLocked(t.id, me?.stats) }))
-    // current first, then everything you can use, locked ones last
-    .sort((a, b) => Number(b.t.id === conv.theme) - Number(a.t.id === conv.theme) || Number(!!a.lock) - Number(!!b.lock))
+    .map((t) => ({ t, item: t.id === conv.theme || has('theme:' + t.id) ? null : itemById('theme:' + t.id) ?? null }))
+    // current first, then everything you can use, the shop ones last
+    .sort((a, b) => Number(b.t.id === conv.theme) - Number(a.t.id === conv.theme) || Number(!!a.item) - Number(!!b.item))
   return (
     <>
       <div className="theme-tabs">
         <Segmented layoutId="theme-tab" value={tab} onChange={setTab} items={[{ id: 'default', label: 'default' }, { id: 'ember', label: 'ember' }]} />
       </div>
       <div className="swatches ci-swatches" key={tab}>
-        {list.map(({ t, lock }) => {
+        {list.map(({ t, item }) => {
           const on = t.id === conv.theme
-          const have = lock ? Math.min(me?.stats?.[lock.k] ?? 0, lock.n) : 0
           return (
             <motion.button
               key={t.id}
               type="button"
-              className={'swatch' + (on ? ' is-on' : '') + (lock ? ' is-locked' : '')}
-              animate={shake === t.id ? { x: [0, -6, 6, -4, 3, 0] } : { x: 0 }}
-              transition={{ duration: 0.32 }}
-              onAnimationComplete={() => shake === t.id && setShake(null)}
+              className={'swatch' + (on ? ' is-on' : '') + (item ? ' is-locked' : '')}
               onClick={(e) => {
-                if (lock) {
-                  navigator.vibrate?.(20)
-                  return setShake(t.id)
-                }
                 if (on) return
-                setThemeOrigin(e.clientX, e.clientY)
-                onPicked()
-                setTimeout(() => void setTheme(conv.id, t.id), 260)
+                const x = e.clientX
+                const y = e.clientY
+                if (item) return askBuy(item.id, () => pick(t.id, x, y))
+                pick(t.id, x, y)
               }}
               whileTap={{ scale: 0.94 }}
               aria-pressed={on}
-              aria-label={t.name + (lock ? ', locked' : '')}
+              aria-label={t.name + (item ? ', in the shop' : '')}
             >
               <span className="swatch-prev" style={{ ...themeVars(t), background: t.bg }}>
                 <span className="sw-b sw-recv" />
@@ -140,21 +142,12 @@ function Themes({ conv, onPicked }: { conv: Conversation; onPicked: () => void }
                     <IconCheck size={14} />
                   </motion.span>
                 )}
-                {lock && (
-                  <span className="swatch-lockbadge">
-                    <IconLock size={12} />
-                  </span>
-                )}
               </span>
               <span className="swatch-name">{t.name}</span>
-              {lock && (
-                <span className="swatch-lock">
-                  <span className="swatch-bar">
-                    <i style={{ width: `${(have / lock.n) * 100}%` }} />
-                  </span>
-                  <span className="tnum">
-                    {have}/{lock.n} {lock.label}
-                  </span>
+              {item && (
+                <span className="swatch-price tnum">
+                  <Coin size={13} />
+                  {coinText(prices[item.id] ?? item.price)}
                 </span>
               )}
             </motion.button>
@@ -162,6 +155,38 @@ function Themes({ conv, onPicked }: { conv: Conversation; onPicked: () => void }
         })}
       </div>
     </>
+  )
+}
+
+/** the doodle wall for this theme: a switch when you own it (or it's up), the price when you don't */
+function GraffitiRow({ conv }: { conv: Conversation }) {
+  const set = GRAFFITI[conv.theme]
+  const id = 'graffiti:' + conv.theme
+  const has = useOwnsFn()(id)
+  const price = useShop((s) => s.prices[id] ?? itemById(id)?.price ?? 0)
+  const [busy, setBusy] = useState(false)
+  if (!set) return null
+  const on = !!conv.graffiti
+  const flip = (v: boolean) => {
+    setBusy(true)
+    setGraffiti(conv.id, v)
+      .catch(() => {})
+      .finally(() => setBusy(false))
+  }
+  const icon = graffitiIcon(set[0])
+  return (
+    <div className="settings-row ci-row ci-graf">
+      <span className="ci-graf-ico" style={{ WebkitMaskImage: icon, maskImage: icon }} aria-hidden="true" />
+      <span className="grow">graffiti</span>
+      {has || on ? (
+        <Toggle label="graffiti" on={on} disabled={busy} onChange={flip} />
+      ) : (
+        <button type="button" className="ci-buy tnum" onClick={() => askBuy(id, () => flip(true))}>
+          <Coin size={14} />
+          {coinText(price)}
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -356,6 +381,7 @@ export function ChatInfo({ conv, onClose }: { conv: Conversation; onClose: () =>
 
       <h3 className="settings-label">theme</h3>
       <Themes conv={conv} onPicked={onClose} />
+      <GraffitiRow conv={conv} />
       <Effects convId={conv.id} themeId={conv.theme} />
 
       <h3 className="settings-label">chat</h3>

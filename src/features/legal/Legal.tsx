@@ -6,7 +6,7 @@ import { Wordmark } from '../../ui/kit'
 import { goBack } from '../shell/nav'
 import { CONTACT_EMAIL, mailto } from '../../lib/contact'
 
-const UPDATED = '11 october 2026'
+const UPDATED = '18 october 2026'
 
 type Sec = { h: string; p: (string | string[])[] }
 
@@ -32,6 +32,8 @@ const PRIVACY: Sec[] = [
         'account: your username, gender, the face you build or a profile photo, and a hashed version of your session token and recovery key (we never store the 6 words themselves).',
         'things you choose to add: bio, place, mood, a song, your birth month and year (only if you stamp your age), and settings like status, seen and ghost mode.',
         'what you send: messages, stickers, games, photos, view once photos, doodles, voice notes, reactions and reports.',
+        'save requests: when someone asks to save your voice note or photo, and what you answered.',
+        'shop: your goof coin balance, what you unlocked and when, and each ad you watched for coins (so balances stay right and nobody farms them).',
         'social stuff: who you chat with, friends, blocks, rooms you are in, streaks, badges and simple counts like how many messages you have sent.',
         'presence: when you are online, typing or away, and when you were last seen (you can hide this in settings).',
         'previous usernames, which people you chat with can see.',
@@ -64,6 +66,8 @@ const PRIVACY: Sec[] = [
         'chat and room messages, reactions, photos and voice notes: deleted from our servers about 24 hours after they are sent. view once photos are gone once opened.',
         'your app also keeps a copy of your chats on your own device so your history stays with you. clearing site data or deleting a chat removes it there.',
         'profile and account data: until you use forget me.',
+        'coin balance, unlocks and ad records: as long as the account exists, to keep balances right and catch abuse.',
+        'if you let someone save your voice note or photo, they keep their own copy on their device, outside our 24 hour wipe.',
         'reports and moderation records: as long as needed to keep people safe and handle appeals.',
         'temp accounts: the sign in only lives in that browser tab. the account record and anything still within 24 hours stays on our servers until it ages out like everything else.',
       ],
@@ -78,6 +82,7 @@ const PRIVACY: Sec[] = [
         'service providers that run the app for us: Supabase (database, storage, realtime) and Vercel (hosting and analytics). song search goes through the Apple iTunes search service, and notifications go through your browser maker (Apple, Google or Mozilla).',
         'authorities, only when the law requires it or to protect someone from serious harm.',
       ],
+      'ads: there are no ads yet, only placeholders. before real ads go live we will update this policy, name the ad partner, and ask for your consent where the law requires it. an ad partner may then get basic device and ad interaction data to show and count an ad.',
       'we never sell or share your personal data for advertising.',
     ],
   },
@@ -103,7 +108,7 @@ const PRIVACY: Sec[] = [
   },
   {
     h: 'security',
-    p: ['traffic is encrypted in transit, tokens and recovery keys are stored hashed, and access to the database is locked down to the app\'s own functions. no system is perfect, so do not send anything you could not stand to see leaked, and never share your recovery key.'],
+    p: ['traffic is encrypted in transit, tokens and recovery keys are stored hashed, and access to the database is locked down to the app\'s own functions. view once photos go dark when the app loses focus, but no website can fully block screenshots or a second camera. no system is perfect, so do not send anything you could not stand to see leaked, and never share your recovery key.'],
   },
   {
     h: 'changes',
@@ -152,8 +157,22 @@ const TERMS: Sec[] = [
         'share someone else\'s personal info, or pretend to be someone you are not.',
         'promote self harm, violence, terrorism, drugs or anything illegal.',
         'spam, scam, phish, advertise, or use bots, scripts or scraping.',
+        'fake ad views or farm goof coins with bots, scripts, emulators or other tricks.',
+        'repost someone\'s voice notes or photos without their ok, even ones they let you save.',
         'break, overload or get around the app\'s security, limits or bans.',
         'infringe anyone\'s copyright or other rights.',
+      ],
+    ],
+  },
+  {
+    h: 'goof coins and the shop',
+    p: [
+      [
+        'goof coins come from watching ads in the shop and from gifts we hand out. you cannot buy them with money, and they have no cash value.',
+        'coins and unlocks cannot be sold, traded, transferred or cashed out, and they stay with the account that got them.',
+        'unlocking something gives you the right to use it in the app. it is not property, and we can change, rename or retire items and change prices.',
+        'we can remove coins or unlocks that came from bugs, cheating or fake ad views, and limit how many ads count each day.',
+        'temp accounts cannot collect coins. if your account is banned, forgotten or the app shuts down, its coins and unlocks go with it, and since nothing was paid there is nothing to refund.',
       ],
     ],
   },

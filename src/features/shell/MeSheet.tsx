@@ -28,6 +28,9 @@ import { peek } from '../profile/peek'
 import { closeMeSheet, openMeSheet, useMeSheet, type MeTab } from './meSheet'
 import { replayTour } from '../guide/Tour'
 import { mailto } from '../../lib/contact'
+import { itemById } from '../shop/catalog'
+import { askBuy, coinText, openShop, useOwnsFn, useShop } from '../shop/shop'
+import { Coin } from '../shop/Coin'
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
@@ -223,44 +226,76 @@ function Account({ onWords }: { onWords: (w: string) => void }) {
   )
 }
 
-const HATS: HatId[] = ['none', 'crown', 'cap', 'beanie', 'halo', 'bow', 'tophat', 'party']
+const HATS: HatId[] = ['none', 'cap', 'beanie', 'bow', 'party', 'chef', 'halo', 'tophat', 'cowboy', 'headphones', 'flowercrown', 'wizard', 'crown']
 
-/** Perk users only: hat, card colours, live nameplate, bio. */
+/** hats, card colours and a live nameplate; shop ones show their price and buy right here */
 function FlairEditor() {
   const me = useMe()
-  if (!me?.vip) return null
+  const has = useOwnsFn()
+  const prices = useShop((s) => s.prices)
+  if (!me) return null
   const f = me.flair ?? {}
   const hat = f.hat ?? 'none'
+  const face = { ...(me.avatar ?? avatarFromTraits(faceTraits(me.username))), photo: undefined }
+  const price = (id: string) => (has(id) ? null : (prices[id] ?? itemById(id)?.price ?? null))
+  const use = (kind: 'hat' | 'card' | 'aura', v: string) => {
+    const go = () => void saveFlair({ [kind]: v }).catch(() => {})
+    if (v !== 'none' && v !== f[kind] && !has(kind + ':' + v)) return askBuy(kind + ':' + v, go)
+    go()
+  }
   return (
     <>
       <h3 className="settings-label">flair</h3>
       <ProfileCardView name={me.username} flair={f} />
       <h3 className="settings-label">hat</h3>
       <div className="fl-grid">
-        {HATS.concat(me.admin ? ['neo'] : []).map((h) => (
-          <button key={h} type="button" className={'fl-opt' + (hat === h ? ' is-on' : '')} aria-label={h} onClick={() => void saveFlair({ hat: h })}>
-            <GoofyFace name={me.username} hat={h} size={44} blink={false} />
-          </button>
-        ))}
+        {HATS.concat(me.admin ? ['neo'] : []).map((h) => {
+          const p = h === 'none' || h === 'neo' || h === hat ? null : price('hat:' + h)
+          return (
+            <button key={h} type="button" className={'fl-opt' + (hat === h ? ' is-on' : '')} aria-label={h === 'none' ? 'no hat' : h} onClick={() => use('hat', h)}>
+              <GoofyFace name={me.username} avatar={face} hat={h} size={44} blink={false} />
+              {p && (
+                <span className="fl-price tnum">
+                  <Coin size={11} />
+                  {coinText(p)}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
       <h3 className="settings-label">card</h3>
       <div className="fl-chips">
+        <button type="button" className={'fl-chip' + (!f.card || f.card === 'none' ? ' is-on' : '')} onClick={() => use('card', 'none')}>
+          off
+        </button>
         {CARDS.map((c) => (
           <button
             key={c.id}
             type="button"
-            className={'fl-swatch' + ((f.card ?? 'ink') === c.id ? ' is-on' : '')}
+            className={'fl-swatch' + (f.card === c.id ? ' is-on' : '')}
             style={{ '--sw-bg': c.bg, '--sw-edge': c.edge } as CSSProperties}
-            aria-label={c.id}
-            onClick={() => void saveFlair({ card: c.id })}
-          />
+            aria-label={c.id + (price('card:' + c.id) && f.card !== c.id ? ', in the shop' : '')}
+            onClick={() => use('card', c.id)}
+          >
+            {f.card !== c.id && price('card:' + c.id) && (
+              <span className="fl-coin">
+                <Coin size={12} />
+              </span>
+            )}
+          </button>
         ))}
       </div>
       <h3 className="settings-label">nameplate</h3>
       <div className="fl-chips">
         {AURAS.filter((a) => a !== 'matrix' || me.admin).map((a) => (
-          <button key={a} type="button" className={'fl-chip' + ((f.aura ?? 'none') === a ? ' is-on' : '')} aria-label={a} onClick={() => void saveFlair({ aura: a })}>
+          <button key={a} type="button" className={'fl-chip' + ((f.aura ?? 'none') === a ? ' is-on' : '')} aria-label={a} onClick={() => use('aura', a)}>
             {a === 'none' ? 'off' : <Aura id={a} />}
+            {a !== 'none' && a !== 'matrix' && f.aura !== a && price('aura:' + a) && (
+              <span className="fl-coin">
+                <Coin size={12} />
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -692,6 +727,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
   if (editing && face)
     return (
       <FaceBuilder
+        shop
         name={me.username}
         value={face}
         onChange={setFace}
@@ -827,6 +863,7 @@ function MeBody({ onClose }: { onClose: () => void }) {
           </div>
           {tab === 'me' ? (
             <>
+              <ShopRow onClose={onClose} />
               <BioRow />
               <SongRow />
               {spotifyEnabled() && <Music />}
@@ -844,6 +881,25 @@ function MeBody({ onClose }: { onClose: () => void }) {
         </>
       )}
     </div>
+  )
+}
+
+function ShopRow({ onClose }: { onClose: () => void }) {
+  const coins = useShop((s) => s.coins)
+  return (
+    <button
+      type="button"
+      className="settings-row me-shop"
+      onClick={() => {
+        onClose()
+        setTimeout(() => openShop('themes'), 180)
+      }}
+    >
+      <Coin size={24} />
+      <span className="grow">shop</span>
+      <b className="tnum">{coinText(coins)}</b>
+      <IconArrowRight size={18} />
+    </button>
   )
 }
 

@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { isPhoto } from './photoUrl'
-import { BLOBS, FACE_INK, TONGUE, applyAvatar, faceTraits, type AvatarConfig, type FaceTraits, type MouthKind } from './face'
+import { BLOBS, FACE_INK, TONGUE, applyAvatar, faceTraits, mixHex, type AvatarConfig, type FaceTraits, type MouthKind } from './face'
 import { useAvatarFor, useHornsFor } from './avatars'
 import { useFlairFor } from './flair'
 import type { HatId } from '../lib/types'
@@ -26,6 +26,18 @@ type Props = {
 }
 
 const W = '#FFFFFF'
+
+const heartPath = (cx: number, cy: number, s: number) =>
+  `M${cx} ${cy + s * 0.9} C${cx - s * 1.25} ${cy + s * 0.05} ${cx - s * 1.05} ${cy - s * 1} ${cx} ${cy - s * 0.38} C${cx + s * 1.05} ${cy - s * 1} ${cx + s * 1.25} ${cy + s * 0.05} ${cx} ${cy + s * 0.9} Z`
+const starPath = (cx: number, cy: number, ro: number, ri: number) => {
+  let d = ''
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5
+    const rr = i % 2 ? ri : ro
+    d += (i ? 'L' : 'M') + (cx + Math.cos(a) * rr).toFixed(2) + ' ' + (cy + Math.sin(a) * rr).toFixed(2)
+  }
+  return d + 'Z'
+}
 
 function Eye({ x, r, t, look, kind, side }: { x: number; r: number; t: FaceTraits; look: Look; kind: string; side: number }) {
   const lx = Math.max(-1, Math.min(1, look.x))
@@ -84,6 +96,46 @@ function Eye({ x, r, t, look, kind, side }: { x: number; r: number; t: FaceTrait
         <path d={`M${x + s * r * 0.35} ${-r * 0.92} l${s * 2.2} -3.6 M${x + s * r * 0.72} ${-r * 0.66} l${s * 3.2} -2.8 M${x + s * r * 0.95} ${-r * 0.28} l${s * 3.6} -1.2`} stroke={FACE_INK} strokeWidth={2} strokeLinecap="round" />
       </g>
     )
+  }
+  if (kind === 'hearts') {
+    const s = r * 1.05
+    const cx = x + lx * r * 0.08
+    const cy = ly * r * 0.08
+    return (
+      <g>
+        <path d={heartPath(cx, cy, s)} fill="#FF4D6D" stroke={FACE_INK} strokeWidth={2.2} strokeLinejoin="round" />
+        <circle cx={cx - s * 0.42} cy={cy - s * 0.2} r={s * 0.17} fill={W} />
+      </g>
+    )
+  }
+  if (kind === 'stars') {
+    const cx = x + lx * r * 0.08
+    const cy = ly * r * 0.08
+    return (
+      <g>
+        <path d={starPath(cx, cy, r * 1.2, r * 0.55)} fill="#FFD84D" stroke={FACE_INK} strokeWidth={2.2} strokeLinejoin="round" />
+        <circle cx={cx - r * 0.25} cy={cy - r * 0.3} r={r * 0.16} fill={W} />
+      </g>
+    )
+  }
+  if (kind === 'dizzy') {
+    const s = (side || 1) * (r / 9)
+    return (
+      <g>
+        <circle cx={x} cy={0} r={r} fill={W} stroke={FACE_INK} strokeWidth={2.2} />
+        <path
+          d={`M${x} 0 a${1.5 * Math.abs(s)} ${1.5 * Math.abs(s)} 0 0 1 ${3 * s} 0 a${3 * Math.abs(s)} ${3 * Math.abs(s)} 0 0 1 ${-6 * s} 0 a${4.6 * Math.abs(s)} ${4.6 * Math.abs(s)} 0 0 1 ${9.2 * s} 0 a${6 * Math.abs(s)} ${6 * Math.abs(s)} 0 0 1 ${-12 * s} 0`}
+          stroke={FACE_INK}
+          strokeWidth={2}
+          fill="none"
+          strokeLinecap="round"
+        />
+      </g>
+    )
+  }
+  if (kind === 'dead') {
+    const k = r * 0.62
+    return <path d={`M${x - k} ${-k} L${x + k} ${k} M${x + k} ${-k} L${x - k} ${k}`} stroke={FACE_INK} strokeWidth={3.2} strokeLinecap="round" />
   }
   if (kind === 'beady') {
     const pr = r * 0.46
@@ -202,6 +254,38 @@ function Mouth({ kind, t, scale = 1 }: { kind: MouthKind; t: FaceTraits; scale?:
           <path d="M-10 4 q2.5 -4.5 5 -1 t5 -1 t5 1 t5 -1" fill="none" {...common} />
         </g>
       )
+    case 'fangs':
+      return (
+        <g transform={`scale(${scale})`}>
+          <path d="M-10.5 0 Q0 10 10.5 0" fill="none" {...common} />
+          <path d="M-6.6 3.1 L-4.9 8.4 L-3 4.3 Z M6.6 3.1 L4.9 8.4 L3 4.3 Z" fill={W} stroke={FACE_INK} strokeWidth={1.5} strokeLinejoin="round" />
+        </g>
+      )
+    case 'cat':
+      return <path transform={`scale(${scale})`} d="M-9 1 Q-4.6 7.6 0 1.6 Q4.6 7.6 9 1" fill="none" {...common} />
+    case 'mustache':
+      return (
+        <g transform={`scale(${scale})`}>
+          <path d="M-4.4 6 Q0 8.6 4.4 6" fill="none" {...common} strokeWidth={2.6} />
+          <path
+            d="M0 -1.6 C-2.6 -5.2 -7.6 -5.4 -10.6 -2.4 C-12.4 -0.6 -13.6 1.6 -16 0.8 C-14.4 4.8 -8.2 5 -4.4 1.8 C-2.4 0.4 -1 0 0 0 C1 0 2.4 0.4 4.4 1.8 C8.2 5 14.4 4.8 16 0.8 C13.6 1.6 12.4 -0.6 10.6 -2.4 C7.6 -5.4 2.6 -5.2 0 -1.6 Z"
+            fill="#4A2E1E"
+            stroke={FACE_INK}
+            strokeWidth={1.4}
+            strokeLinejoin="round"
+          />
+        </g>
+      )
+    case 'braces':
+      return (
+        <g transform={`scale(${scale})`}>
+          <rect x={-10} y={-1} width={20} height={9} rx={4.2} fill={W} stroke={FACE_INK} strokeWidth={2.4} />
+          <path d="M-9 3.6 H9" stroke="#8F99A6" strokeWidth={1.8} />
+          {[-6, -2, 2, 6].map((bx) => (
+            <rect key={bx} x={bx - 1.3} y={2.3} width={2.6} height={2.6} rx={0.5} fill="#C9D0D8" stroke={FACE_INK} strokeWidth={0.8} />
+          ))}
+        </g>
+      )
     case 'flat':
     default:
       return <path transform={`scale(${scale})`} d="M-7.5 2 H7.5" fill="none" {...common} />
@@ -280,6 +364,62 @@ function Hat({ kind, x, y }: { kind: HatId; x: number; y: number }) {
           <circle cx={x} cy={y - 25} r={3.8} fill="#FFC83D" {...ink} strokeWidth={1.8} />
         </g>
       )
+    case 'cowboy':
+      return (
+        <g transform={`rotate(-6 ${x} ${y})`}>
+          <path d={`M${x - 14} ${y + 3} C${x - 15} ${y - 10} ${x - 12} ${y - 18} ${x - 6} ${y - 17} C${x - 3} ${y - 16} ${x - 1} ${y - 13} ${x} ${y - 13} C${x + 1} ${y - 13} ${x + 3} ${y - 16} ${x + 6} ${y - 17} C${x + 12} ${y - 18} ${x + 15} ${y - 10} ${x + 14} ${y + 3} Z`} fill="#C07A3A" {...ink} />
+          <path d={`M${x - 14.4} ${y - 2} C${x - 5} ${y} ${x + 5} ${y} ${x + 14.4} ${y - 2} L${x + 14.2} ${y + 2.4} C${x + 5} ${y + 4.4} ${x - 5} ${y + 4.4} ${x - 14.2} ${y + 2.4} Z`} fill="#5A3A1E" stroke={FACE_INK} strokeWidth={1.6} strokeLinejoin="round" />
+          <path d={`M${x - 31} ${y + 2} C${x - 26} ${y + 11} ${x + 26} ${y + 11} ${x + 31} ${y + 2} C${x + 25} ${y - 2} ${x + 15} ${y + 3} ${x} ${y + 3} C${x - 15} ${y + 3} ${x - 25} ${y - 2} ${x - 31} ${y + 2} Z`} fill="#A8672F" {...ink} />
+        </g>
+      )
+    case 'wizard':
+      return (
+        <g transform={`rotate(-8 ${x} ${y})`}>
+          <path d={`M${x - 14} ${y + 3} C${x - 10} ${y - 10} ${x - 4} ${y - 24} ${x + 7} ${y - 33} C${x + 4} ${y - 26} ${x + 6} ${y - 14} ${x + 14} ${y + 3} Z`} fill="#4B5BD6" {...ink} />
+          <path d={starPath(x - 3, y - 8, 3.2, 1.4)} fill="#FFD84D" stroke={FACE_INK} strokeWidth={1} strokeLinejoin="round" />
+          <path d={starPath(x + 4.5, y - 19, 2.4, 1.1)} fill="#FFD84D" stroke={FACE_INK} strokeWidth={1} strokeLinejoin="round" />
+          <circle cx={x + 6} cy={y - 4} r={1.3} fill="#FFD84D" />
+          <ellipse cx={x} cy={y + 4} rx={21} ry={4.6} fill="#3D49B8" {...ink} />
+        </g>
+      )
+    case 'headphones':
+      return (
+        <g>
+          <path d={`M${x - 25} ${y + 15} C${x - 26} ${y - 12} ${x + 26} ${y - 12} ${x + 25} ${y + 15}`} fill="none" stroke={FACE_INK} strokeWidth={7.4} strokeLinecap="round" />
+          <path d={`M${x - 25} ${y + 15} C${x - 26} ${y - 12} ${x + 26} ${y - 12} ${x + 25} ${y + 15}`} fill="none" stroke="#FF5C7A" strokeWidth={3.6} strokeLinecap="round" />
+          <rect x={x - 31} y={y + 9} width={11} height={18} rx={5} fill="#2A2A35" {...ink} />
+          <rect x={x + 20} y={y + 9} width={11} height={18} rx={5} fill="#2A2A35" {...ink} />
+          <rect x={x - 22.6} y={y + 11.5} width={3.6} height={13} rx={1.8} fill="#FF5C7A" />
+          <rect x={x + 19} y={y + 11.5} width={3.6} height={13} rx={1.8} fill="#FF5C7A" />
+        </g>
+      )
+    case 'flowercrown': {
+      const spots: [number, number, string][] = [[-18, 6, '#FF8FC7'], [-9, 0.5, '#FFD84D'], [0, -1.5, '#FFFFFF'], [9, 0.5, '#C69CFF'], [18, 6, '#FF8FC7']]
+      return (
+        <g>
+          <path d={`M${x - 22} ${y + 9} Q${x} ${y - 6} ${x + 22} ${y + 9}`} fill="none" stroke="#4E9A3A" strokeWidth={2.4} strokeLinecap="round" />
+          {[[-13, 4, -30], [5, 0, 20], [13, 4, 40]].map(([dx, dy, rot], i) => (
+            <ellipse key={'l' + i} cx={x + dx} cy={y + dy - 2} rx={3.4} ry={1.8} fill="#7BD66B" stroke={FACE_INK} strokeWidth={1.1} transform={`rotate(${rot} ${x + dx} ${y + dy - 2})`} />
+          ))}
+          {spots.map(([dx, dy, c], i) => (
+            <g key={i}>
+              {[0, 72, 144, 216, 288].map((a) => (
+                <circle key={a} cx={x + dx + Math.cos((a * Math.PI) / 180) * 2.9} cy={y + dy + Math.sin((a * Math.PI) / 180) * 2.9} r={2.4} fill={c} stroke={FACE_INK} strokeWidth={1.1} />
+              ))}
+              <circle cx={x + dx} cy={y + dy} r={1.7} fill={c === '#FFD84D' ? '#FF8A3D' : '#FFD84D'} stroke={FACE_INK} strokeWidth={0.9} />
+            </g>
+          ))}
+        </g>
+      )
+    }
+    case 'chef':
+      return (
+        <g transform={`rotate(6 ${x} ${y})`}>
+          <path d={`M${x - 14} ${y - 2} C${x - 23} ${y - 6} ${x - 21} ${y - 21} ${x - 10} ${y - 19} C${x - 8} ${y - 28} ${x + 8} ${y - 28} ${x + 10} ${y - 19} C${x + 21} ${y - 21} ${x + 23} ${y - 6} ${x + 14} ${y - 2} Z`} fill="#FFFFFF" {...ink} />
+          <path d={`M${x - 6} ${y - 4} Q${x - 7} ${y - 12} ${x - 5} ${y - 17} M${x + 6} ${y - 4} Q${x + 7} ${y - 12} ${x + 5} ${y - 17}`} fill="none" stroke={FACE_INK} strokeWidth={1.2} strokeLinecap="round" opacity={0.35} />
+          <rect x={x - 14.5} y={y - 4} width={29} height={9} rx={2.5} fill="#F2EFE7" {...ink} />
+        </g>
+      )
     case 'ghost':
       return (
         <g transform={`rotate(8 ${x} ${y})`}>
@@ -287,6 +427,61 @@ function Hat({ kind, x, y }: { kind: HatId; x: number; y: number }) {
           <ellipse cx={x - 4} cy={y - 12} rx={1.8} ry={2.6} fill={FACE_INK} />
           <ellipse cx={x + 4} cy={y - 12} rx={1.8} ry={2.6} fill={FACE_INK} />
           <ellipse cx={x} cy={y - 5} rx={2.2} ry={2.8} fill={FACE_INK} />
+        </g>
+      )
+    default:
+      return null
+  }
+}
+
+/** shop tops, drawn behind the blob so their roots tuck under it */
+function Top({ t, geo }: { t: FaceTraits; geo: (typeof BLOBS)[keyof typeof BLOBS] }) {
+  const [tx, ty] = geo.top
+  const [ex, ey] = geo.ear ?? [13, ty + 9]
+  const ink = { stroke: FACE_INK, strokeWidth: 2.6, strokeLinejoin: 'round' as const }
+  const inner = mixHex(t.color, '#FF6F91', 0.55)
+  switch (t.top) {
+    case 'cat':
+      return (
+        <g>
+          {[-1, 1].map((s) => (
+            <g key={s}>
+              <path d={`M${tx + s * (ex - 9)} ${ey + 3} L${tx + s * (ex + 4)} ${ey - 21} L${tx + s * (ex + 11)} ${ey + 5} Z`} fill={t.color} {...ink} />
+              <path d={`M${tx + s * (ex - 3)} ${ey} L${tx + s * (ex + 4)} ${ey - 13} L${tx + s * (ex + 7.5)} ${ey + 1} Z`} fill={inner} />
+            </g>
+          ))}
+        </g>
+      )
+    case 'bunny':
+      return (
+        <g>
+          {[-1, 1].map((s) => (
+            <g key={s} transform={`rotate(${s * 14} ${tx + s * ex} ${ey})`}>
+              <ellipse cx={tx + s * ex} cy={ey - 17} rx={6.6} ry={19} fill={t.color} {...ink} />
+              <ellipse cx={tx + s * ex} cy={ey - 15} rx={3} ry={12.5} fill={inner} />
+            </g>
+          ))}
+        </g>
+      )
+    case 'flower': {
+      const fx = tx + 3
+      const fy = ty - 16
+      return (
+        <g>
+          <path d={`M${tx} ${ty + 5} Q${tx + 2} ${ty - 4} ${fx} ${fy}`} stroke={FACE_INK} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+          <path d={`M${tx + 1} ${ty - 3} q-8 -1 -9 -7 q7 -1 9 7 Z`} fill="#7BD66B" stroke={FACE_INK} strokeWidth={1.8} strokeLinejoin="round" />
+          {[0, 72, 144, 216, 288].map((a) => (
+            <circle key={a} cx={fx + Math.cos(((a - 90) * Math.PI) / 180) * 6.4} cy={fy + Math.sin(((a - 90) * Math.PI) / 180) * 6.4} r={5.3} fill="#FFFFFF" stroke={FACE_INK} strokeWidth={2} />
+          ))}
+          <circle cx={fx} cy={fy} r={4.2} fill="#FFC83D" stroke={FACE_INK} strokeWidth={2} />
+        </g>
+      )
+    }
+    case 'unicorn':
+      return (
+        <g transform={`rotate(8 ${tx} ${ty})`}>
+          <path d={`M${tx - 9} ${ty + 8} L${tx + 1} ${ty - 30} L${tx + 9} ${ty + 8} Z`} fill="#FFE27A" {...ink} />
+          <path d={`M${tx - 7.4} ${ty + 1} L${tx + 7.6} ${ty - 3.6} M${tx - 5.2} ${ty - 7.4} L${tx + 5.4} ${ty - 11} M${tx - 3} ${ty - 15.6} L${tx + 3.4} ${ty - 18.4} M${tx - 1} ${ty - 23} L${tx + 1.8} ${ty - 24.4}`} stroke="#FF6FB5" strokeWidth={2.2} strokeLinecap="round" />
         </g>
       )
     default:
@@ -381,6 +576,32 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
               <Eye x={dx} r={r} t={t} look={look} kind="angry" side={1} />
             </>
           )
+        case 'shades': {
+          // never wider than the gap between the eyes allows, so the lenses don't melt into one
+          const w = Math.min(r * 1.25, dx - 2.5)
+          const h = r * 0.95
+          const lens = (cx: number) => `M${cx - w} ${-h * 0.75} H${cx + w} Q${cx + w} ${h * 0.95} ${cx} ${h} Q${cx - w} ${h * 0.95} ${cx - w} ${-h * 0.75} Z`
+          return (
+            <>
+              <path d={`M${-dx - w - 4} ${-h * 0.55} L${-dx - w} ${-h * 0.62} M${dx + w} ${-h * 0.62} L${dx + w + 4} ${-h * 0.55}`} stroke={FACE_INK} strokeWidth={2.4} strokeLinecap="round" />
+              <path d={lens(-dx) + lens(dx)} fill="#1B1726" stroke={FACE_INK} strokeWidth={2.4} strokeLinejoin="round" />
+              <path d={`M${-dx + w} ${-h * 0.62} Q0 ${-h * 1.05} ${dx - w} ${-h * 0.62}`} stroke={FACE_INK} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+              <path d={`M${-dx - w * 0.55} ${-h * 0.25} L${-dx - w * 0.05} ${-h * 0.62} M${dx - w * 0.55} ${-h * 0.25} L${dx - w * 0.05} ${-h * 0.62}`} stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" opacity={0.7} />
+            </>
+          )
+        }
+        case 'nerd': {
+          const g = Math.min(r * 1.18, dx - 2)
+          return (
+            <>
+              <Eye x={-dx} r={r * 0.82} t={t} look={derpL} kind="beady" side={-1} />
+              <Eye x={dx} r={r * 0.82} t={t} look={derpR} kind="beady" side={1} />
+              <circle cx={-dx} cy={0} r={g} fill="rgba(255,255,255,.28)" stroke={FACE_INK} strokeWidth={2.6} />
+              <circle cx={dx} cy={0} r={g} fill="rgba(255,255,255,.28)" stroke={FACE_INK} strokeWidth={2.6} />
+              <path d={`M${-dx + g} -1 Q0 -5 ${dx - g} -1 M${-dx - g} -1 L${-dx - g - 4} -3 M${dx + g} -1 L${dx + g + 4} -3`} stroke={FACE_INK} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+            </>
+          )
+        }
         case 'wink':
           return (
             <>
@@ -468,13 +689,14 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
             <path d={`M${top[0] + 24} ${top[1] + 12} Q${top[0] + 34} ${top[1] - 6} ${top[0] + 26} ${top[1] - 16} Q${top[0] + 22} ${top[1] - 2} ${top[0] + 10} ${top[1] + 6} Z`} />
           </g>
         )}
-        {t.antenna && !hatOn && !neo && (
+        {!hatOn && !neo && <Top t={t} geo={geo} />}
+        {t.top === 'antenna' && !hatOn && !neo && (
           <g>
             <path d={`M${top[0]} ${top[1] + 4} Q${top[0] + 4} ${top[1] - 6} ${top[0] + 1} ${top[1] - 11}`} stroke={FACE_INK} strokeWidth={2.4} fill="none" strokeLinecap="round" />
             <circle cx={top[0] + 1} cy={top[1] - 13} r={4.4} fill={t.accent} stroke={FACE_INK} strokeWidth={2.2} />
           </g>
         )}
-        {t.sprout && !hatOn && !neo && (
+        {t.top === 'sprout' && !hatOn && !neo && (
           <g>
             <path d={`M${top[0]} ${top[1] + 4} V${top[1] - 7}`} stroke={FACE_INK} strokeWidth={2.4} strokeLinecap="round" />
             <path d={`M${top[0]} ${top[1] - 6} q-9 -2 -11 -10 q9 -1 11 10 Z`} fill="#7BD66B" stroke={FACE_INK} strokeWidth={2} strokeLinejoin="round" />
@@ -489,7 +711,7 @@ function FaceSvg({ t, look, mood, blink, horns, hat }: { t: FaceTraits; look: Lo
             <circle cx={68} cy={32} r={2.2} />
           </g>
         )}
-        {hatOn && <Hat kind={hat!} x={top[0]} y={top[1]} />}
+        {hatOn && <Hat kind={hat!} x={(geo.hat ?? top)[0]} y={(geo.hat ?? top)[1]} />}
       </g>
       <g transform={`translate(${geo.cx + t.ox} ${geo.cy + t.oy}) rotate(${t.featureRot}) scale(${geo.s})`} className={neo ? 'gf-feat' : undefined}>
         {t.blush && !neo && (

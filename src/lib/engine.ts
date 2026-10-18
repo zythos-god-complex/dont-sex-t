@@ -695,7 +695,7 @@ function onThemeEvent(p: Record<string, unknown>) {
   if (!c) return
   const at = typeof p.theme_at === 'string' ? p.theme_at : null
   if (at && c.theme_at && ts(at) < ts(c.theme_at) && c.theme_by !== get().me?.id) return
-  patchConv(convId, { theme, theme_by: typeof p.theme_by === 'string' ? p.theme_by : null, theme_at: at })
+  patchConv(convId, { theme, theme_by: typeof p.theme_by === 'string' ? p.theme_by : null, theme_at: at, ...(typeof p.graffiti === 'boolean' ? { graffiti: p.graffiti } : {}) })
 }
 
 function onPeerTyping(convId: string, p: Record<string, unknown>) {
@@ -1455,6 +1455,21 @@ export async function loadOlder(convId: string): Promise<number> {
         delete loadingOlder[convId]
         return { loadingOlder }
       })
+  }
+}
+
+/** Doodle wall on or off for this chat (the server checks you own it for the current theme). */
+export async function setGraffiti(convId: string, on: boolean): Promise<void> {
+  const t = token
+  const c = get().conversations[convId]
+  if (!t || !c) return
+  const prev = !!c.graffiti
+  patchConv(convId, { graffiti: on })
+  try {
+    applyConversation(await api.graffiti(t, convId, on))
+  } catch (e) {
+    patchConv(convId, { graffiti: prev })
+    throw e
   }
 }
 

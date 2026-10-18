@@ -1,6 +1,6 @@
 import type { AvatarConfig } from '../ui/face'
 import { JOIN_KEY, REST_URL, SUPABASE_KEY } from './env'
-import type { Conversation, ErrorCode, Flair, Gender, Me, Message, Profile, Song } from './types'
+import type { Conversation, ErrorCode, Flair, Gender, Me, Message, Profile, ShopState, Song } from './types'
 
 const KNOWN_CODES: ReadonlySet<string> = new Set([
   'unauthorized',
@@ -20,6 +20,9 @@ const KNOWN_CODES: ReadonlySet<string> = new Set([
   'age_required',
   'banned',
   'rename_cooldown',
+  'locked',
+  'not_enough',
+  'too_soon',
 ])
 
 export class ApiError extends Error {
@@ -149,6 +152,11 @@ export const api = {
   unsend: (token: string, msg: string) => rpc<Message>('gat_unsend', { p_token: token, p_msg: msg }),
   openOnce: (token: string, msg: string) => rpc<Message>('gat_open_once', { p_token: token, p_msg: msg }),
   clear: (token: string, conv: string, both: boolean) => rpc<Conversation>('gat_clear', { p_token: token, p_conversation: conv, p_both: both }),
+  shop: (token: string) => rpc<ShopState>('gat_shop', { p_token: token }),
+  buy: (token: string, item: string) => rpc<ShopState>('gat_buy', { p_token: token, p_item: item }),
+  adStart: (token: string, slot: string) => rpc<{ id: string; seconds: number }>('gat_ad_start', { p_token: token, p_slot: slot }),
+  adClaim: (token: string, id: string) => rpc<ShopState>('gat_ad_claim', { p_token: token, p_id: id }),
+  graffiti: (token: string, conv: string, on: boolean) => rpc<Conversation>('gat_graffiti', { p_token: token, p_conversation: conv, p_on: on }),
   blockList: (token: string) => rpc<{ blocked: string[]; blocked_by: string[] }>('gat_block_list', { p_token: token }),
 
   profiles: (token: string, ids: string[]) => rpc<Profile[]>('gat_profiles', { p_token: token, p_ids: ids }),

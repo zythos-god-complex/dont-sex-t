@@ -1,4 +1,4 @@
-// Who has flair (perk users only). Seeded once from gat_flairs so hats show on any face by name
+// Who wears flair (hats, cards, nameplates). Seeded once from gat_flairs so hats show on any face by name
 // (rooms, stickers), then kept fresh from server profiles (me, dm peers, looked-up profiles).
 // Never read from presence: that is client-sent and could be faked.
 import { create } from 'zustand'
@@ -48,7 +48,7 @@ function collect() {
   const e: [string, Flair | null | undefined][] = []
   // a profile without the vip field is an old payload: leave what we know alone
   const add = (p: { username: string; vip?: boolean; flair?: Flair | null } | undefined) => {
-    if (p && p.vip !== undefined) e.push([p.username, p.vip ? (p.flair ?? null) : null])
+    if (p && p.vip !== undefined) e.push([p.username, p.flair ?? null])
   }
   add(s.me ?? undefined)
   for (const id in s.conversations) add(s.conversations[id].peer)

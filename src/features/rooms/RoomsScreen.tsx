@@ -9,6 +9,7 @@ import { useThemeMode } from '../../themes/mode'
 import { Badge, Sheet, spring, useIsDesktop } from '../../ui/kit'
 import { IconPlus } from '../../ui/icons'
 import { MeButton } from '../shell/MeSheet'
+import { CoinChip } from '../shop/Coin'
 import { displayBody } from '../stickers/stickers'
 import { Crew, Faces } from './Crew'
 import { PeoplePicker } from './PeoplePicker'
@@ -150,7 +151,14 @@ export default function RoomsScreen() {
     <div className="rooms">
       <header className="m-head">
         <h1 className="m-title is-left">rooms</h1>
-        <div className="m-head-actions">{!desktop && <MeButton />}</div>
+        <div className="m-head-actions">
+          {!desktop && (
+            <>
+              <CoinChip />
+              <MeButton />
+            </>
+          )}
+        </div>
       </header>
       <div className="rooms-scroll scroll-y">
         {/* your rooms (with the unread ones) come first once you have any */}

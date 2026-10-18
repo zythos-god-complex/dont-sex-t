@@ -1,6 +1,7 @@
 // Steam / Discord style profile card. Everyone gets the basic card; perk users get their card colours,
 // live banner and bio.
 import { IconAddFriend, IconBrush, IconDm, IconFlame, IconFriend, IconGhost, IconHi, IconMoon, IconPhone, IconUsers } from '../../ui/icons'
+import { Coin } from '../shop/Coin'
 import { Flame } from '../../ui/Flame'
 import { openMeSheet } from '../shell/meSheet'
 import { NowPlaying, SongCard } from '../music/NowPlaying'
@@ -54,13 +55,13 @@ export function ProfileCardView({ name, flair: given, sub }: { name: string; fla
   const np = prof?.now_playing
   const [open, setOpen] = useState<string | null>(null)
   const color = applyAvatar(faceTraits(name), custom).color
-  const card = flair ? (CARDS.find((c) => c.id === flair.card) ?? CARDS[0]) : null
+  const card = flair?.card ? (CARDS.find((c) => c.id === flair.card) ?? null) : null
   const style = {
     '--pc-banner': `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 55%, #000))`,
     ...(card ? { '--pc-bg': card.bg, '--pc-edge': card.edge } : {}),
   } as CSSProperties
   return (
-    <div className={'pc' + (flair ? ' is-vip' : '')} style={style}>
+    <div className={'pc' + (card ? ' is-vip' : '')} style={style}>
       <div className="pc-banner">
         <Aura id={flair?.aura} />
       </div>
@@ -186,6 +187,30 @@ function CallsSwitch({ id }: { id: string }) {
   )
 }
 
+/** admin only: drop someone coins */
+function GiftCoins({ id }: { id: string }) {
+  const [st, setSt] = useState<'idle' | 'busy' | 'done'>('idle')
+  return (
+    <div className="pc-admin">
+      <Coin size={18} />
+      <span className="grow">coins</span>
+      <button
+        type="button"
+        className="ci-buy"
+        disabled={st === 'busy'}
+        onClick={() => {
+          setSt('busy')
+          adminCall('coins', { id, n: 500 })
+            .then(() => setSt('done'))
+            .catch(() => setSt('idle'))
+        }}
+      >
+        {st === 'done' ? 'sent' : 'gift 500'}
+      </button>
+    </div>
+  )
+}
+
 // the relationship lives here: say hi, message, add friend, add back, friends, unfriend
 export function ProfileCard({ name, id, sub, open, onClose }: { name: string; id?: string | null; sub?: string | null; open: boolean; onClose: () => void; chat?: boolean }) {
   const me = useMe()
@@ -254,6 +279,7 @@ export function ProfileCard({ name, id, sub, open, onClose }: { name: string; id
         </div>
       )}
       {!mine && me?.admin && id && <CallsSwitch id={id} />}
+      {!mine && me?.admin && id && <GiftCoins id={id} />}
       {!mine && me && (
         <div className="pc-acts">
           {live && myF && theirF && <Armed key={'uf' + conv.id} label="unfriend" onGo={() => void setFriend(conv.id, false)} />}

@@ -14,6 +14,7 @@ import { Badge, TypingDots, spring } from '../../ui/kit'
 import { peek } from '../profile/peek'
 import { IconPin } from '../../ui/icons'
 import { MeButton } from '../shell/MeSheet'
+import { CoinChip } from '../shop/Coin'
 import { useRef, useState } from 'react'
 import { togglePin, usePins } from './pins'
 
@@ -216,6 +217,7 @@ export default function Inbox({ variant }: InboxProps) {
         <header className="m-head">
           <h1 className="m-title is-left">chats</h1>
           <div className="m-head-actions">
+            <CoinChip />
             <MeButton />
           </div>
         </header>

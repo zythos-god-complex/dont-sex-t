@@ -26,6 +26,8 @@ import { DailyReward } from './features/rewards/Reward'
 import { CONTACT_EMAIL, mailto } from './lib/contact'
 import { TourHost } from './features/guide/Tour'
 import { CallHost } from './features/call/CallUI'
+import { ShopHost } from './features/shop/Shop'
+import { CoinChip } from './features/shop/Coin'
 
 // screens most visits never open load on demand, then get warmed up when the phone is idle.
 // onboarding is tiny and is the first thing new people see, so it ships in the main bundle.
@@ -154,6 +156,7 @@ function DesktopApp() {
             </button>
             {me && (
               <div className="d-me">
+                <CoinChip />
                 <MeButton size={34} />
               </div>
             )}
@@ -328,6 +331,7 @@ export default function App() {
       <MeSheetHost />
       <TourHost />
       <CallHost />
+      <ShopHost />
       <UpdateBanner />
       <Toasts />
     </>

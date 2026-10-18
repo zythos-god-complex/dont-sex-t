@@ -389,3 +389,16 @@ export const IconChevronDown = (p: P) => (
     <path d="M6 9l6 6 6-6" />
   </Svg>
 )
+export const IconDownload = (p: P) => (
+  <Svg {...p}>
+    <path d="M12 4v11" />
+    <path d="M7.5 10.8 12 15.3l4.5-4.5" />
+    <path d="M5 19.5h14" />
+  </Svg>
+)
+export const IconBag = (p: P) => (
+  <Svg {...p}>
+    <path d="M5.5 8.5h13l-1 11.2a1.6 1.6 0 0 1-1.6 1.4H8.1a1.6 1.6 0 0 1-1.6-1.4z" />
+    <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5" />
+  </Svg>
+)

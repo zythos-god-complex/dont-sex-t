@@ -11,6 +11,7 @@ import { GenderIcon, IconClose, IconDice, IconDm, IconGhost, IconMegaphone } fro
 import { loadRooms, useRoomList, useRooms } from '../rooms/rooms'
 import { Crew } from '../rooms/Crew'
 import { MeButton } from '../shell/MeSheet'
+import { CoinChip } from '../shop/Coin'
 import { takeRoll } from '../shell/nav'
 import { maybeTour } from '../guide/Tour'
 import { saveGhost, setLooking, useBlocks, useGhost, useMood } from '../../lib/engine'
@@ -236,6 +237,7 @@ export default function Lobby() {
         <header className="m-head">
           <Wordmark size={22} />
           <div className="m-head-actions">
+            <CoinChip />
             <MeButton />
           </div>
         </header>

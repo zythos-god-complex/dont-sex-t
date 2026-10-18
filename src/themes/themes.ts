@@ -388,6 +388,109 @@ const SPECS: ThemeSpec[] = [
       composer: '#1B0A12', composerInk: '#F9DFE6',
     },
   },
+  // ---------------------------------------------------------------- shop themes
+  {
+    id: 'vapor', name: 'vaporwave', ambient: 'sparkles',
+    light: {
+      bg: 'linear-gradient(rgba(214,0,111,.07) 1px, transparent 1px) 0 0/100% 28px, linear-gradient(90deg, rgba(40,150,230,.08) 1px, transparent 1px) 0 0/28px 100%, linear-gradient(180deg, #FFE6F4 0%, #F1DEFF 55%, #DDF4FF 100%)',
+      ink: '#2A1640', meta: 'rgba(42,22,64,.56)', header: 'rgba(255,236,247,.84)',
+      sent: ['#C8006A', '#9324D6', '#4A55D8'], sentInk: '#FFFFFF',
+      recv: '#FFFFFF', recvInk: '#2A1640', accent: '#C8006A', accentInk: '#FFFFFF',
+      composer: '#FFFFFF', composerInk: '#2A1640',
+    },
+    dark: {
+      bg: 'linear-gradient(rgba(255,79,163,.06) 1px, transparent 1px) 0 0/100% 28px, linear-gradient(90deg, rgba(79,195,255,.06) 1px, transparent 1px) 0 0/28px 100%, radial-gradient(90% 50% at 50% 100%, rgba(255,60,160,.26) 0%, transparent 70%), #140A22',
+      ink: '#F6E9FF', meta: 'rgba(246,233,255,.52)', header: 'rgba(20,10,34,.86)',
+      sent: ['#8A1F60', '#682A8C', '#33408C'], sentInk: '#F6E9FF',
+      recv: '#24163A', recvInk: '#F6E9FF', accent: '#FF5CB3', accentInk: '#140A22',
+      composer: '#1D1230', composerInk: '#F6E9FF',
+    },
+  },
+  {
+    id: 'ocean', name: 'deep sea', ambient: 'bubbles',
+    light: {
+      bg: 'radial-gradient(120% 70% at 50% 0%, #D6F5FF 0%, transparent 60%), linear-gradient(180deg, #EAFBFF 0%, #CDEFFA 100%)',
+      ink: '#06324A', meta: 'rgba(6,50,74,.56)', header: 'rgba(234,251,255,.84)',
+      sent: ['#0072AE', '#00669E', '#005A8F'], sentInk: '#FFFFFF',
+      recv: '#FFFFFF', recvInk: '#06324A', accent: '#006CA6', accentInk: '#FFFFFF',
+      composer: '#FFFFFF', composerInk: '#06324A',
+    },
+    dark: {
+      bg: 'radial-gradient(80% 50% at 50% 0%, rgba(0,140,200,.28) 0%, transparent 70%), linear-gradient(180deg, #04192B 0%, #020D18 100%)',
+      ink: '#DDF4FF', meta: 'rgba(221,244,255,.52)', header: 'rgba(4,25,43,.86)',
+      sent: ['#0B4F75', '#0A4468', '#0A3A5C'], sentInk: '#DDF4FF',
+      recv: '#0B2236', recvInk: '#DDF4FF', accent: '#38BDF8', accentInk: '#04192B',
+      composer: '#081B2C', composerInk: '#DDF4FF',
+    },
+  },
+  {
+    id: 'galaxy', name: 'galaxy', ambient: 'stars',
+    light: {
+      bg: 'radial-gradient(90% 60% at 100% 0%, #E6D9FF 0%, transparent 60%), radial-gradient(80% 60% at 0% 100%, #D9E4FF 0%, transparent 60%), #F6F3FF',
+      ink: '#1E1440', meta: 'rgba(30,20,64,.56)', header: 'rgba(246,243,255,.84)',
+      sent: ['#5636C0', '#4733B2', '#3934A4'], sentInk: '#FFFFFF',
+      recv: '#FFFFFF', recvInk: '#1E1440', accent: '#5636C0', accentInk: '#FFFFFF',
+      composer: '#FFFFFF', composerInk: '#1E1440',
+    },
+    dark: {
+      bg: 'radial-gradient(70% 45% at 85% 10%, rgba(140,80,255,.28) 0%, transparent 70%), radial-gradient(60% 40% at 10% 90%, rgba(60,120,255,.22) 0%, transparent 70%), radial-gradient(50% 30% at 50% 50%, rgba(255,80,200,.09) 0%, transparent 70%), #0A0818',
+      ink: '#ECE6FF', meta: 'rgba(236,230,255,.52)', header: 'rgba(10,8,24,.86)',
+      sent: ['#4A2E9A', '#3E2C8C', '#2F2C7E'], sentInk: '#ECE6FF',
+      recv: '#1A1534', recvInk: '#ECE6FF', accent: '#A78BFA', accentInk: '#0A0818',
+      composer: '#15112B', composerInk: '#ECE6FF',
+    },
+  },
+  {
+    id: 'sunset', name: 'golden hour', ambient: 'sparkles',
+    light: {
+      bg: 'linear-gradient(180deg, #FFE1C2 0%, #FFD3CB 50%, #F9CADF 100%)',
+      ink: '#4A1A12', meta: 'rgba(74,26,18,.56)', header: 'rgba(255,229,204,.84)',
+      sent: ['#C2410C', '#B23A10', '#A8235A'], sentInk: '#FFFFFF',
+      recv: '#FFF8F2', recvInk: '#4A1A12', accent: '#B23A10', accentInk: '#FFFFFF',
+      composer: '#FFF8F2', composerInk: '#4A1A12',
+    },
+    dark: {
+      bg: 'radial-gradient(90% 50% at 50% 100%, rgba(255,110,40,.28) 0%, transparent 70%), radial-gradient(70% 40% at 50% 0%, rgba(200,40,110,.22) 0%, transparent 70%), #170A0C',
+      ink: '#FFE8DC', meta: 'rgba(255,232,220,.52)', header: 'rgba(23,10,12,.86)',
+      sent: ['#7A2E12', '#73241E', '#6A1E3A'], sentInk: '#FFE8DC',
+      recv: '#2A1416', recvInk: '#FFE8DC', accent: '#FF8A4C', accentInk: '#170A0C',
+      composer: '#211012', composerInk: '#FFE8DC',
+    },
+  },
+  {
+    id: 'noir', name: 'noir', ambient: 'haze',
+    light: {
+      bg: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,.06) 1px, transparent 0) 0 0/4px 4px, linear-gradient(180deg, #F4F4F2 0%, #E2E2DF 100%)',
+      ink: '#141414', meta: 'rgba(20,20,20,.56)', header: 'rgba(244,244,242,.86)',
+      sent: ['#1C1C1E', '#232325', '#2B2B2E'], sentInk: '#F4F4F2',
+      recv: '#FFFFFF', recvInk: '#141414', accent: '#1C1C1E', accentInk: '#F4F4F2',
+      composer: '#FFFFFF', composerInk: '#141414',
+    },
+    dark: {
+      bg: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0) 0 0/4px 4px, radial-gradient(70% 50% at 50% 0%, rgba(255,255,255,.07) 0%, transparent 70%), #0E0E0F',
+      ink: '#ECECEC', meta: 'rgba(236,236,236,.5)', header: 'rgba(14,14,15,.88)',
+      sent: ['#3A3A3D', '#333336', '#2C2C2F'], sentInk: '#ECECEC',
+      recv: '#1B1B1D', recvInk: '#ECECEC', accent: '#E6E6E6', accentInk: '#0E0E0F',
+      composer: '#161618', composerInk: '#ECECEC',
+    },
+  },
+  {
+    id: 'arcade', name: 'arcade', ambient: 'scanlines', mono: true,
+    light: {
+      bg: 'linear-gradient(rgba(27,16,54,.035) 2px, transparent 2px) 0 0/100% 6px, radial-gradient(90% 60% at 50% 0%, #FFE9F6 0%, transparent 65%), #FFF7D6',
+      ink: '#1B1036', meta: 'rgba(27,16,54,.56)', header: 'rgba(255,247,214,.86)',
+      sent: ['#C8006E', '#A9007E', '#7E00A8'], sentInk: '#FFFFFF',
+      recv: '#FFFFFF', recvInk: '#1B1036', accent: '#C8006E', accentInk: '#FFFFFF',
+      composer: '#FFFFFF', composerInk: '#1B1036',
+    },
+    dark: {
+      bg: 'radial-gradient(70% 45% at 50% 0%, rgba(255,0,170,.2) 0%, transparent 70%), radial-gradient(60% 40% at 50% 100%, rgba(0,229,255,.16) 0%, transparent 70%), #0B0716',
+      ink: '#F2F0FF', meta: 'rgba(242,240,255,.52)', header: 'rgba(11,7,22,.88)',
+      sent: ['#7A1A6E', '#5E1F7E', '#2A3B86'], sentInk: '#F2F0FF',
+      recv: '#1C1430', recvInk: '#F2F0FF', accent: '#00E5FF', accentInk: '#0B0716',
+      composer: '#150F26', composerInk: '#F2F0FF',
+    },
+  },
 ]
 
 export type ThemeMode = 'light' | 'dark'
@@ -412,19 +515,8 @@ export function getTheme(id: string | null | undefined, mode: ThemeMode = curren
 /** the night themes made for Ember, shown on their own tab in the picker */
 export const EMBER_THEMES = ['meteor', 'temple', 'sakuranight', 'butterfly']
 
-// themes you earn: by chats started, best streak, or messages sent. matrix stays admin only.
-export type Unlock = { k: 'chats' | 'streak' | 'msgs'; n: number; label: string }
-export const UNLOCKS: Record<string, Unlock> = {
-  meteor: { k: 'chats', n: 3, label: 'chats' },
-  sakuranight: { k: 'msgs', n: 100, label: 'messages' },
-  temple: { k: 'streak', n: 3, label: 'day streak' },
-  butterfly: { k: 'chats', n: 10, label: 'chats' },
-}
-export function themeLocked(id: string, stats?: { msgs: number; chats: number; streak: number } | null): Unlock | null {
-  const u = UNLOCKS[id]
-  if (!u) return null
-  return (stats?.[u.k] ?? 0) >= u.n ? null : u
-}
+/** free to pick for everyone; the rest live in the shop (matrix stays admin only) */
+export const FREE_THEMES = ['goofy', 'cherry', 'midnight', 'matcha', 'lagoon', 'lavender', 'terminal', 'bubblegum', 'citrus']
 
 export function themeList(mode: ThemeMode = currentMode): ThemeDef[] {
   return SPECS.map((s) => build(s, mode))

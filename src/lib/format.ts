@@ -129,6 +129,10 @@ export function messagePreview(m: Pick<Message, 'sender_id' | 'kind' | 'body'> |
   const b = m.body
   if (b === '[[friends]]') return 'friends now'
   if (b === '[[call]]') return mine ? 'you called' : 'called you'
+  const ask = /^\[\[save:[0-9a-f-]{36}\|(voice|photo)\]\]$/.exec(b)
+  if (ask) return mine ? `you asked to save their ${ask[1] === 'voice' ? 'voice note' : 'photo'}` : `wants to save your ${ask[1] === 'voice' ? 'voice note' : 'photo'}`
+  if (/^\[\[saveok:/.test(b)) return mine ? 'you let them save it' : 'said yes, you can save it'
+  if (/^\[\[saveno:/.test(b)) return mine ? 'you said no to saving' : 'said no to saving'
   // system-ish lines read as actions, from whoever did them; only real content gets 'you: '
   const act: [RegExp, string, string][] = [
     [/^\[\[toy:dice/, 'you rolled the dice', 'rolled the dice'],

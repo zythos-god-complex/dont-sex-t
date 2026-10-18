@@ -39,7 +39,8 @@ export async function prepImage(file: File): Promise<{ blob: Blob; w: number; h:
   const k = Math.min(1, max / Math.max(im.width, im.height))
   const w = Math.max(1, Math.round(im.width * k))
   const h = Math.max(1, Math.round(im.height * k))
-  if (file.type === 'image/gif' && file.size < 6_000_000) {
+  // gifs go as they are so they keep moving, whatever their size
+  if (file.type === 'image/gif') {
     im.done()
     return { blob: file, w, h }
   }

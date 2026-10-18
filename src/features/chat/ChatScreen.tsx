@@ -20,7 +20,7 @@ import { activeAgo, daySeparator, emojiOnlyCount, hereFor, linkify, needsSeparat
 import type { Conversation, Message } from '../../lib/types'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Badge, Sheet, TypingDots, spring, useIsDesktop } from '../../ui/kit'
-import { GenderIcon, IconImage, IconMic, IconClose, IconReply, IconAlert, IconArrowDown, IconBack, IconGear, IconSend, IconGhost, IconHi, IconAddFriend, IconFriend, IconLock, IconClock, IconPlus, IconShare, IconCopy, IconTrash, IconBan, IconDice, IconEightBall, IconTicTacToe, IconScissors, IconPhone } from '../../ui/icons'
+import { GenderIcon, IconImage, IconMic, IconClose, IconReply, IconAlert, IconArrowDown, IconBack, IconGear, IconSend, IconGhost, IconHi, IconAddFriend, IconFriend, IconLock, IconClock, IconPlus, IconShare, IconCopy, IconTrash, IconBan, IconDice, IconEightBall, IconTicTacToe, IconScissors, IconPhone, IconDownload } from '../../ui/icons'
 import { getTheme, themeVars } from '../../themes/themes'
 import { useThemeMode } from '../../themes/mode'
 import { goBack, queueRoll } from '../shell/nav'
@@ -31,6 +31,7 @@ import { audioType, readAudioFile, uploadVoice, voiceBody, voiceOf } from '../vo
 import { GONE, imageOf, imageBody, prepImage, uploadImage } from '../image/image'
 import { useChill } from '../../lib/chill'
 import { ImageBubble } from '../image/ImageBubble'
+import { answerOf, askOf, saveAnswer, saveAsk, saveFile, saveStateIn, useSaveState, type SaveKind } from './save'
 import { Confetti, type ConfettiHandle } from './Confetti'
 import { LockedSticker, Sticker } from '../stickers/Sticker'
 import { useStore } from '../../lib/store'
@@ -206,7 +207,7 @@ function ChatView({ conv }: { conv: Conversation }) {
   return (
     <div ref={chatRef} onPointerDown={onChatTap} className={'chat scheme-' + theme.scheme + ' theme-' + theme.id + (themeBump ? ' theme-bump' : '')} style={themeVars(theme)}>
       <Confetti ref={confetti} themeId={theme.id} host={() => chatRef.current} spicy={spicy} />
-      <ThemeBackground themeId={theme.id} host={chatRef} onPhase={setThemeBump} spicy={spicy} />
+      <ThemeBackground themeId={theme.id} host={chatRef} onPhase={setThemeBump} spicy={spicy} graffiti={!!conv.graffiti} />
 
       <header className="chat-head">
         {!desktop && (
@@ -399,6 +400,13 @@ function MessageList({ conv, now, sinceOnline, online, onReply, ice }: { conv: C
       )
       continue
     }
+    const ask = askOf(m.body)
+    if (ask) {
+      items.push(<SaveLine key={m.id} m={m} ask={ask} msgs={msgs} meId={me?.id ?? null} peerName={peer.username} />)
+      continue
+    }
+    // answers show up on the ask's own line
+    if (answerOf(m.body)) continue
     if (m.body === '[[call]]') {
       items.push(
         <div key={m.id} className="sys is-call">
@@ -491,6 +499,55 @@ function MineStatus({ state, id }: { state: 'sending' | 'failed' | 'sent' | 'see
   )
 }
 
+/** "can I save your voice note?" with its answer, in one line; the owner answers right on it */
+function SaveLine({ m, ask, msgs, meId, peerName }: { m: Message; ask: { id: string; kind: SaveKind }; msgs: Message[]; meId: string | null; peerName: string }) {
+  const target = msgs.find((x) => x.id === ask.id)
+  const asker = m.sender_id === meId
+  const owner = asker ? (target?.sender_id ?? '') : (meId ?? '')
+  const st = saveStateIn(msgs, ask.id, owner)
+  const what = ask.kind === 'voice' ? 'voice note' : 'photo'
+  const media = target ? (voiceOf(target.body) ?? imageOf(target.body)) : null
+  const jump = () => {
+    const el = document.querySelector(`[data-mid="${ask.id}"]`)
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    el?.classList.add('flash')
+    setTimeout(() => el?.classList.remove('flash'), 1200)
+  }
+  return (
+    <motion.div className={'sys is-save' + (st === 'ok' ? ' is-ok' : st === 'no' ? ' is-no' : '')} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={spring}>
+      <button type="button" className="save-what" onClick={jump}>
+        <IconDownload size={14} />
+        {asker ? (
+          <span>
+            you asked to save their {what}
+            {st === 'ok' ? ', they said yes' : st === 'no' ? ', they said no' : ''}
+          </span>
+        ) : (
+          <span>
+            <b className="ellipsis">{peerName}</b> wants to save your {what}
+            {st === 'ok' ? ', you said yes' : st === 'no' ? ', you said no' : ''}
+          </span>
+        )}
+      </button>
+      {!asker && st === 'asked' && target && (
+        <span className="save-btns">
+          <button type="button" className="save-yes" onClick={() => void sendMessage(m.conversation_id, saveAnswer(ask.id, true))}>
+            allow
+          </button>
+          <button type="button" className="save-no" onClick={() => void sendMessage(m.conversation_id, saveAnswer(ask.id, false))}>
+            no
+          </button>
+        </span>
+      )}
+      {asker && st === 'ok' && media && (
+        <button type="button" className="save-yes" onClick={() => void saveFile(media.url, ask.kind)}>
+          save
+        </button>
+      )}
+    </motion.div>
+  )
+}
+
 /** Live nsfw flag for the other person: presence is freshest, the conversation snapshot can be stale. */
 function peerNsfw(s: ReturnType<typeof useStore.getState>, peer: Conversation['peer'] | undefined): boolean {
   if (!peer) return false
@@ -520,6 +577,9 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
   const [viewer, setViewer] = useState(false)
   const gone = m.body === GONE
   const once = !!img?.once
+  // theirs: saving needs their ok first; yours saves straight away; view once never does
+  const media: { url: string; kind: SaveKind } | null = voice ? { url: voice.url, kind: 'voice' } : img && !once ? { url: img.url, kind: 'photo' } : null
+  const saveSt = useSaveState(m.conversation_id, m.id, m.sender_id, !!media && !mine)
   // view once: 5s after opening it closes itself, and closing (any way) burns it for both
   useEffect(() => {
     if (!viewer || !once || mine) return
@@ -594,6 +654,15 @@ function Bubble({ m, mine, joinPrev, joinNext, peerName, meId, onReply, fresh, h
     { id: 'reply', label: 'reply', ico: <IconReply size={19} />, go: () => (setMenu(null), onReply(m)) },
     ...(plain ? [{ id: 'copy', label: 'copy', ico: <IconCopy size={19} />, go: () => (setMenu(null), void navigator.clipboard?.writeText(m.body).catch(() => {})) }] : []),
     ...(stk ? [{ id: 'share', label: 'share sticker', ico: <IconShare size={19} />, go: () => (setMenu(null), void shareSticker(document.querySelector(`[data-mid="${m.id}"] .stk`), STICKERS.find((x) => x.id === stk)?.caption ?? 'sticker')) }] : []),
+    ...(media
+      ? [
+          mine || saveSt === 'ok'
+            ? { id: 'save', label: 'save', ico: <IconDownload size={19} />, go: () => (setMenu(null), void saveFile(media.url, media.kind)) }
+            : saveSt === 'none'
+              ? { id: 'save', label: 'ask to save', ico: <IconDownload size={19} />, go: () => (setMenu(null), void sendMessage(m.conversation_id, saveAsk(m.id, media.kind))) }
+              : { id: 'save', label: saveSt === 'asked' ? 'asked to save' : 'they said no', ico: <IconDownload size={19} />, go: () => setMenu(null) },
+        ]
+      : []),
     ...(mine ? [{ id: 'unsend', label: 'unsend', ico: <IconTrash size={19} />, danger: true, go: () => (setMenu(null), void unsend(m)) }] : []),
   ]
 
@@ -1079,7 +1148,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId, ice, onWish, onCon
   const move = useMyMove(conv.id, meId)
   // A fresh native input per tap, no accept filter: on some Android phones the gallery app never
   // returns the photo to Chrome, while the system document picker does. Some Androids only fire 'input'.
-  const [aud, setAud] = useState<'sending' | 'big' | 'error' | 'failed' | 'asked' | null>(null)
+  const [aud, setAud] = useState<'sending' | 'error' | 'failed' | 'asked' | null>(null)
   const openPicker = (kind: 'image' | 'audio' = 'image') => {
     const el = document.createElement('input')
     el.type = 'file'
@@ -1102,7 +1171,6 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId, ice, onWish, onCon
   const pickAudio = async (file: File | undefined) => {
     if (!file) return
     if (!audioType(file, file.name)) return flash('error')
-    if (file.size > 5 * 1024 * 1024) return flash('big')
     setAud('sending')
     const reply = replyTo
     onClearReply()
@@ -1115,7 +1183,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId, ice, onWish, onCon
       flash('error')
     }
   }
-  const flash = (s: 'big' | 'error' | 'failed' | 'asked') => {
+  const flash = (s: 'error' | 'failed' | 'asked') => {
     setAud(s)
     setTimeout(() => setAud(null), 3000)
   }
@@ -1366,7 +1434,7 @@ function Composer({ conv, onEgg, replyTo, onClearReply, meId, ice, onWish, onCon
       </AnimatePresence>
       {aud && (
         <span className={'aud-pill' + (aud === 'sending' || aud === 'asked' ? '' : ' is-err')}>
-          {aud === 'sending' ? 'sending audio...' : aud === 'big' ? 'too big, 5mb max' : aud === 'asked' ? `asked ${conv.peer.username}` : "couldn't send that"}
+          {aud === 'sending' ? 'sending audio...' : aud === 'asked' ? `asked ${conv.peer.username}` : "couldn't send that"}
         </span>
       )}
       <div className="composer" style={recording ? { display: 'none' } : undefined}>

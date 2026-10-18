@@ -16,12 +16,16 @@ export const FACE_PALETTE = [
   '#F2E8CF', // oat
 ] as const
 
+/** shop colors: never used for generated faces, only when bought */
+export const PREMIUM_COLORS = ['#FF4747', '#FFE94D', '#12C2A8', '#E07BFF', '#C9A27A', '#B8BEC9'] as const
+export const FACE_COLORS: readonly string[] = [...FACE_PALETTE, ...PREMIUM_COLORS]
+
 export const FACE_INK = '#17131F'
 export const TONGUE = '#FF6F91'
 
-export type BlobKind = 'squircle' | 'bean' | 'egg' | 'cloud' | 'wobble' | 'tall' | 'wide' | 'star' | 'circle' | 'soft'
-export type EyeKind = 'pair' | 'mismatch' | 'squint' | 'three' | 'sleepy' | 'wide' | 'beady' | 'calm' | 'soft' | 'almond' | 'shine' | 'lashes'
-export type MouthKind = 'grin' | 'o' | 'wavy' | 'tongue' | 'teeth' | 'smirk' | 'bigD' | 'flat'
+export type BlobKind = 'squircle' | 'bean' | 'egg' | 'cloud' | 'wobble' | 'tall' | 'wide' | 'star' | 'circle' | 'soft' | 'heart' | 'onion' | 'ghosty'
+export type EyeKind = 'pair' | 'mismatch' | 'squint' | 'three' | 'sleepy' | 'wide' | 'beady' | 'calm' | 'soft' | 'almond' | 'shine' | 'lashes' | 'hearts' | 'stars' | 'shades' | 'nerd' | 'dizzy' | 'dead'
+export type MouthKind = 'grin' | 'o' | 'wavy' | 'tongue' | 'teeth' | 'smirk' | 'bigD' | 'flat' | 'fangs' | 'cat' | 'mustache' | 'braces'
 export type BrowKind = 'raised' | 'worried' | 'grumpy' | 'uneven'
 
 export type FaceTraits = {
@@ -37,8 +41,7 @@ export type FaceTraits = {
   blush: boolean
   freckles: boolean
   tooth: boolean
-  antenna: boolean
-  sprout: boolean
+  top: TopKind
   spots: boolean
   mirror: boolean // flips asymmetric features (mismatch, squint, smirk)
   derp: boolean // pupils wander in different directions at rest
@@ -149,6 +152,8 @@ export type BlobGeo = {
   cy: number
   s: number // feature scale
   top: Pt // where antenna / sprout attach
+  ear?: Pt // half spacing and height for ears, when the default (13, top + 9) would float
+  hat?: Pt // where hats sit, when that isn't the top
 }
 
 function makeBlobs(): Record<BlobKind, BlobGeo> {
@@ -197,6 +202,10 @@ function makeBlobs(): Record<BlobKind, BlobGeo> {
     tall: { d: smoothClosed(tall), cx: 50, cy: 52, s: 0.86, top: [50, 10.5] },
     wide: { d: smoothClosed(wide), cx: 50, cy: 58, s: 0.95, top: [50, 25.5] },
     star: { d: smoothClosed(star), cx: 50, cy: 57, s: 0.9, top: [50, 14.5] },
+    // shop shapes
+    heart: { d: 'M50 32 C46 20 34 14 24 17 C12 21 8 34 12 46 C17 61 33 74 50 90 C67 74 83 61 88 46 C92 34 88 21 76 17 C66 14 54 20 50 32 Z', cx: 50, cy: 50, s: 0.92, top: [50, 31], ear: [20, 24], hat: [50, 19] },
+    onion: { d: 'M50 12 C56 26 82 36 86 58 C90 80 72 93 50 93 C28 93 10 80 14 58 C18 36 44 26 50 12 Z', cx: 50, cy: 62, s: 0.95, top: [50, 13], ear: [11, 31] },
+    ghosty: { d: 'M50 14 C73 14 87 30 87 53 L87 86 Q87 92 81 90 Q75 84 69 90 Q63 96 57 90 Q50 84 43 90 Q37 96 31 90 Q25 84 19 90 Q13 92 13 86 L13 53 C13 30 27 14 50 14 Z', cx: 50, cy: 52, s: 1, top: [50, 14] },
   }
 }
 
@@ -214,6 +223,8 @@ function ellipseR(t: number, a: number, b: number): number {
 
 export const BLOBS: Record<BlobKind, BlobGeo> = makeBlobs()
 export const BLOB_KINDS = Object.keys(BLOBS) as BlobKind[]
+// generated faces only ever use the original ten, in this order, so nobody's face changes when the shop grows
+const GEN_BLOBS: BlobKind[] = ['squircle', 'circle', 'soft', 'bean', 'egg', 'cloud', 'wobble', 'tall', 'wide', 'star']
 
 /* ---------------- traits ---------------- */
 
@@ -268,7 +279,7 @@ function genTraits(key: string): FaceTraits {
 
   const colorIdx = Math.floor(rnd() * FACE_PALETTE.length)
   const color = FACE_PALETTE[colorIdx]
-  const blob = BLOB_KINDS[Math.floor(rnd() * BLOB_KINDS.length)]
+  const blob = GEN_BLOBS[Math.floor(rnd() * GEN_BLOBS.length)]
   const eyes = pickWeighted(rnd(), EYE_TABLE)
   let mouth = pickWeighted(rnd(), MOUTH_TABLE)
   if (eyes === 'sleepy' && mouth === 'bigD') mouth = 'o'
@@ -279,8 +290,7 @@ function genTraits(key: string): FaceTraits {
   const toothOk = mouth === 'grin' || mouth === 'bigD' || mouth === 'smirk'
   const tooth = toothOk && chance(0.3)
   const topRoll = rnd()
-  const antenna = topRoll < 0.1
-  const sprout = !antenna && topRoll < 0.2
+  const top: TopKind = topRoll < 0.1 ? 'antenna' : topRoll < 0.2 ? 'sprout' : 'none'
   const spots = chance(0.1)
   const mirror = chance(0.5)
   const derp = (eyes === 'pair' || eyes === 'mismatch' || eyes === 'wide') && chance(0.22)
@@ -299,8 +309,7 @@ function genTraits(key: string): FaceTraits {
     blush,
     freckles,
     tooth,
-    antenna,
-    sprout,
+    top,
     spots,
     mirror,
     derp,
@@ -330,8 +339,7 @@ function defaultTraits(): FaceTraits {
     blush: true,
     freckles: false,
     tooth: true,
-    antenna: false,
-    sprout: false,
+    top: 'none',
     spots: false,
     mirror: false,
     derp: false,
@@ -364,7 +372,7 @@ export function faceTilt(username: string | null | undefined, range = 1.5): numb
 
 /* ---------------- custom avatars (built at sign up) ---------------- */
 
-export type TopKind = 'none' | 'antenna' | 'sprout'
+export type TopKind = 'none' | 'antenna' | 'sprout' | 'cat' | 'bunny' | 'flower' | 'unicorn'
 export type AvatarConfig = {
   v: 1
   ghost?: boolean // ghost browse: wears a bedsheet
@@ -379,16 +387,28 @@ export type AvatarConfig = {
   top: TopKind
 }
 
-export const EYE_KINDS: EyeKind[] = ['calm', 'soft', 'almond', 'shine', 'lashes', 'pair', 'beady', 'wide', 'mismatch', 'sleepy', 'squint', 'three']
-export const MOUTH_KINDS: MouthKind[] = ['grin', 'bigD', 'tongue', 'o', 'smirk', 'teeth', 'wavy', 'flat']
+export const EYE_KINDS: EyeKind[] = ['calm', 'soft', 'almond', 'shine', 'lashes', 'pair', 'beady', 'wide', 'mismatch', 'sleepy', 'squint', 'three', 'hearts', 'stars', 'shades', 'nerd', 'dizzy', 'dead']
+export const MOUTH_KINDS: MouthKind[] = ['grin', 'bigD', 'tongue', 'o', 'smirk', 'teeth', 'wavy', 'flat', 'fangs', 'cat', 'mustache', 'braces']
 export const BROW_KINDS: (BrowKind | null)[] = [null, 'raised', 'worried', 'grumpy', 'uneven']
-export const TOP_KINDS: TopKind[] = ['none', 'antenna', 'sprout']
+export const TOP_KINDS: TopKind[] = ['none', 'antenna', 'sprout', 'cat', 'bunny', 'flower', 'unicorn']
+
+/** shop id of a face part, or null when it is free */
+export function partItem(part: 'color' | 'shape' | 'eyes' | 'mouth' | 'top', v: string): string | null {
+  if (part === 'color') return (PREMIUM_COLORS as readonly string[]).includes(v) ? 'color:' + v.slice(1).toLowerCase() : null
+  const paid: Record<string, readonly string[]> = {
+    shape: ['heart', 'onion', 'ghosty'],
+    eyes: ['hearts', 'stars', 'shades', 'nerd', 'dizzy', 'dead'],
+    mouth: ['fangs', 'cat', 'mustache', 'braces'],
+    top: ['cat', 'bunny', 'flower', 'unicorn'],
+  }
+  return paid[part].includes(v) ? part + ':' + v : null
+}
 
 export function isAvatar(x: unknown): x is AvatarConfig {
   if (!x || typeof x !== 'object') return false
   const a = x as Record<string, unknown>
   return (
-    (FACE_PALETTE as readonly string[]).includes(a.color as string) &&
+    FACE_COLORS.includes(a.color as string) &&
     BLOB_KINDS.includes(a.blob as BlobKind) &&
     EYE_KINDS.includes(a.eyes as EyeKind) &&
     MOUTH_KINDS.includes(a.mouth as MouthKind) &&
@@ -409,7 +429,7 @@ export function avatarFromTraits(t: FaceTraits): AvatarConfig {
     brows: t.brows,
     blush: t.blush,
     freckles: t.freckles,
-    top: t.antenna ? 'antenna' : t.sprout ? 'sprout' : 'none',
+    top: t.top,
   }
 }
 
@@ -429,8 +449,7 @@ export function applyAvatar(t: FaceTraits, a: AvatarConfig | null | undefined): 
     brows: a.eyes === 'three' ? null : a.brows,
     blush: a.blush,
     freckles: a.freckles,
-    antenna: a.top === 'antenna',
-    sprout: a.top === 'sprout',
+    top: a.top,
     tooth: t.tooth && (a.mouth === 'grin' || a.mouth === 'bigD' || a.mouth === 'smirk'),
     derp: t.derp && (a.eyes === 'pair' || a.eyes === 'mismatch' || a.eyes === 'wide'),
     er,
@@ -439,17 +458,23 @@ export function applyAvatar(t: FaceTraits, a: AvatarConfig | null | undefined): 
 
 const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)]
 
-export function randomAvatar(): AvatarConfig {
-  const eyes = pick(EYE_KINDS)
+/** the dice: only parts you can use (free ones, plus whatever owns() says yes to) */
+export function randomAvatar(owns: (item: string) => boolean = () => false): AvatarConfig {
+  const ok = (part: Parameters<typeof partItem>[0]) => (v: string) => {
+    const id = partItem(part, v)
+    return !id || owns(id)
+  }
+  const eyes = pick(EYE_KINDS.filter(ok('eyes')))
+  const tops = TOP_KINDS.filter((t) => t !== 'none' && ok('top')(t))
   return {
     v: 1,
-    color: pick(FACE_PALETTE),
-    blob: pick(BLOB_KINDS),
+    color: pick(FACE_COLORS.filter(ok('color'))),
+    blob: pick(BLOB_KINDS.filter(ok('shape'))),
     eyes,
-    mouth: pick(MOUTH_KINDS),
+    mouth: pick(MOUTH_KINDS.filter(ok('mouth'))),
     brows: eyes === 'three' || Math.random() < 0.6 ? null : pick(BROW_KINDS.slice(1)),
     blush: Math.random() < 0.5,
     freckles: Math.random() < 0.25,
-    top: Math.random() < 0.7 ? 'none' : pick(['antenna', 'sprout'] as const),
+    top: Math.random() < 0.7 ? 'none' : pick(tops),
   }
 }

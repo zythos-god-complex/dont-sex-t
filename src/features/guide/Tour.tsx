@@ -17,13 +17,14 @@ const STEPS: Record<Kind, Step[]> = {
     { sel: ['.roll:not(.is-ghost)'], title: 'or let fate pick', body: 'roll drops you straight into a chat with someone new.', mood: 'wink' },
     { sel: ['.tabbar .tab:nth-child(2)', '.d-rail .rail-chats', '.d-rail-head'], title: 'your chats', body: 'requests, friends and everyone you talked to. add someone as a friend and they stick around.', mood: 'smug' },
     { sel: ['.tabbar .tab:nth-child(3)', '.d-live:not(.is-home)'], title: 'rooms', body: 'group chats. hop in a public one or make your own with friends.', mood: 'happy' },
+    { sel: ['.m-head .coin-chip', '.d-me .coin-chip'], title: 'goof coins', body: 'watch an ad in the shop to collect coins, then spend them on themes, graffiti, hats and face stuff. you start with a gift.', mood: 'happy' },
     { sel: ['.m-head .me-btn', '.d-me .me-btn', '.me-btn'], title: "that's you", body: 'mood, bio, song, your face and all the settings live here.', mood: 'kiss' },
     { title: 'golden rules', body: "be nice. never share where you live, never send money, and block or report anyone weird from their profile.", mood: 'angry' },
   ],
   chat: [
     { sel: ['.chat-head .chat-peer'], title: 'tap their name', body: 'add friend, pick a theme, notifications, block or report. all in one place.', mood: 'happy' },
     { sel: ['.composer .stk-toggle'], title: 'the plus', body: 'games, photos, voice notes, doodles and stickers.', mood: 'wink' },
-    { sel: ['.ice-chips', '.msgs-inner .b-row .b'], title: 'stuck on what to say?', body: 'tap a line to send it. once you are talking, tap any message to react or reply, double tap for a heart.', mood: 'smug' },
+    { sel: ['.ice-chips', '.msgs-inner .b-row .b'], title: 'stuck on what to say?', body: 'tap a line to send it. once you are talking, tap any message to react or reply, double tap for a heart. to keep their voice note or photo, ask to save it from the same menu.', mood: 'smug' },
     { title: 'secret move', body: 'tap 4 times fast anywhere in a chat for confetti. they see it too.', mood: 'shocked' },
   ],
 }

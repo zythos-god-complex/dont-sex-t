@@ -77,5 +77,9 @@ export const stickerBody = (k: StickerKind | CoupleKind) => `[[sticker:${k}]]`
 export function displayBody(body: string): string {
   if (/^\[\[voice:/.test(body)) return 'voice message'
   if (/^\[\[img:/.test(body)) return 'photo'
+  const ask = /^\[\[save:[0-9a-f-]{36}\|(voice|photo)\]\]$/.exec(body)
+  if (ask) return `wants to save your ${ask[1] === 'voice' ? 'voice note' : 'photo'}`
+  if (/^\[\[saveok:/.test(body)) return 'said yes, you can save it'
+  if (/^\[\[saveno:/.test(body)) return 'said no to saving'
   return stickerOf(body) || coupleOf(body) ? 'sent a sticker' : body
 }

@@ -191,6 +191,7 @@ function sameConversation(a: Conversation, b: Conversation): boolean {
     a.theme === b.theme &&
     a.theme_by === b.theme_by &&
     a.theme_at === b.theme_at &&
+    a.graffiti === b.graffiti &&
     a.created_at === b.created_at &&
     a.last_message_at === b.last_message_at &&
     a.my_last_read_at === b.my_last_read_at &&

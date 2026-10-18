@@ -7,19 +7,29 @@ import {
   BLOB_KINDS,
   BROW_KINDS,
   EYE_KINDS,
-  FACE_PALETTE,
+  FACE_COLORS,
   MOUTH_KINDS,
   TOP_KINDS,
+  partItem,
   randomAvatar,
   type AvatarConfig,
 } from '../../ui/face'
+import { itemById } from '../shop/catalog'
+import { askBuy, coinText, useOwnsFn, useShop } from '../shop/shop'
+import { Coin } from '../shop/Coin'
 
 type Tab = 'color' | 'shape' | 'eyes' | 'mouth' | 'top' | 'brows'
 
-function Tile({ on, onPick, children, label }: { on: boolean; onPick: () => void; children: React.ReactNode; label: string }) {
+function Tile({ on, onPick, children, label, price }: { on: boolean; onPick: () => void; children: React.ReactNode; label: string; price?: number | null }) {
   return (
-    <motion.button type="button" className={'fb-tile' + (on ? ' is-on' : '')} onClick={onPick} whileTap={{ scale: 0.9 }} transition={spring} aria-pressed={on} aria-label={label}>
+    <motion.button type="button" className={'fb-tile' + (on ? ' is-on' : '') + (price ? ' is-shop' : '')} onClick={onPick} whileTap={{ scale: 0.9 }} transition={spring} aria-pressed={on} aria-label={label + (price ? ', in the shop' : '')}>
       {children}
+      {!!price && (
+        <span className="fb-price tnum">
+          <Coin size={11} />
+          {coinText(price)}
+        </span>
+      )}
       {on && (
         <motion.span className="fb-check" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring}>
           <IconCheck size={12} />
@@ -29,10 +39,26 @@ function Tile({ on, onPick, children, label }: { on: boolean; onPick: () => void
   )
 }
 
-export function FaceBuilder({ name, value, onChange, onDone }: { name: string | null; value: AvatarConfig; onChange: (a: AvatarConfig) => void; onDone: () => void }) {
+/** shop: signed in, so shop parts show with their price and buy in place; off at sign up, where they stay hidden */
+export function FaceBuilder({ name, value, onChange, onDone, shop = false }: { name: string | null; value: AvatarConfig; onChange: (a: AvatarConfig) => void; onDone: () => void; shop?: boolean }) {
   const [tab, setTab] = useState<Tab>('color')
   const [spin, setSpin] = useState(0)
+  const has = useOwnsFn()
+  const prices = useShop((s) => s.prices)
   const set = (patch: Partial<AvatarConfig>) => onChange({ ...value, ...patch })
+  // a part you already wear counts as yours; a shop part you don't have shows its price
+  type Part = Parameters<typeof partItem>[0]
+  const cost = (part: Part, v: string, cur: string): number | null => {
+    const id = partItem(part, v)
+    if (!id || v === cur || has(id)) return null
+    return prices[id] ?? itemById(id)?.price ?? null
+  }
+  const shown = (part: Part, v: string, cur: string) => shop || v === cur || !partItem(part, v)
+  const pick = (part: Part, v: string, cur: string, patch: Partial<AvatarConfig>) => {
+    const id = partItem(part, v)
+    if (id && v !== cur && !has(id)) return askBuy(id, () => set(patch))
+    set(patch)
+  }
   const face = (a: AvatarConfig, size = 58) => <GoofyFace name={name} avatar={a} size={size} blink={false} />
   // tops and brows are small: a bigger face cropped to its upper half so the difference shows
   const zoom = (a: AvatarConfig) => <span className="fb-zoom">{face(a, 104)}</span>
@@ -51,7 +77,7 @@ export function FaceBuilder({ name, value, onChange, onDone }: { name: string | 
           transition={{ type: 'spring', stiffness: 260, damping: 18 }}
           onClick={() => {
             setSpin((n) => n + 1)
-            onChange(randomAvatar())
+            onChange(randomAvatar(shop ? has : undefined))
           }}
         >
           <IconDice size={24} />
@@ -74,32 +100,32 @@ export function FaceBuilder({ name, value, onChange, onDone }: { name: string | 
 
       <div className="fb-grid">
         {tab === 'color' &&
-          FACE_PALETTE.map((c) => (
-            <Tile key={c} label={c} on={value.color === c} onPick={() => set({ color: c })}>
+          FACE_COLORS.filter((c) => shown('color', c, value.color)).map((c) => (
+            <Tile key={c} label={c} on={value.color === c} price={cost('color', c, value.color)} onPick={() => pick('color', c, value.color, { color: c })}>
               <span className="fb-color" style={{ background: c }} />
             </Tile>
           ))}
         {tab === 'shape' &&
-          BLOB_KINDS.map((b) => (
-            <Tile key={b} label={b} on={value.blob === b} onPick={() => set({ blob: b })}>
+          BLOB_KINDS.filter((b) => shown('shape', b, value.blob)).map((b) => (
+            <Tile key={b} label={b} on={value.blob === b} price={cost('shape', b, value.blob)} onPick={() => pick('shape', b, value.blob, { blob: b })}>
               {face({ ...value, blob: b })}
             </Tile>
           ))}
         {tab === 'eyes' &&
-          EYE_KINDS.map((e) => (
-            <Tile key={e} label={e} on={value.eyes === e} onPick={() => set({ eyes: e })}>
+          EYE_KINDS.filter((e) => shown('eyes', e, value.eyes)).map((e) => (
+            <Tile key={e} label={e} on={value.eyes === e} price={cost('eyes', e, value.eyes)} onPick={() => pick('eyes', e, value.eyes, { eyes: e })}>
               {face({ ...value, eyes: e })}
             </Tile>
           ))}
         {tab === 'mouth' &&
-          MOUTH_KINDS.map((m) => (
-            <Tile key={m} label={m} on={value.mouth === m} onPick={() => set({ mouth: m })}>
+          MOUTH_KINDS.filter((m) => shown('mouth', m, value.mouth)).map((m) => (
+            <Tile key={m} label={m} on={value.mouth === m} price={cost('mouth', m, value.mouth)} onPick={() => pick('mouth', m, value.mouth, { mouth: m })}>
               {face({ ...value, mouth: m })}
             </Tile>
           ))}
         {tab === 'top' &&
-          TOP_KINDS.map((t) => (
-            <Tile key={'top' + t} label={t} on={value.top === t} onPick={() => set({ top: t })}>
+          TOP_KINDS.filter((t) => shown('top', t, value.top)).map((t) => (
+            <Tile key={'top' + t} label={t} on={value.top === t} price={cost('top', t, value.top)} onPick={() => pick('top', t, value.top, { top: t })}>
               {zoom({ ...value, top: t })}
             </Tile>
           ))}
