@@ -14,7 +14,7 @@ import { EMBER_THEMES, getTheme, themeList, themeVars } from '../../themes/theme
 import { GRAFFITI, graffitiIcon } from '../../themes/graffiti'
 import { itemById } from '../shop/catalog'
 import { askBuy, coinText, useOwnsFn, useShop } from '../shop/shop'
-import { Coin } from '../shop/Coin'
+import { Coin, Lock } from '../shop/Coin'
 import { useThemeMode } from '../../themes/mode'
 import { AMBIENT_LABEL, PARTICLE_AMBIENTS, SCENE_AMBIENTS, SPEED_ONLY, setAmbientPrefs, setLanding, useAmbientPrefs } from '../../themes/ambientPrefs'
 import { setThemeOrigin } from './ThemeReveal'
@@ -142,14 +142,23 @@ function Themes({ conv, onPicked }: { conv: Conversation; onPicked: () => void }
                     <IconCheck size={14} />
                   </motion.span>
                 )}
+                <AnimatePresence>
+                  {item && (
+                    <motion.span key="lock" className="swatch-lockbadge" exit={{ scale: 1.8, rotate: 24, y: -8, opacity: 0, transition: { duration: 0.4 } }}>
+                      <Lock size={13} />
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </span>
               <span className="swatch-name">{t.name}</span>
-              {item && (
-                <span className="swatch-price tnum">
-                  <Coin size={13} />
-                  {coinText(prices[item.id] ?? item.price)}
-                </span>
-              )}
+              <AnimatePresence initial={false}>
+                {item && (
+                  <motion.span key="price" className="swatch-price tnum" exit={{ y: -6, opacity: 0, scale: 0.8 }}>
+                    <Coin size={13} />
+                    {coinText(prices[item.id] ?? item.price)}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </motion.button>
           )
         })}

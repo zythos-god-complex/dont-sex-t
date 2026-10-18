@@ -1,6 +1,6 @@
 // The shop: goof coins from ads buy themes, graffiti, face parts, hats and flair. One sheet, one buy
 // card and one ad player for the whole app; pickers elsewhere call askBuy() to buy in place.
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMe } from '../../lib/hooks'
@@ -9,7 +9,7 @@ import { saveAvatar, saveFlair } from '../../lib/engine'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Aura, CARDS } from '../../ui/Aura'
 import { Sheet, spring } from '../../ui/kit'
-import { IconCheck, IconClose, IconLock, IconPlay } from '../../ui/icons'
+import { IconCheck, IconClose, IconPlay } from '../../ui/icons'
 import { avatarFromTraits, faceTraits, type AvatarConfig } from '../../ui/face'
 import { getTheme, themeVars } from '../../themes/themes'
 import { graffitiTile } from '../../themes/graffiti'
@@ -17,7 +17,7 @@ import { useThemeMode } from '../../themes/mode'
 import { openMeSheet } from '../shell/meSheet'
 import { homeTourDue, useTourBusy } from '../guide/Tour'
 import { catalog, itemById, type Item, type Kind } from './catalog'
-import { Coin } from './Coin'
+import { Coin, Lock, useTicker } from './Coin'
 import {
   adClaim,
   adStart,
@@ -137,8 +137,26 @@ function Price({ item }: { item: Item }) {
   )
 }
 
+/** true for a moment right after something flips from locked to yours (not on the first load) */
+function useJustUnlocked(has: boolean): boolean {
+  const loaded = useShop((s) => s.loaded)
+  const prev = useRef({ has, loaded })
+  const [fresh, setFresh] = useState(false)
+  useEffect(() => {
+    const p = prev.current
+    prev.current = { has, loaded }
+    if (!p.has && has && p.loaded) {
+      setFresh(true)
+      const t = setTimeout(() => setFresh(false), 1500)
+      return () => clearTimeout(t)
+    }
+  }, [has, loaded])
+  return fresh
+}
+
 function Tile({ item }: { item: Item }) {
   const has = useOwnsFn()(item.id)
+  const fresh = useJustUnlocked(has)
   const wearing = useWearing(item)
   const wearable = item.kind !== 'theme' && item.kind !== 'graffiti'
   const [busy, setBusy] = useState(false)
@@ -152,9 +170,25 @@ function Tile({ item }: { item: Item }) {
       .finally(() => setBusy(false))
   }
   return (
-    <motion.button type="button" className={'shop-tile' + (has ? ' is-owned' : '') + (wearing ? ' is-on' : '')} onClick={tap} whileTap={{ scale: 0.95 }} transition={spring} aria-label={item.name + (has ? (wearing ? ', wearing' : ', owned') : '')}>
+    <motion.button
+      type="button"
+      className={'shop-tile' + (has ? ' is-owned' : ' is-locked') + (wearing ? ' is-on' : '') + (fresh ? ' is-fresh' : '')}
+      onClick={tap}
+      whileTap={{ scale: 0.95 }}
+      animate={fresh ? { scale: [1, 0.92, 1.06, 1] } : { scale: 1 }}
+      transition={fresh ? { duration: 0.55, delay: 0.15 } : spring}
+      aria-label={item.name + (has ? (wearing ? ', wearing' : ', owned') : ', locked')}
+    >
       <span className="shop-tile-prev">
         <ItemPreview item={item} />
+        <AnimatePresence>
+          {!has && (
+            <motion.span key="lock" className="shop-tile-lock" exit={{ scale: 1.9, rotate: 24, y: -10, opacity: 0, transition: { duration: 0.45 } }}>
+              <Lock size={13} open={false} />
+            </motion.span>
+          )}
+        </AnimatePresence>
+        {fresh && <span className="tile-shine" aria-hidden="true" />}
         {wearing && (
           <span className="shop-tile-check">
             <IconCheck size={13} />
@@ -162,15 +196,27 @@ function Tile({ item }: { item: Item }) {
         )}
       </span>
       <span className="shop-tile-name ellipsis">{item.name}</span>
-      {has ? <span className="shop-owned">{wearing ? 'wearing' : wearable ? 'wear' : 'yours'}</span> : <Price item={item} />}
+      <AnimatePresence mode="wait" initial={false}>
+        {has ? (
+          <motion.span key="own" className="shop-owned" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+            {wearing ? 'wearing' : wearable ? 'wear' : 'yours'}
+          </motion.span>
+        ) : (
+          <motion.span key="price" exit={{ y: -8, opacity: 0, scale: 0.8 }}>
+            <Price item={item} />
+          </motion.span>
+        )}
+      </AnimatePresence>
     </motion.button>
   )
 }
 
 function Grid({ items }: { items: Item[] }) {
   const has = useOwnsFn()
-  // things you can still get first, the ones you have after
-  const list = [...items].sort((a, b) => Number(has(a.id)) - Number(has(b.id)))
+  // things you can still get first, the ones you have after; the order holds while the tab is open
+  // so a tile you just unlocked stays put for its moment
+  const [order] = useState(() => [...items].sort((a, b) => Number(has(a.id)) - Number(has(b.id))).map((x) => x.id))
+  const list = order.map((id) => items.find((x) => x.id === id)!).filter(Boolean)
   return (
     <div className="shop-grid">
       {list.map((it) => (
@@ -262,6 +308,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function ShopBody() {
   const tab = useShopUi((s) => s.tab)
   const coins = useShop((s) => s.coins)
+  const shownCoins = useTicker(coins)
   const all = catalog()
   const of = (k: Kind) => all.filter((x) => x.kind === k)
   return (
@@ -270,7 +317,7 @@ function ShopBody() {
         <h2 className="shop-title">shop</h2>
         <span className="shop-bal tnum" aria-label={`${coins} coins`}>
           <Coin size={22} />
-          {coins.toLocaleString('en-US')}
+          {shownCoins.toLocaleString('en-US')}
         </span>
       </header>
       <div className="shop-tabs" role="tablist">
@@ -356,6 +403,8 @@ function BuyInner({ item, then }: { item: Item; then?: () => void }) {
   const ads = useShop((s) => s.ads)
   const price = useShop((s) => s.prices[item.id] ?? item.price)
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>(owns(item.id) ? 'done' : 'idle')
+  // bought in this card (plays the unlock) rather than already yours when it opened
+  const [won, setWon] = useState(false)
   const wearable = item.kind !== 'theme' && item.kind !== 'graffiti'
   const poor = coins < price
   const go = async () => {
@@ -363,44 +412,67 @@ function BuyInner({ item, then }: { item: Item; then?: () => void }) {
     setState('busy')
     const r = await buy(item.id)
     if (r === 'ok') {
-      navigator.vibrate?.([12, 40, 18])
+      navigator.vibrate?.([12, 60, 24])
+      setWon(true)
       setState('done')
-      if (then) {
-        then()
-        setTimeout(closeBuy, 900)
-      }
+      if (then) setTimeout(then, 1100)
+      if (then) setTimeout(closeBuy, 1500)
     } else setState(r === 'poor' ? 'idle' : 'error')
   }
+  const after = won ? 0.62 : 0
   return (
     <Layer onClose={closeBuy} className="buy-layer">
-      <motion.div className="buy-card" role="dialog" aria-label={'unlock ' + item.name} initial={{ y: 40, scale: 0.92, opacity: 0 }} animate={{ y: 0, scale: 1, opacity: 1 }} exit={{ y: 30, scale: 0.95, opacity: 0 }} transition={spring}>
+      <motion.div className="buy-card" role="dialog" aria-label={(state === 'done' ? '' : 'unlock ') + item.name} initial={{ y: 40, scale: 0.92, opacity: 0 }} animate={{ y: 0, scale: 1, opacity: 1 }} exit={{ y: 30, scale: 0.95, opacity: 0 }} transition={spring}>
         <button type="button" className="icon-btn buy-x" aria-label="close" onClick={closeBuy}>
           <IconClose size={20} />
         </button>
-        <motion.div className="buy-prev" animate={state === 'done' ? { scale: [1, 1.12, 1], rotate: [0, -4, 0] } : {}} transition={{ duration: 0.5 }}>
+        <motion.div className={'buy-prev' + (state !== 'done' ? ' is-locked' : '')} animate={won ? { scale: [1, 0.95, 1.07, 1], rotate: [0, -2, 1.5, 0] } : {}} transition={{ delay: 0.48, duration: 0.6 }}>
           <ItemPreview item={item} big />
-          {state === 'done' && (
-            <span className="buy-burst" aria-hidden="true">
-              {Array.from({ length: 10 }, (_, i) => {
-                const a = (i / 10) * Math.PI * 2
-                return (
-                  <motion.i
-                    key={i}
-                    initial={{ x: 0, y: 0, scale: 0.4, opacity: 1 }}
-                    animate={{ x: Math.cos(a) * 88, y: Math.sin(a) * 62, scale: 1, opacity: 0 }}
-                    transition={{ duration: 0.75, ease: 'easeOut' }}
-                  />
-                )
-              })}
-            </span>
+          <AnimatePresence>
+            {state !== 'done' && (
+              <motion.span key="corner" className="buy-lock" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.4, opacity: 0, transition: { duration: 0.15 } }}>
+                <Lock size={18} />
+              </motion.span>
+            )}
+          </AnimatePresence>
+          {won && (
+            <>
+              <motion.span className="buy-unlock" initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: [0.4, 1.12, 1, 1, 1.6], opacity: [0, 1, 1, 1, 0] }} transition={{ duration: 1, times: [0, 0.2, 0.32, 0.5, 1] }} aria-hidden="true">
+                <Lock size={66} open delay={0.3} />
+              </motion.span>
+              <span className="buy-shine" aria-hidden="true" />
+              <span className="buy-burst" aria-hidden="true">
+                {Array.from({ length: 14 }, (_, i) => {
+                  const a = (i / 14) * Math.PI * 2 + 0.2
+                  const coin = i % 2 === 0
+                  return (
+                    <motion.i
+                      key={i}
+                      className={coin ? 'is-coin' : ''}
+                      initial={{ x: 0, y: 0, scale: 0.3, opacity: 0 }}
+                      animate={{ x: Math.cos(a) * (coin ? 120 : 96), y: Math.sin(a) * (coin ? 78 : 64) - 10, scale: [0.3, 1, 0.9], opacity: [0, 1, 0], rotate: coin ? (i % 4 ? 200 : -200) : 0 }}
+                      transition={{ duration: 0.85, delay: 0.5, ease: 'easeOut' }}
+                    >
+                      {coin && <Coin size={18} />}
+                    </motion.i>
+                  )
+                })}
+              </span>
+              <motion.span className="buy-spent tnum" initial={{ y: 0, opacity: 0 }} animate={{ y: -30, opacity: [0, 1, 1, 0] }} transition={{ duration: 1.3, delay: 0.15 }} aria-hidden="true">
+                -{price.toLocaleString('en-US')}
+              </motion.span>
+            </>
           )}
         </motion.div>
         <h3 className="buy-name">{item.name}</h3>
         <p className="buy-kind">{KIND_LABEL[item.kind]}</p>
         {state === 'done' ? (
-          <>
+          <motion.div className="buy-done" initial={won ? { opacity: 0, y: 10 } : false} animate={{ opacity: 1, y: 0 }} transition={{ delay: after, type: 'spring', stiffness: 420, damping: 22 }}>
             <p className="buy-yours">
-              <IconCheck size={16} /> yours
+              <motion.span initial={won ? { scale: 0 } : false} animate={{ scale: 1 }} transition={{ delay: after + 0.08, type: 'spring', stiffness: 600, damping: 14 }} className="buy-yours-tick">
+                <IconCheck size={14} />
+              </motion.span>
+              {won ? 'unlocked' : 'yours'}
             </p>
             {!then && wearable ? (
               <button
@@ -420,7 +492,7 @@ function BuyInner({ item, then }: { item: Item; then?: () => void }) {
                 </button>
               )
             )}
-          </>
+          </motion.div>
         ) : temp ? (
           <KeepFirst />
         ) : poor ? (
@@ -430,7 +502,7 @@ function BuyInner({ item, then }: { item: Item; then?: () => void }) {
                 <Coin size={16} /> {coins.toLocaleString('en-US')} / {price.toLocaleString('en-US')}
               </span>
               <span className="buy-bar">
-                <i style={{ width: `${Math.min(100, (coins / price) * 100)}%` }} />
+                <motion.i initial={false} animate={{ width: `${Math.min(100, (coins / price) * 100)}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
               </span>
             </div>
             <button type="button" className="buy-go is-ad" disabled={ads.left <= 0} onClick={openAd}>
@@ -439,7 +511,7 @@ function BuyInner({ item, then }: { item: Item; then?: () => void }) {
           </>
         ) : (
           <>
-            <button type="button" className="buy-go" disabled={state === 'busy'} onClick={() => void go()}>
+            <motion.button type="button" className="buy-go" disabled={state === 'busy'} onClick={() => void go()} whileTap={{ scale: 0.97 }} animate={state === 'error' ? { x: [0, -8, 8, -5, 4, 0] } : { x: 0 }} transition={{ duration: 0.35 }}>
               {state === 'busy' ? (
                 <span className="dots-loader">
                   <i />
@@ -448,10 +520,10 @@ function BuyInner({ item, then }: { item: Item; then?: () => void }) {
                 </span>
               ) : (
                 <>
-                  <IconLock size={16} /> unlock · <Coin size={16} /> {price.toLocaleString('en-US')}
+                  <Lock size={16} /> unlock · <Coin size={16} /> {price.toLocaleString('en-US')}
                 </>
               )}
-            </button>
+            </motion.button>
             <p className="buy-left tnum">{state === 'error' ? "didn't go through, try again" : `${(coins - price).toLocaleString('en-US')} left after`}</p>
           </>
         )}

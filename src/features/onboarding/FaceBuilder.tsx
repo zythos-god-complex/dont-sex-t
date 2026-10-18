@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { GoofyFace } from '../../ui/GoofyFace'
 import { Segmented, spring } from '../../ui/kit'
 import { IconCheck, IconDice } from '../../ui/icons'
@@ -16,7 +16,7 @@ import {
 } from '../../ui/face'
 import { itemById } from '../shop/catalog'
 import { askBuy, coinText, useOwnsFn, useShop } from '../shop/shop'
-import { Coin } from '../shop/Coin'
+import { Coin, Lock } from '../shop/Coin'
 
 type Tab = 'color' | 'shape' | 'eyes' | 'mouth' | 'top' | 'brows'
 
@@ -24,12 +24,15 @@ function Tile({ on, onPick, children, label, price }: { on: boolean; onPick: () 
   return (
     <motion.button type="button" className={'fb-tile' + (on ? ' is-on' : '') + (price ? ' is-shop' : '')} onClick={onPick} whileTap={{ scale: 0.9 }} transition={spring} aria-pressed={on} aria-label={label + (price ? ', in the shop' : '')}>
       {children}
-      {!!price && (
-        <span className="fb-price tnum">
-          <Coin size={11} />
-          {coinText(price)}
-        </span>
-      )}
+      <AnimatePresence initial={false}>
+        {!!price && (
+          <motion.span key="price" className="fb-price tnum" exit={{ y: -10, opacity: 0, scale: 0.7, transition: { duration: 0.35 } }}>
+            <Lock size={10} />
+            <Coin size={11} />
+            {coinText(price)}
+          </motion.span>
+        )}
+      </AnimatePresence>
       {on && (
         <motion.span className="fb-check" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={spring}>
           <IconCheck size={12} />

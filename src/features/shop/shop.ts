@@ -39,6 +39,9 @@ export function loadShop(): Promise<void> {
 
 export const priceOf = (it: Item) => useShop.getState().prices[it.id] ?? it.price
 
+// left locked for the admin on purpose so the buy flow can be tried (same list as gat_owns)
+const ADMIN_LOCKED = ['theme:galaxy', 'hat:wizard']
+
 /** free things, admin, and anything bought; before the shop loads only free things count */
 export function owns(id: string | null | undefined): boolean {
   if (!id) return true
@@ -46,7 +49,7 @@ export function owns(id: string | null | undefined): boolean {
   const s = useShop.getState()
   if (s.owned.has(id)) return true
   const me = useStore.getState().me
-  return !s.loaded && !!me?.admin
+  return !s.loaded && !!me?.admin && !ADMIN_LOCKED.includes(id)
 }
 export function useOwns(id: string | null | undefined): boolean {
   useShop((s) => s.owned)

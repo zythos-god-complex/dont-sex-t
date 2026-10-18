@@ -1729,3 +1729,47 @@ button.me-face { position: relative; margin: 0; flex: none; border: 0; padding: 
 .gift-rain { z-index: 0; opacity: .5; }
 .gift-card > :not(.gift-rain) { z-index: 1; }
 .shop-tabs { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+
+/* locks and the unlock moment */
+.lock-ico { display: block; flex: none; overflow: visible; }
+.lock-hole { fill: var(--lock-hole, var(--surface)); }
+.shop-tile-lock {
+  position: absolute; top: 6px; left: 6px; z-index: 2; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(23,19,31,.62); color: #FFF; --lock-hole: rgba(23,19,31,.62);
+}
+.shop-tile.is-locked .shop-tile-prev::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, transparent 55%, rgba(23,19,31,.10));
+}
+.tile-shine, .buy-shine { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 3; }
+.tile-shine::before, .buy-shine::before {
+  content: ''; position: absolute; top: -20%; bottom: -20%; width: 45%; left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.75), transparent); transform: skewX(-18deg);
+  animation: shine-sweep .8s ease-out .2s both;
+}
+.buy-shine::before { animation-delay: .55s; animation-duration: .9s; }
+@keyframes shine-sweep { from { left: -60%; } to { left: 120%; } }
+.shop-tile.is-fresh .shop-tile-prev { box-shadow: 0 0 0 2.5px var(--sun), 0 0 18px color-mix(in srgb, var(--sun) 60%, transparent); }
+.swatch-lockbadge { --lock-hole: rgba(0,0,0,.55); }
+.fb-price .lock-ico, .fl-price .lock-ico { color: var(--muted); --lock-hole: var(--surface); }
+
+.buy-prev { overflow: visible; }
+.buy-prev.is-locked > .shop-sw, .buy-prev.is-locked > .gf, .buy-prev.is-locked > .shop-card, .buy-prev.is-locked > .shop-plate { filter: saturate(.75); }
+.buy-lock {
+  position: absolute; top: 10px; left: 10px; z-index: 3; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(23,19,31,.7); color: #FFF; --lock-hole: rgba(23,19,31,.7);
+}
+.buy-unlock {
+  position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; pointer-events: none;
+  color: var(--sun); --lock-hole: #17131F; filter: drop-shadow(0 3px 0 #17131F) drop-shadow(0 0 2px #17131F);
+}
+.buy-burst { z-index: 5; }
+.buy-burst i.is-coin { width: auto; height: auto; background: none; box-shadow: none; border-radius: 0; }
+.buy-spent {
+  position: absolute; top: 10px; right: 12px; z-index: 6; padding: 4px 9px; border-radius: 999px;
+  background: #17131F; color: var(--sun); font: 850 13px/1 var(--font-display);
+}
+.buy-done { width: 100%; display: flex; flex-direction: column; align-items: center; }
+.buy-yours-tick { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--online); color: #FFF; }
+.coin-gain.is-spend { color: var(--danger); }
+@media (prefers-reduced-motion: reduce) { .tile-shine::before, .buy-shine::before { animation: none; display: none; } }

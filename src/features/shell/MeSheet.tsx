@@ -30,7 +30,7 @@ import { replayTour } from '../guide/Tour'
 import { mailto } from '../../lib/contact'
 import { itemById } from '../shop/catalog'
 import { askBuy, coinText, openShop, useOwnsFn, useShop } from '../shop/shop'
-import { Coin } from '../shop/Coin'
+import { Coin, Lock } from '../shop/Coin'
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
@@ -254,12 +254,15 @@ function FlairEditor() {
           return (
             <button key={h} type="button" className={'fl-opt' + (hat === h ? ' is-on' : '')} aria-label={h === 'none' ? 'no hat' : h} onClick={() => use('hat', h)}>
               <GoofyFace name={me.username} avatar={face} hat={h} size={44} blink={false} />
-              {p && (
-                <span className="fl-price tnum">
-                  <Coin size={11} />
-                  {coinText(p)}
-                </span>
-              )}
+              <AnimatePresence initial={false}>
+                {p && (
+                  <motion.span key="price" className="fl-price tnum" exit={{ y: -8, opacity: 0, scale: 0.7 }}>
+                    <Lock size={10} />
+                    <Coin size={11} />
+                    {coinText(p)}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
           )
         })}
