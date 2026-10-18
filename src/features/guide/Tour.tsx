@@ -49,6 +49,11 @@ const put = (k: string, v: string | null) => {
 
 const useTour = create<{ kind: Kind | null; i: number }>(() => ({ kind: null, i: 0 }))
 
+/** is a tour on screen right now */
+export const useTourBusy = () => useTour((s) => !!s.kind)
+/** a brand new account that hasn't had the home tour yet (other popups wait for it) */
+export const homeTourDue = () => get(NEW) === '1' && !get(KEY('home'))
+
 /** called right before joining, so only brand new accounts get the tour on their own */
 export const markNewUser = () => put(NEW, '1')
 

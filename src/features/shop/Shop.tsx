@@ -15,6 +15,7 @@ import { getTheme, themeVars } from '../../themes/themes'
 import { graffitiTile } from '../../themes/graffiti'
 import { useThemeMode } from '../../themes/mode'
 import { openMeSheet } from '../shell/meSheet'
+import { homeTourDue, useTourBusy } from '../guide/Tour'
 import { catalog, itemById, type Item, type Kind } from './catalog'
 import { Coin } from './Coin'
 import {
@@ -560,9 +561,12 @@ function AdInner() {
 /** the one time launch gift */
 function GiftCard() {
   const gift = useShop((s) => s.gift)
+  // a new account sees the tour first; the gift lands right after it
+  const touring = useTourBusy()
+  const show = !!gift && !touring && !homeTourDue()
   return (
     <AnimatePresence>
-      {gift && (
+      {show && gift && (
         <Layer onClose={takeGift} className="gift-layer">
           <motion.div className="gift-card" role="dialog" aria-label="launch gift" initial={{ y: 60, scale: 0.8, opacity: 0 }} animate={{ y: 0, scale: 1, opacity: 1 }} exit={{ y: 40, opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 20 }}>
             <span className="gift-rain" aria-hidden="true">

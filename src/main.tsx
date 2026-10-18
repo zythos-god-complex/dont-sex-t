@@ -20,7 +20,10 @@ import App from './App.tsx'
 // so nobody gets sent to a dead page while DNS is still setting up.
 const OLD_HOST = 'goofyahhtalk.vercel.app'
 const NEW_HOST = 'strangers.cafe'
-if (location.hostname === OLD_HOST) {
+// paused while GoDaddy's two parked A records still answer next to Vercel's: half the connections to
+// the new address land on a parking server. Flip back on once DNS only has Vercel's records.
+const MOVE = false
+if (MOVE && location.hostname === OLD_HOST) {
   // a parking page or half set up DNS fails this check (it must be our own version file), so nobody lands on it
   void fetch(`https://${NEW_HOST}/version.json`, { cache: 'no-store' })
     .then((r) => (r.ok ? (r.json() as Promise<{ id?: string }>) : null))
