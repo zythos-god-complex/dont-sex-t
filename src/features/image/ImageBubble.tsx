@@ -43,7 +43,7 @@ function useShield(on: boolean): boolean {
 
 export function ImageBubble({ img, open, onClose, blur }: { img: ImageMsg; open: boolean; onClose: () => void; blur?: boolean }) {
   const [loaded, setLoaded] = useState(false)
-  const src = useMediaSrc(img.url)
+  const src = useMediaSrc(img.url, !blur)
   const shield = useShield(open && !!blur)
   const ratio = img.w && img.h ? img.w / img.h : 1
   // portrait shots stay narrow, panoramas stay short
@@ -60,7 +60,7 @@ export function ImageBubble({ img, open, onClose, blur }: { img: ImageMsg; open:
   return (
     <>
       <span className={'img-b' + (loaded ? ' is-loaded' : '') + (blur ? ' is-once' : '')} style={{ width, height }}>
-        <img src={src} alt="" draggable={false} loading="lazy" decoding="async" onLoad={() => setLoaded(true)} />
+        <img src={src || undefined} alt="" draggable={false} decoding="async" onLoad={() => setLoaded(true)} />
         {blur && <i className="once-badge">1</i>}
       </span>
       {createPortal(
@@ -77,7 +77,7 @@ export function ImageBubble({ img, open, onClose, blur }: { img: ImageMsg; open:
               {blur && <i className="img-timer" />}
               {shield && <span className="img-shield">no peeking</span>}
               <motion.img
-                src={src}
+                src={src || undefined}
                 alt=""
                 initial={{ scale: 0.7, y: 30 }}
                 animate={{ scale: 1, y: 0 }}

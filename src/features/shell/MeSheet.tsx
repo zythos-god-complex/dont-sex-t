@@ -204,7 +204,7 @@ function Account({ onWords }: { onWords: (w: string) => void }) {
   return (
     <>
       <h3 className="settings-label">account</h3>
-      {!temp && me.has_key && (
+      {!temp && me.has_key && !me.admin && (
         <div className="settings-row">
           <span className="grow">recovery key</span>
           <button type="button" className={'acc-btn' + (arm === 'key' ? ' acc-forget is-armed' : '')} onClick={() => tap('key') && void makeKey().then((w) => onWords((shownWords = w))).catch(() => {})}>

@@ -27,7 +27,7 @@ export async function uploadPhoto(file: File): Promise<string> {
   const path = await api.uploadTicket(tok, 'gat-pfp', 'jpg')
   const r = await fetch(`${SUPABASE_URL}/storage/v1/object/gat-pfp/${path}`, {
     method: 'POST',
-    headers: { apikey: SUPABASE_KEY, 'content-type': 'image/jpeg' },
+    headers: { apikey: SUPABASE_KEY, 'x-gat-token': tok, 'content-type': 'image/jpeg' },
     body: blob,
   })
   if (!r.ok) throw new Error('upload failed')

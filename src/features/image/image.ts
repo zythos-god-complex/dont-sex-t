@@ -62,7 +62,7 @@ export async function uploadImage(blob: Blob, _userId: string): Promise<string> 
   const path = await api.uploadTicket(tok, 'gat-img', ext)
   const r = await fetch(`${SUPABASE_URL}/storage/v1/object/gat-img/${path}`, {
     method: 'POST',
-    headers: { apikey: SUPABASE_KEY, 'content-type': type },
+    headers: { apikey: SUPABASE_KEY, 'x-gat-token': tok, 'content-type': type },
     body: blob,
   })
   if (!r.ok) throw new Error(`upload ${r.status} ${(await r.text().catch(() => '')).slice(0, 160)}`)

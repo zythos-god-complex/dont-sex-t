@@ -55,8 +55,10 @@ export function VoiceBubble({ note }: { note: VoiceNote }) {
     void a.play().catch(() => setPlaying(false))
   }
 
+  const ready = !!src
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!ready) return
     const a = ensure()
     if (a.paused) play(a)
     else a.pause()
@@ -64,6 +66,7 @@ export function VoiceBubble({ note }: { note: VoiceNote }) {
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation()
+    if (!ready) return
     const r = e.currentTarget.getBoundingClientRect()
     const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
     // tapping the wave before the first play starts it from there
@@ -82,8 +85,8 @@ export function VoiceBubble({ note }: { note: VoiceNote }) {
 
   const prog = Math.min(1, pos / dur)
   return (
-    <div className="vn" onPointerDown={(e) => e.stopPropagation()}>
-      <motion.button type="button" className="vn-play" aria-label={playing ? 'pause' : 'play'} onClick={toggle} whileTap={{ scale: 0.88 }}>
+    <div className={'vn' + (ready ? '' : ' is-wait')} onPointerDown={(e) => e.stopPropagation()}>
+      <motion.button type="button" className="vn-play" aria-label={playing ? 'pause' : 'play'} aria-busy={!ready} onClick={toggle} whileTap={{ scale: 0.88 }}>
         {playing ? (
           <svg viewBox="0 0 24 24" width="18" height="18"><rect x="6" y="5" width="4.2" height="14" rx="1.6" fill="currentColor" /><rect x="13.8" y="5" width="4.2" height="14" rx="1.6" fill="currentColor" /></svg>
         ) : (

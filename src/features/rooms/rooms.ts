@@ -64,7 +64,7 @@ export const useRooms = create<S>(() => ({ rooms: {}, loaded: false, msgs: {}, m
 const get = useRooms.getState
 const set = useRooms.setState
 
-// keep a copy of everything on this device: the server drops room messages after 24h
+// keep a copy of everything on this device: the server drops room messages after 4h
 useRooms.subscribe((s, p) => {
   if (s.msgs === p.msgs) return
   for (const id in s.msgs) if (s.msgs[id] !== p.msgs[id]) archiveRoomMsgs(s.msgs[id] as never)
@@ -150,7 +150,7 @@ function mergeMsgs(a: RoomMsg[], b: RoomMsg[]): RoomMsg[] {
 
 async function history(id: string, before?: string) {
   const list = await rpc<RoomMsg[]>('gat_room_history', { p_token: tok(), p_room: id, p_before: before ?? null, p_limit: 50 })
-  // past the server's 24h window, fall back to this device's copy
+  // past the server's 4h window, fall back to this device's copy
   let local: RoomMsg[] = []
   if (list.length < 50) {
     const floor = list[0]?.created_at ?? before ?? get().msgs[id]?.find((m) => !m.state)?.created_at ?? null

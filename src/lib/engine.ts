@@ -1432,7 +1432,7 @@ export async function loadOlder(convId: string): Promise<number> {
   try {
     const rows = (await api.messages(t, convId, oldest.created_at, PAGE)) || []
     if (g !== gen) return 0
-    // the server only keeps 24h; anything older comes from this device's archive
+    // the server only keeps 4h; anything older comes from this device's archive
     let local: Message[] = []
     if (rows.length < PAGE) {
       const floor = rows.length ? rows[rows.length - 1].created_at : oldest.created_at

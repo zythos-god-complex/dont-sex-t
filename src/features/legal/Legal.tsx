@@ -6,7 +6,7 @@ import { Wordmark } from '../../ui/kit'
 import { goBack } from '../shell/nav'
 import { CONTACT_EMAIL, mailto } from '../../lib/contact'
 
-const UPDATED = '18 october 2026'
+const UPDATED = '22 october 2026'
 
 type Sec = { h: string; p: (string | string[])[] }
 
@@ -18,7 +18,7 @@ const PRIVACY: Sec[] = [
   {
     h: 'the short version',
     p: [
-      'strangers cafe is a place to chat with strangers and friends. we collect as little as we can, we never sell your data, we show no ads, and chat messages, photos and voice notes are wiped from our servers about 24 hours after they are sent.',
+      'strangers cafe is a place to chat with strangers and friends. we collect as little as we can, we never sell your data, we show no ads, and chat messages, photos and voice notes are wiped from our servers about 4 hours after they are sent.',
     ],
   },
   {
@@ -63,13 +63,13 @@ const PRIVACY: Sec[] = [
     h: 'how long we keep it',
     p: [
       [
-        'chat and room messages, reactions, photos and voice notes: deleted from our servers about 24 hours after they are sent. view once photos are gone once opened.',
+        'chat and room messages, reactions, photos and voice notes: deleted from our servers about 4 hours after they are sent. view once photos are gone once opened.',
         'your app also keeps a copy of your chats on your own device so your history stays with you. clearing site data or deleting a chat removes it there.',
         'profile and account data: until you use forget me.',
         'coin balance, unlocks and ad records: as long as the account exists, to keep balances right and catch abuse.',
-        'if you let someone save your voice note or photo, they keep their own copy on their device, outside our 24 hour wipe.',
+        'if you let someone save your voice note or photo, they keep their own copy on their device, outside our 4 hour wipe.',
         'reports and moderation records: as long as needed to keep people safe and handle appeals.',
-        'temp accounts: the sign in only lives in that browser tab. the account record and anything still within 24 hours stays on our servers until it ages out like everything else.',
+        'temp accounts: the sign in only lives in that browser tab. the account record and anything still within 4 hours stays on our servers until it ages out like everything else.',
       ],
     ],
   },
@@ -108,7 +108,7 @@ const PRIVACY: Sec[] = [
   },
   {
     h: 'security',
-    p: ['traffic is encrypted in transit, tokens and recovery keys are stored hashed, and access to the database is locked down to the app\'s own functions. view once photos go dark when the app loses focus, but no website can fully block screenshots or a second camera. no system is perfect, so do not send anything you could not stand to see leaked, and never share your recovery key.'],
+    p: ['traffic is encrypted in transit, tokens and recovery keys are stored hashed, and access to the database is locked down to the app\'s own functions. photos and voice notes are private to the chat they were sent in: each time one is opened the server checks that you are in that chat, and a plain link to the file opens nothing. view once photos go dark when the app loses focus, but no website can fully block screenshots or a second camera. no system is perfect, so do not send anything you could not stand to see leaked, and never share your recovery key.'],
   },
   {
     h: 'changes',

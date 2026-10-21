@@ -238,20 +238,21 @@ export default function Onboarding() {
   )
 }
 
-/** log in: name + the 6 words brings an account to this phone. */
+/** log in: name + the 6 words (or a password, for the admin) brings an account to this phone. */
 function RecoverForm() {
   const [name, setName] = useState('')
   const [words, setWords] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const count = words.trim() ? words.trim().split(/\s+/).length : 0
-  const ok = name.trim().length >= 3 && count === 6
+  // six words, or one longer string (a password); the server decides which it is
+  const ok = name.trim().length >= 3 && (count === 6 || (count === 1 && words.trim().length >= 8))
   const go = async () => {
     if (busy || !ok) return
     setBusy(true)
     setErr(null)
     try {
-      await recoverAccount(name, words)
+      await recoverAccount(name, words.trim())
     } catch (e) {
       setBusy(false)
       setErr(isApiError(e, 'rate_limited') ? 'too many tries, wait an hour' : 'nope, check the name and words')
@@ -263,7 +264,7 @@ function RecoverForm() {
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="username" aria-label="username" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
       <div className="rec-words">
         <textarea value={words} onChange={(e) => setWords(e.target.value)} placeholder="your 6 words" aria-label="recovery words" rows={2} autoCapitalize="off" autoCorrect="off" spellCheck={false} />
-        <span className={'rec-n tnum' + (count === 6 ? ' is-ok' : '')}>{count}/6</span>
+        {(count !== 1 || words.trim().length < 8) && <span className={'rec-n tnum' + (count === 6 ? ' is-ok' : '')}>{count}/6</span>}
       </div>
       {err && <p className="ob-error">{err}</p>}
       <button type="button" className="fb-done" disabled={busy || !ok} onClick={() => void go()}>

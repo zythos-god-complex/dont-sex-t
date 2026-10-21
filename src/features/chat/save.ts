@@ -47,8 +47,10 @@ export async function saveFile(url: string, kind: SaveKind): Promise<void> {
   const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')
   const fromUrl = (url.split('?')[0].split('.').pop() ?? '').toLowerCase()
   try {
-    // this phone's own copy first: the server lets files go after a day
-    const blob = await (await fetch(await mediaSrc(url))).blob()
+    // this phone's own copy first: the server lets files go after a few hours
+    const src = await mediaSrc(url)
+    if (!src) return
+    const blob = await (await fetch(src)).blob()
     const ext = EXT[blob.type.split(';')[0]] ?? (fromUrl.length <= 4 ? fromUrl : kind === 'voice' ? 'm4a' : 'jpg')
     const name = `strangers-cafe-${kind === 'voice' ? 'voice' : 'photo'}-${stamp}.${ext}`
     const file = new File([blob], name, { type: blob.type || (kind === 'voice' ? 'audio/mp4' : 'image/jpeg') })
@@ -70,7 +72,6 @@ export async function saveFile(url: string, kind: SaveKind): Promise<void> {
     a.remove()
     setTimeout(() => URL.revokeObjectURL(href), 4000)
   } catch {
-    // storage can hand the file over as a download itself
-    if (url.startsWith('http')) window.open(url + (url.includes('?') ? '&' : '?') + 'download=strangers-cafe-' + kind + '-' + stamp + (fromUrl ? '.' + fromUrl : ''), '_blank', 'noopener')
+    /* the file is gone or we are offline */
   }
 }

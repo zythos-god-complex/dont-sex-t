@@ -75,7 +75,7 @@ export async function uploadVoice(blob: Blob, _userId: string, name = ''): Promi
   const path = await api.uploadTicket(tok, 'gat-voice', ext)
   const r = await fetch(`${SUPABASE_URL}/storage/v1/object/gat-voice/${path}`, {
     method: 'POST',
-    headers: { apikey: SUPABASE_KEY, 'content-type': type },
+    headers: { apikey: SUPABASE_KEY, 'x-gat-token': tok, 'content-type': type },
     body: blob,
   })
   if (!r.ok) throw new Error('upload failed')

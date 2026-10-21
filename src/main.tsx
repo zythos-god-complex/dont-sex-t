@@ -6,6 +6,7 @@ import { boot } from './lib/engine'
 import { registerSW } from './lib/push'
 import { isTempToken, readSession } from './lib/session'
 import App from './App.tsx'
+import { CrashBoundary, clearCrashFlag } from './ui/CrashScreen'
 
 // Budget phones (few cores / little RAM / data saver) get lite mode: no live blur, lighter effects.
 {
@@ -42,12 +43,16 @@ boot()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {/* people who ask their phone for less motion get fades instead of slides, springs and bounces */}
-    <MotionConfig reducedMotion="user">
-      <App />
-    </MotionConfig>
+    <CrashBoundary>
+      {/* people who ask their phone for less motion get fades instead of slides, springs and bounces */}
+      <MotionConfig reducedMotion="user">
+        <App />
+      </MotionConfig>
+    </CrashBoundary>
   </StrictMode>,
 )
+// up for a while: a later stale file is allowed one more automatic reload
+setTimeout(clearCrashFlag, 15000)
 
 // Service worker registration off the critical path.
 const idle = (cb: () => void) =>

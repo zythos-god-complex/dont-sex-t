@@ -1,5 +1,7 @@
-// On-device history. The server forgets everything after 24h, so every message, room message and
+// On-device history. The server forgets everything after 4h, so every message, room message and
 // voice/photo file we see is copied into IndexedDB and read back from here once the server copy is gone.
+import { SUPABASE_KEY } from './env'
+import { getToken } from './engine'
 
 type Row = { id: string; created_at: string; [k: string]: unknown }
 type Store = 'msgs' | 'rmsgs' | 'media' | 'meta'
@@ -122,6 +124,52 @@ const wanted = new Set<string>()
 const queue: string[] = []
 let active = 0
 
+/**
+ * Voice notes and photos are private: the file only comes back for someone who is in that chat, and the
+ * server checks the account's token on every request. A plain link to the file opens nothing.
+ */
+async function fetchMedia(url: string): Promise<Blob | null> {
+  const tok = getToken()
+  if (!tok) return null
+  try {
+    const r = await fetch(url.replace('/storage/v1/object/public/', '/storage/v1/object/authenticated/'), {
+      headers: { apikey: SUPABASE_KEY, 'x-gat-token': tok },
+    })
+    return r.ok ? await r.blob() : null
+  } catch {
+    return null
+  }
+}
+
+async function putMedia(url: string, blob: Blob): Promise<void> {
+  const d = await db()
+  if (!d) return
+  try {
+    const tx = d.transaction('media', 'readwrite')
+    tx.objectStore('media').put(blob, url)
+    await done(tx)
+  } catch {
+    /* quota or private mode */
+  }
+}
+
+// one download per file, however many bubbles and the archive ask at once
+const inflight = new Map<string, Promise<Blob | null>>()
+function loadMedia(url: string, keep: boolean): Promise<Blob | null> {
+  let p = inflight.get(url)
+  if (!p) {
+    p = (async () => {
+      const have = await getMedia(url)
+      if (have) return have
+      const blob = await fetchMedia(url)
+      if (blob && keep) await putMedia(url, blob)
+      return blob
+    })().finally(() => inflight.delete(url))
+    inflight.set(url, p)
+  }
+  return p
+}
+
 function grabMedia(body: string | undefined) {
   const m = body ? MEDIA_RE.exec(body) : null
   // view-once photos never get a copy on the device
@@ -135,27 +183,16 @@ function pump() {
   while (active < 2 && queue.length) {
     const url = queue.shift()!
     active++
-    void (async () => {
-      try {
-        if (!(await getMedia(url))) {
-          const r = await fetch(url)
-          if (r.ok) {
-            const blob = await r.blob()
-            const d = await db()
-            if (d) {
-              const tx = d.transaction('media', 'readwrite')
-              tx.objectStore('media').put(blob, url)
-              await done(tx)
-            }
-          }
-        }
-      } catch {
-        /* offline or gone */
-      } finally {
+    void loadMedia(url, true)
+      .then((blob) => {
+        // not there yet (the message can show up a beat before its file is readable) or offline: let a later look try again
+        if (!blob) wanted.delete(url)
+      })
+      .catch(() => wanted.delete(url))
+      .finally(() => {
         active--
         pump()
-      }
-    })()
+      })
   }
 }
 
@@ -174,22 +211,18 @@ export async function getMedia(url: string): Promise<Blob | null> {
 }
 
 const objUrls = new Map<string, string>()
-/** Local object URL for a voice/photo if we have the file, else the network URL (and start saving it). */
-export async function mediaSrc(url: string): Promise<string> {
+/** the local address of a file we already have open, if any (no waiting) */
+export const peekMedia = (url: string): string | undefined => objUrls.get(url)
+
+/** Local object URL for a voice note or photo: this device's copy, else fetched now (and kept unless `keep` is off). '' if it can't be had. */
+export async function mediaSrc(url: string, keep = true): Promise<string> {
   const hit = objUrls.get(url)
   if (hit) return hit
-  const blob = await getMedia(url)
-  if (blob) {
-    const u = URL.createObjectURL(blob)
-    objUrls.set(url, u)
-    return u
-  }
-  if (!wanted.has(url)) {
-    wanted.add(url)
-    queue.push(url)
-    pump()
-  }
-  return url
+  const blob = await loadMedia(url, keep)
+  if (!blob) return ''
+  const u = URL.createObjectURL(blob)
+  objUrls.set(url, u)
+  return u
 }
 
 /** Drop this device's copy of a chat up to `upTo` (delete chat). */
